@@ -9,12 +9,13 @@ export default function StreetRow({
   s: Street;
   onDone?: (id: string) => void;
 }) {
+  const today = new Date();
   const days = s.lastDelivered
-    ? businessDaysBetween(new Date(s.lastDelivered), new Date())
+    ? businessDaysBetween(new Date(s.lastDelivered), today)
     : undefined;
 
   const doneToday =
-    s.lastDelivered && isSameDay(new Date(s.lastDelivered), new Date());
+    s.lastDelivered && isSameDay(new Date(s.lastDelivered), today);
 
   return (
     <tr className={doneToday ? "done-today" : undefined}>
