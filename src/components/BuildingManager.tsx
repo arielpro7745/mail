@@ -188,7 +188,16 @@ export default function BuildingManager(){
                   <td className="text-center">{r.allowDoor?"✓":"—"}</td>
                   <td className="flex gap-1">
                     <button className="btn-sm" onClick={()=>setEditingRes({b,r})}>✏️</button>
-                    <button className="btn-sm" onClick={()=>deleteResident(b.id,r.id)}>🗑️</button>
+                    <button
+                      className="btn-sm"
+                      onClick={() => {
+                        if (window.confirm("בטוח למחוק דייר זה?")) {
+                          deleteResident(b.id, r.id);
+                        }
+                      }}
+                    >
+                      🗑️
+                    </button>
                   </td>
                 </tr>
               ))}
