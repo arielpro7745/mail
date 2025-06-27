@@ -5,9 +5,11 @@ import { isSameDay } from "../utils/isSameDay";
 export default function StreetRow({
   s,
   onDone,
+  onUndo,
 }: {
   s: Street;
   onDone?: (id: string) => void;
+  onUndo?: (id: string) => void;
 }) {
   const today = new Date();
   const days = s.lastDelivered
@@ -23,10 +25,11 @@ export default function StreetRow({
       <td className="text-center">{s.isBig ? "גדול" : "קטן"}</td>
       <td className="text-center">{days ?? "—"}</td>
       <td className="text-center">
-        {onDone && (
-          <button className="btn-sm" onClick={() => onDone(s.id)}>
-            ✓
-          </button>
+        {onDone && !doneToday && (
+          <button className="btn-sm" onClick={() => onDone(s.id)}>✓</button>
+        )}
+        {onUndo && doneToday && (
+          <button className="btn-sm" onClick={() => onUndo(s.id)}>↺</button>
         )}
       </td>
     </tr>
