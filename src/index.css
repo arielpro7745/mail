@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* כפתורים */
+.btn     { @apply px-4 py-2 rounded bg-indigo-500 text-white hover:bg-indigo-600 transition; }
+.btn-sm  { @apply px-2 py-1 rounded bg-indigo-500 text-white hover:bg-indigo-600 transition; }
+
+/* טבלאות */
+table      { @apply w-full text-sm sm:text-base; }
+th, td     { @apply border p-2 whitespace-nowrap; }
+thead      { @apply bg-gray-100 dark:bg-gray-700 dark:text-gray-100; }
+
+/* שורה שסומנה היום */
+tr.done-today td { @apply line-through text-gray-400; }
+
+/* מצב כהה */
+.dark body { @apply bg-gray-800 text-gray-100; }
