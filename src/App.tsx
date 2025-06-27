@@ -18,6 +18,7 @@ export default function App() {
     completedToday,
     recommended,
     markDelivered,
+    undoDelivered,
     endDay,
   } = useDistribution();
 
@@ -52,7 +53,7 @@ export default function App() {
               </div>
             </section>
 
-            <CompletedToday list={completedToday} />
+            <CompletedToday list={completedToday} onUndo={undoDelivered} />
             <Notifications count={overdue} />
             <WalkingOrder area={todayArea} />
           </>
