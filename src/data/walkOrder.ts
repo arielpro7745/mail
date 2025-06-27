@@ -12,4 +12,6 @@ export const walkOrder45 = [
   "heib-odd"
 ];
 
-/* באזור 14 אין צורך – השאר ריק או שנה בעתיד */
+// There is currently no special walking order for area 14.
+// Export an empty array so consumers can safely import it.
+export const walkOrder14: string[] = [];
