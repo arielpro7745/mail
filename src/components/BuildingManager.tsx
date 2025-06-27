@@ -123,7 +123,16 @@ export default function BuildingManager(){
                   <td className="flex gap-1">
                     <button className="btn-sm" onClick={()=>setAddingRes(b)}>➕</button>
                     <button className="btn-sm" onClick={()=>setEditingB(b)}>✏️</button>
-                    <button className="btn-sm" onClick={()=>deleteBuilding(b.id)}>🗑️</button>
+                    <button
+                      className="btn-sm"
+                      onClick={() => {
+                        if (window.confirm("בטוח למחוק בניין זה?")) {
+                          deleteBuilding(b.id);
+                        }
+                      }}
+                    >
+                      🗑️
+                    </button>
                   </td>
                 </tr>
               ))}
