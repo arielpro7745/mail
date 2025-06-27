@@ -1,7 +1,13 @@
 import { Street } from "../types";
 import StreetRow from "./StreetRow";
 
-export default function CompletedToday({ list }: { list: Street[] }) {
+export default function CompletedToday({
+  list,
+  onUndo,
+}: {
+  list: Street[];
+  onUndo: (id: string) => void;
+}) {
   if (!list.length) return null;
   return (
     <section className="mt-6">
@@ -12,13 +18,13 @@ export default function CompletedToday({ list }: { list: Street[] }) {
             <tr>
               <th>רחוב</th>
               <th>סוג</th>
-              <th>ימים מאז</th>
+              <th>ימים מאז</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {list.map((s) => (
-              <StreetRow key={s.id} s={s} />
+              <StreetRow key={s.id} s={s} onUndo={onUndo} />
             ))}
           </tbody>
         </table>
