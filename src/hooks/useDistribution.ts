@@ -40,6 +40,11 @@ export function useDistribution() {
         s.id === id ? { ...s, lastDelivered: new Date().toISOString() } : s
       )
     );
+
+  const undoDelivered = (id: string) =>
+    setData((d) =>
+      d.map((s) => (s.id === id ? { ...s, lastDelivered: "" } : s))
+    );
   const endDay = () => setTodayArea((a) => (a === 14 ? 45 : 14));
 
   return {
@@ -48,6 +53,7 @@ export function useDistribution() {
     completedToday,
     recommended,
     markDelivered,
+    undoDelivered,
     endDay,
   };
 }
