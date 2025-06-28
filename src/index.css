@@ -14,5 +14,36 @@ thead      { @apply bg-gray-100 dark:bg-gray-700 dark:text-gray-100; }
 /* שורה שסומנה היום */
 tr.done-today td { @apply line-through text-gray-400; }
 
+/* סימון ויזואלי לרחובות שבוצעו */
+.completed-street {
+  @apply bg-green-100 border-green-300;
+}
+
+.completed-street td {
+  @apply text-green-700;
+}
+
+.overdue-street {
+  @apply bg-red-100 border-red-300;
+}
+
+.urgent-street {
+  @apply bg-yellow-100 border-yellow-300;
+}
+
+/* אנימציות */
+@keyframes pulse-green {
+  0%, 100% { @apply bg-green-100; }
+  50% { @apply bg-green-200; }
+}
+
+.pulse-green {
+  animation: pulse-green 2s infinite;
+}
+
 /* מצב כהה */
 .dark body { @apply bg-gray-800 text-gray-100; }
+.dark .completed-street { @apply bg-green-900 border-green-700; }
+.dark .completed-street td { @apply text-green-300; }
+.dark .overdue-street { @apply bg-red-900 border-red-700; }
+.dark .urgent-street { @apply bg-yellow-900 border-yellow-700; }

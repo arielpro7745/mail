@@ -4,7 +4,9 @@ import { db } from "../firebase";
 import { streets as initialStreets } from "../data/streets";
 import { Street, Area } from "../types";
 import { sortByUrgency, pickForToday } from "../utils/schedule";
+import { optimizeRoute } from "../utils/routeOptimizer";
 import { isSameDay } from "../utils/isSameDay";
+import { useSettings } from "./useSettings";
 
 const COLLECTION_NAME = "streets";
 const AREA_DOC = "currentArea";
@@ -13,6 +15,7 @@ export function useDistribution() {
   const [data, setData] = useState<Street[]>([]);
   const [todayArea, setTodayArea] = useState<Area>(14);
   const [loading, setLoading] = useState(true);
+  const { settings } = useSettings();
 
   // Initialize data if collection is empty
   const initializeData = async () => {
@@ -78,7 +81,13 @@ export function useDistribution() {
   }, []);
 
   const today = new Date();
-  const todayList = sortByUrgency(data.filter(s => s.area === todayArea), today);
+  let todayList = sortByUrgency(data.filter(s => s.area === todayArea), today);
+  
+  // Apply route optimization if enabled
+  if (settings.optimizeRoutes) {
+    todayList = optimizeRoute(todayList, todayArea);
+  }
+
   const completedToday = todayList.filter(
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
   );
@@ -88,11 +97,24 @@ export function useDistribution() {
 
   const recommended = pickForToday(pendingToday);
 
-  const markDelivered = async (id: string) => {
+  const markDelivered = async (id: string, deliveryTime?: number) => {
     try {
-      await updateDoc(doc(db, COLLECTION_NAME, id), {
+      const street = data.find(s => s.id === id);
+      if (!street) return;
+
+      const updates: Partial<Street> = {
         lastDelivered: new Date().toISOString()
-      });
+      };
+
+      if (deliveryTime) {
+        const newTimes = [...(street.deliveryTimes || []), deliveryTime];
+        const averageTime = Math.round(newTimes.reduce((a, b) => a + b, 0) / newTimes.length);
+        
+        updates.deliveryTimes = newTimes;
+        updates.averageTime = averageTime;
+      }
+
+      await updateDoc(doc(db, COLLECTION_NAME, id), updates);
     } catch (error) {
       console.error("Error marking delivered:", error);
     }

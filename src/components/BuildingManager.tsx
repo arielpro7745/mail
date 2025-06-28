@@ -4,6 +4,7 @@ import { useBuildings } from "../hooks/useBuildings";
 import { streets } from "../data/streets";
 import { Building, Resident } from "../types";
 import LoadingSpinner from "./LoadingSpinner";
+import BuildingEntranceManager from "./BuildingEntranceManager";
 
 /* רכיב אינפוט ממותג */
 function Field({label, ...rest}:{label:string;name:string;type?:string;defaultValue?:string}) {
@@ -23,6 +24,7 @@ export default function BuildingManager(){
   const [editingB,setEditingB]=useState<Building|null>(null);
   const [addingRes,setAddingRes]=useState<Building|null>(null);
   const [editingRes,setEditingRes]=useState<{b:Building;r:Resident}|null>(null);
+  const [managingEntrances, setManagingEntrances] = useState<Building|null>(null);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -38,7 +40,7 @@ export default function BuildingManager(){
     const code=f.code.value.trim();
 
     addBuilding({id:`${streetId}-${number}${entrance}`,streetId,number,
-      entrance:entrance||undefined,code:code||undefined,residents:[]});
+      entrance:entrance||undefined,code:code||undefined,residents:[], entrances: []});
     f.reset();
   }
 
@@ -116,7 +118,7 @@ export default function BuildingManager(){
           </summary>
           <table className="w-full">
             <thead>
-              <tr><th>בית</th><th>כניסה</th><th>קוד</th><th>דיירים (#)</th><th></th></tr>
+              <tr><th>בית</th><th>כניסה</th><th>קוד</th><th>דיירים (#)</th><th>כניסות (#)</th><th></th></tr>
             </thead>
             <tbody>
               {g.houses.map(b=>(
@@ -125,8 +127,10 @@ export default function BuildingManager(){
                   <td className="text-center">{b.entrance||"—"}</td>
                   <td className="text-center">{b.code||"—"}</td>
                   <td className="text-center">{b.residents.length}</td>
+                  <td className="text-center">{b.entrances?.length || 0}</td>
                   <td className="flex gap-1">
                     <button className="btn-sm" onClick={()=>setAddingRes(b)}>➕</button>
+                    <button className="btn-sm bg-purple-500 hover:bg-purple-600" onClick={()=>setManagingEntrances(b)}>🏢</button>
                     <button className="btn-sm" onClick={()=>setEditingB(b)}>✏️</button>
                     <button
                       className="btn-sm"
@@ -169,6 +173,29 @@ export default function BuildingManager(){
       {/* עריכת דייר */}
       {editingRes && (
         <ResidentForm b={editingRes.b} res={editingRes.r}/>
+      )}
+
+      {/* ניהול כניסות */}
+      {managingEntrances && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto m-4">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="text-lg font-semibold">ניהול כניסות ותיבות</h3>
+              <button
+                onClick={() => setManagingEntrances(null)}
+                className="btn-sm bg-gray-500 hover:bg-gray-600"
+              >
+                סגור
+              </button>
+            </div>
+            <div className="p-4">
+              <BuildingEntranceManager
+                building={managingEntrances}
+                onUpdateBuilding={updateBuilding}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* דיירים לכל בניין */}
