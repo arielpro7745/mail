@@ -55,7 +55,7 @@ export default function BuildingManager(){
         id:res?.id||nanoid(6),
         fullName:f.fullName.value.trim(),
         apartment:f.apartment.value.trim(),
-        phone:f.phone.value.trim()||undefined,
+        phone:f.phone.value.trim()||null,
         familyPhones:f.familyPhones.value.split(",").map((s:string)=>s.trim()).filter(Boolean),
         allowMailbox:f.allowMailbox.checked,
         allowDoor:f.allowDoor.checked
