@@ -176,7 +176,7 @@ export default function BuildingManager(){
     const code=f.code.value.trim();
 
     addBuilding({id:`${streetId}-${number}${entrance}`,streetId,number,
-      entrance:entrance||undefined,code:code||undefined,residents:[], entrances: []});
+      entrance:entrance||null,code:code||null,residents:[], entrances: []});
     f.reset();
   }
 
@@ -475,7 +475,7 @@ export default function BuildingManager(){
             </div>
             <form onSubmit={e=>{e.preventDefault();
                 const f=e.currentTarget as any;
-                updateBuilding(editingB.id,{entrance:f.entrance.value.trim()||undefined,code:f.code.value.trim()||undefined});
+                updateBuilding(editingB.id,{entrance:f.entrance.value.trim()||null,code:f.code.value.trim()||null});
                 setEditingB(null);
               }}
               className="p-6">
