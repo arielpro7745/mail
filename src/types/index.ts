@@ -42,8 +42,11 @@ export interface BuildingEntrance {
 export interface Mailbox {
   id: string;
   number: string;
-  residentId?: string;
+  familyName?: string; // שם משפחה
+  phone?: string; // טלפון
   hasKey?: boolean;
+  notes?: string; // הערות נוספות
+  residentId?: string; // קישור לדייר (אופציונלי)
 }
 
 /* ---------- הגדרות מערכת ---------- */

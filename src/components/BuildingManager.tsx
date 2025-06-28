@@ -5,13 +5,14 @@ import { streets } from "../data/streets";
 import { Building, Resident } from "../types";
 import LoadingSpinner from "./LoadingSpinner";
 import BuildingEntranceManager from "./BuildingEntranceManager";
+import { Home, Users, Plus, Edit, Trash2, Building2 } from "lucide-react";
 
 /* רכיב אינפוט ממותג */
 function Field({label, ...rest}:{label:string;name:string;type?:string;defaultValue?:string}) {
   return (
     <label className="flex flex-col gap-1">
-      {label}
-      <input className="border p-1 rounded" {...rest}/>
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <input className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" {...rest}/>
     </label>
   );
 }
@@ -63,22 +64,43 @@ export default function BuildingManager(){
       setAddingRes(null); setEditingRes(null);
     }
     return(
-      <form onSubmit={submit} className="border p-3 rounded mt-2">
-        <div className="flex flex-wrap gap-3">
-          <Field label="שם מלא" name="fullName" defaultValue={res?.fullName}/>
-          <Field label="דירה" name="apartment" defaultValue={res?.apartment}/>
-          <Field label="טלפון" name="phone" defaultValue={res?.phone}/>
-          <Field label="טלפונים נוספים (פסיקים)" name="familyPhones"
-                 defaultValue={res?.familyPhones?.join(", ")}/>
-          <label className="flex gap-1 items-center">
-            <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox}/> מאשר תיבה
-          </label>
-          <label className="flex gap-1 items-center">
-            <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor}/> מאשר דלת
-          </label>
-          <button className="btn-sm" type="submit">{isEdit?"עדכן":"הוסף"}</button>
-        </div>
-      </form>
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mt-4 shadow-lg">
+        <h4 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
+          <Users size={20} className="text-blue-500" />
+          {isEdit ? "עריכת דייר" : "דייר חדש"}
+        </h4>
+        <form onSubmit={submit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="שם מלא" name="fullName" defaultValue={res?.fullName}/>
+            <Field label="דירה" name="apartment" defaultValue={res?.apartment}/>
+            <Field label="טלפון" name="phone" defaultValue={res?.phone}/>
+            <Field label="טלפונים נוספים (פסיקים)" name="familyPhones"
+                   defaultValue={res?.familyPhones?.join(", ")}/>
+          </div>
+          <div className="flex flex-wrap gap-4 mt-4">
+            <label className="flex gap-2 items-center">
+              <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
+              <span className="text-sm font-medium text-gray-700">מאשר תיבה</span>
+            </label>
+            <label className="flex gap-2 items-center">
+              <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
+              <span className="text-sm font-medium text-gray-700">מאשר דלת</span>
+            </label>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors" type="submit">
+              {isEdit?"עדכן":"הוסף"}
+            </button>
+            <button 
+              type="button" 
+              onClick={() => {setAddingRes(null); setEditingRes(null);}}
+              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              בטל
+            </button>
+          </div>
+        </form>
+      </div>
     );
   }
 
@@ -89,80 +111,151 @@ export default function BuildingManager(){
 
   return(
     <section className="mt-4">
-      <h2 className="text-lg font-semibold mb-4">בניינים ↠ דיירים</h2>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-blue-500 rounded-lg">
+          <Building2 size={24} className="text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">בניינים ודיירים</h2>
+          <p className="text-gray-600">ניהול מידע על בניינים, כניסות ותיבות דואר</p>
+        </div>
+      </div>
 
       {/* טופס בניין חדש */}
-      <form onSubmit={submitBuilding} className="flex flex-wrap gap-2 items-end border p-3 rounded mb-6">
-        <label className="flex flex-col gap-1">
-          רחוב / מקטע
-          <select name="streetId" className="border p-1 rounded">
-            <optgroup label="אזור 45">
-              {streets.filter(s=>s.area===45).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-            </optgroup>
-            <optgroup label="אזור 14">
-              {streets.filter(s=>s.area===14).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-            </optgroup>
-          </select>
-        </label>
-        <Field label="מס׳ בית" name="number" type="number"/>
-        <Field label="כניסה"  name="entrance"/>
-        <Field label="קוד‑דלת" name="code"/>
-        <button className="btn-sm" type="submit">הוסף בניין</button>
-      </form>
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6 shadow-lg">
+        <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
+          <Plus size={20} className="text-blue-500" />
+          הוספת בניין חדש
+        </h3>
+        <form onSubmit={submitBuilding} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-gray-700">רחוב / מקטע</span>
+            <select name="streetId" className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <optgroup label="אזור 45">
+                {streets.filter(s=>s.area===45).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+              </optgroup>
+              <optgroup label="אזור 14">
+                {streets.filter(s=>s.area===14).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+              </optgroup>
+            </select>
+          </label>
+          <Field label="מס׳ בית" name="number" type="number"/>
+          <Field label="כניסה"  name="entrance"/>
+          <Field label="קוד‑דלת" name="code"/>
+          <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2" type="submit">
+            <Plus size={16} />
+            הוסף בניין
+          </button>
+        </form>
+      </div>
 
       {/* הצגת רחובות ↓ */}
-      {grouped.map(g=>(
-        <details key={g.st.id} className="border rounded mb-4">
-          <summary className="cursor-pointer p-2 bg-gray-100 select-none">
-            {g.st.name} ({g.houses.length})
-          </summary>
-          <table className="w-full">
-            <thead>
-              <tr><th>בית</th><th>כניסה</th><th>קוד</th><th>דיירים (#)</th><th>כניסות (#)</th><th></th></tr>
-            </thead>
-            <tbody>
-              {g.houses.map(b=>(
-                <tr key={b.id} className={b.number%2===0?"bg-sky-50":undefined}>
-                  <td className="text-center">{b.number}</td>
-                  <td className="text-center">{b.entrance||"—"}</td>
-                  <td className="text-center">{b.code||"—"}</td>
-                  <td className="text-center">{b.residents.length}</td>
-                  <td className="text-center">{b.entrances?.length || 0}</td>
-                  <td className="flex gap-1">
-                    <button className="btn-sm" onClick={()=>setAddingRes(b)}>➕</button>
-                    <button className="btn-sm bg-purple-500 hover:bg-purple-600" onClick={()=>setManagingEntrances(b)}>🏢</button>
-                    <button className="btn-sm" onClick={()=>setEditingB(b)}>✏️</button>
-                    <button
-                      className="btn-sm"
-                      onClick={() => {
-                        if (window.confirm("בטוח למחוק בניין זה?")) {
-                          deleteBuilding(b.id);
-                        }
-                      }}
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
-      ))}
+      <div className="space-y-4">
+        {grouped.map(g=>(
+          <div key={g.st.id} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <Home size={20} className="text-gray-600" />
+                {g.st.name} ({g.houses.length} בניינים)
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-right p-3 font-semibold text-gray-700">בית</th>
+                    <th className="text-right p-3 font-semibold text-gray-700">כניסה</th>
+                    <th className="text-right p-3 font-semibold text-gray-700">קוד</th>
+                    <th className="text-right p-3 font-semibold text-gray-700">דיירים</th>
+                    <th className="text-right p-3 font-semibold text-gray-700">כניסות</th>
+                    <th className="text-right p-3 font-semibold text-gray-700">פעולות</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.houses.map(b=>(
+                    <tr key={b.id} className={`hover:bg-gray-50 transition-colors ${b.number%2===0?"bg-blue-25":""}`}>
+                      <td className="p-3 text-center font-medium">{b.number}</td>
+                      <td className="p-3 text-center">{b.entrance||"—"}</td>
+                      <td className="p-3 text-center">{b.code||"—"}</td>
+                      <td className="p-3 text-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {b.residents.length}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {b.entrances?.length || 0}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex gap-1 justify-center">
+                          <button 
+                            className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors" 
+                            onClick={()=>setAddingRes(b)}
+                            title="הוסף דייר"
+                          >
+                            <Users size={14} />
+                          </button>
+                          <button 
+                            className="p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors" 
+                            onClick={()=>setManagingEntrances(b)}
+                            title="ניהול כניסות"
+                          >
+                            <Building2 size={14} />
+                          </button>
+                          <button 
+                            className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors" 
+                            onClick={()=>setEditingB(b)}
+                            title="עריכת בניין"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            onClick={() => {
+                              if (window.confirm("בטוח למחוק בניין זה?")) {
+                                deleteBuilding(b.id);
+                              }
+                            }}
+                            title="מחיקת בניין"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* עריכת בניין */}
       {editingB && (
-        <form onSubmit={e=>{e.preventDefault();
-            const f=e.currentTarget as any;
-            updateBuilding(editingB.id,{entrance:f.entrance.value.trim()||undefined,code:f.code.value.trim()||undefined});
-            setEditingB(null);
-          }}
-          className="border p-3 rounded mt-4 flex gap-2 items-end">
-          <Field label="כניסה" name="entrance" defaultValue={editingB.entrance}/>
-          <Field label="קוד‑דלת" name="code" defaultValue={editingB.code}/>
-          <button className="btn-sm" type="submit">שמור</button>
-          <button className="btn-sm" type="button" onClick={()=>setEditingB(null)}>בטל</button>
-        </form>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-200">
+              <h4 className="text-lg font-bold text-gray-800">עריכת בניין</h4>
+            </div>
+            <form onSubmit={e=>{e.preventDefault();
+                const f=e.currentTarget as any;
+                updateBuilding(editingB.id,{entrance:f.entrance.value.trim()||undefined,code:f.code.value.trim()||undefined});
+                setEditingB(null);
+              }}
+              className="p-6">
+              <div className="space-y-4">
+                <Field label="כניסה" name="entrance" defaultValue={editingB.entrance}/>
+                <Field label="קוד‑דלת" name="code" defaultValue={editingB.code}/>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors" type="submit">שמור</button>
+                <button className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors" type="button" onClick={()=>setEditingB(null)}>בטל</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* דייר חדש */}
@@ -177,18 +270,18 @@ export default function BuildingManager(){
 
       {/* ניהול כניסות */}
       {managingEntrances && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto m-4">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="text-lg font-semibold">ניהול כניסות ותיבות</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+              <h3 className="text-xl font-bold text-gray-800">ניהול כניסות ותיבות</h3>
               <button
                 onClick={() => setManagingEntrances(null)}
-                className="btn-sm bg-gray-500 hover:bg-gray-600"
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
               >
                 סגור
               </button>
             </div>
-            <div className="p-4">
+            <div className="p-6">
               <BuildingEntranceManager
                 building={managingEntrances}
                 onUpdateBuilding={updateBuilding}
@@ -199,43 +292,74 @@ export default function BuildingManager(){
       )}
 
       {/* דיירים לכל בניין */}
-      {buildings.map(b=>b.residents.length && (
-        <details key={b.id+"-res"} className="border rounded mt-4">
-          <summary className="cursor-pointer p-2 bg-gray-50 select-none">
-            {b.streetId} {b.number}{b.entrance&&` ${b.entrance}`} – דיירים ({b.residents.length})
-          </summary>
-          <table className="w-full">
-            <thead>
-              <tr><th>שם</th><th>דירה</th><th>טלפונים</th><th>תיבה</th><th>דלת</th><th></th></tr>
-            </thead>
-            <tbody>
-              {b.residents.map(r=>(
-                <tr key={r.id}>
-                  <td>{r.fullName}</td>
-                  <td className="text-center">{r.apartment}</td>
-                  <td className="text-center">
-                    {[r.phone,...(r.familyPhones||[])].filter(Boolean).join(", ")||"—"}
-                  </td>
-                  <td className="text-center">{r.allowMailbox?"✓":"—"}</td>
-                  <td className="text-center">{r.allowDoor?"✓":"—"}</td>
-                  <td className="flex gap-1">
-                    <button className="btn-sm" onClick={()=>setEditingRes({b,r})}>✏️</button>
-                    <button
-                      className="btn-sm"
-                      onClick={() => {
-                        if (window.confirm("בטוח למחוק דייר זה?")) {
-                          deleteResident(b.id, r.id);
-                        }
-                      }}
-                    >
-                      🗑️
-                    </button>
-                  </td>
+      {buildings.map(b=>b.residents.length > 0 && (
+        <div key={b.id+"-res"} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden mt-4">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 border-b border-gray-200">
+            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+              <Users size={20} className="text-green-600" />
+              {b.streetId} {b.number}{b.entrance&&` ${b.entrance}`} – דיירים ({b.residents.length})
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-right p-3 font-semibold text-gray-700">שם</th>
+                  <th className="text-right p-3 font-semibold text-gray-700">דירה</th>
+                  <th className="text-right p-3 font-semibold text-gray-700">טלפונים</th>
+                  <th className="text-right p-3 font-semibold text-gray-700">תיבה</th>
+                  <th className="text-right p-3 font-semibold text-gray-700">דלת</th>
+                  <th className="text-right p-3 font-semibold text-gray-700">פעולות</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
+              </thead>
+              <tbody>
+                {b.residents.map(r=>(
+                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="p-3 font-medium">{r.fullName}</td>
+                    <td className="p-3 text-center">{r.apartment}</td>
+                    <td className="p-3 text-center text-sm">
+                      {[r.phone,...(r.familyPhones||[])].filter(Boolean).join(", ")||"—"}
+                    </td>
+                    <td className="p-3 text-center">
+                      {r.allowMailbox ? 
+                        <span className="text-green-600 font-bold">✓</span> : 
+                        <span className="text-gray-400">—</span>
+                      }
+                    </td>
+                    <td className="p-3 text-center">
+                      {r.allowDoor ? 
+                        <span className="text-green-600 font-bold">✓</span> : 
+                        <span className="text-gray-400">—</span>
+                      }
+                    </td>
+                    <td className="p-3">
+                      <div className="flex gap-1 justify-center">
+                        <button 
+                          className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors" 
+                          onClick={()=>setEditingRes({b,r})}
+                          title="עריכת דייר"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                          onClick={() => {
+                            if (window.confirm("בטוח למחוק דייר זה?")) {
+                              deleteResident(b.id, r.id);
+                            }
+                          }}
+                          title="מחיקת דייר"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ))}
     </section>
   );
