@@ -8,8 +8,8 @@ const firebaseConfig = {
   projectId: "mail-5b7f9",
   storageBucket: "mail-5b7f9.firebasestorage.app",
   messagingSenderId: "158583453090",
-  appId: "1:158583453090:web:793907103308e7adf96efb",
-  measurementId: "G-51TYLZCVRL",
+  appId: "1:158583453090:web:51603942c910a804f96efb",
+  measurementId: "G-2JD8Y3D7SH"
 };
 
 const app = initializeApp(firebaseConfig);
