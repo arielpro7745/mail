@@ -12,6 +12,15 @@ export const walkOrder45 = [
   "heib-odd"
 ];
 
-// There is currently no special walking order for area 14.
-// Export an empty array so consumers can safely import it.
-export const walkOrder14: string[] = [];
+// סדר חלוקה מותאם לאזור 14
+export const walkOrder14 = [
+  "d-hayomi",           // הדף היומי
+  "rot-110‑132",        // רוטשילד 110-132
+  "rot-134‑150",        // רוטשילד 134-150
+  "rot-152‑182",        // רוטשילד 152-182
+  "gad-machnes-4",      // גד מכנס 4
+  "rot-179‑143",        // רוטשילד 179-143
+  "kkl-even",           // קק"ל זוגי
+  "kkl-odd",            // קק"ל אי-זוגי
+  "rot-141‑109"         // רוטשילד 141-109
+];
