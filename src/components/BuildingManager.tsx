@@ -5,10 +5,10 @@ import { streets } from "../data/streets";
 import { Building, Resident } from "../types";
 import LoadingSpinner from "./LoadingSpinner";
 import BuildingEntranceManager from "./BuildingEntranceManager";
-import { Home, Users, Plus, Edit, Trash2, Building2 } from "lucide-react";
+import { Home, Users, Plus, Edit, Trash2, Building2, UserPlus, Phone, Crown } from "lucide-react";
 
 /* רכיב אינפוט ממותג */
-function Field({label, ...rest}:{label:string;name:string;type?:string;defaultValue?:string}) {
+function Field({label, ...rest}:{label:string;name:string;type?:string;defaultValue?:string;placeholder?:string}) {
   return (
     <label className="flex flex-col gap-1">
       <span className="text-sm font-medium text-gray-700">{label}</span>
@@ -26,6 +26,7 @@ export default function BuildingManager(){
   const [addingRes,setAddingRes]=useState<Building|null>(null);
   const [editingRes,setEditingRes]=useState<{b:Building;r:Resident}|null>(null);
   const [managingEntrances, setManagingEntrances] = useState<Building|null>(null);
+  const [selectedApartment, setSelectedApartment] = useState<string>("");
 
   if (loading) {
     return <LoadingSpinner />;
@@ -48,21 +49,40 @@ export default function BuildingManager(){
   /*‑‑‑ טופס דייר (חדש/עריכה) ‑‑‑*/
   function ResidentForm({b,res}:{b:Building;res?:Resident}){
     const isEdit=Boolean(res);
+    
+    // קבלת דירות קיימות בבניין
+    const existingApartments = [...new Set(b.residents.map(r => r.apartment))].sort();
+    
     function submit(e:React.FormEvent<HTMLFormElement>){
       e.preventDefault();
       const f=e.currentTarget as any;
+      
+      const apartment = f.apartment.value.trim();
+      const existingResidentsInApartment = b.residents.filter(r => r.apartment === apartment && r.id !== res?.id);
+      
       const r:Resident={
         id:res?.id||nanoid(6),
         fullName:f.fullName.value.trim(),
-        apartment:f.apartment.value.trim(),
+        apartment,
         phone:f.phone.value.trim()||null,
         familyPhones:f.familyPhones.value.split(",").map((s:string)=>s.trim()).filter(Boolean),
         allowMailbox:f.allowMailbox.checked,
-        allowDoor:f.allowDoor.checked
+        allowDoor:f.allowDoor.checked,
+        isPrimary: existingResidentsInApartment.length === 0 || f.isPrimary?.checked || false,
+        relationship: f.relationship.value.trim() || null
       };
+      
+      // אם זה דייר ראשי חדש, צריך לעדכן את הדיירים הקיימים בדירה
+      if (r.isPrimary && existingResidentsInApartment.length > 0) {
+        existingResidentsInApartment.forEach(existingResident => {
+          updateResident(b.id, existingResident.id, { isPrimary: false });
+        });
+      }
+      
       if(isEdit) updateResident(b.id,res!.id,r); else addResident(b.id,r);
-      setAddingRes(null); setEditingRes(null);
+      setAddingRes(null); setEditingRes(null); setSelectedApartment("");
     }
+    
     return(
       <div className="bg-white border border-gray-200 rounded-xl p-6 mt-4 shadow-lg">
         <h4 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
@@ -71,12 +91,45 @@ export default function BuildingManager(){
         </h4>
         <form onSubmit={submit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="שם מלא" name="fullName" defaultValue={res?.fullName}/>
-            <Field label="דירה" name="apartment" defaultValue={res?.apartment}/>
-            <Field label="טלפון" name="phone" defaultValue={res?.phone}/>
+            <Field label="שם מלא" name="fullName" defaultValue={res?.fullName} placeholder="ישראל ישראלי"/>
+            
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-gray-700">דירה</span>
+              <div className="flex gap-2">
+                <input 
+                  name="apartment" 
+                  defaultValue={res?.apartment || selectedApartment}
+                  className="flex-1 border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="מספר דירה"
+                  list="apartments"
+                />
+                <datalist id="apartments">
+                  {existingApartments.map(apt => (
+                    <option key={apt} value={apt} />
+                  ))}
+                </datalist>
+                {existingApartments.length > 0 && (
+                  <select 
+                    onChange={(e) => setSelectedApartment(e.target.value)}
+                    className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    defaultValue=""
+                  >
+                    <option value="">בחר דירה קיימת</option>
+                    {existingApartments.map(apt => (
+                      <option key={apt} value={apt}>{apt}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+            
+            <Field label="טלפון" name="phone" defaultValue={res?.phone} placeholder="050-1234567"/>
             <Field label="טלפונים נוספים (פסיקים)" name="familyPhones"
-                   defaultValue={res?.familyPhones?.join(", ")}/>
+                   defaultValue={res?.familyPhones?.join(", ")} placeholder="052-1111111, 03-1234567"/>
+            
+            <Field label="קשר משפחתי" name="relationship" defaultValue={res?.relationship} placeholder="בעל הבית, בן, בת, וכו'"/>
           </div>
+          
           <div className="flex flex-wrap gap-4 mt-4">
             <label className="flex gap-2 items-center">
               <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
@@ -86,14 +139,20 @@ export default function BuildingManager(){
               <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
               <span className="text-sm font-medium text-gray-700">מאשר דלת</span>
             </label>
+            <label className="flex gap-2 items-center">
+              <input type="checkbox" name="isPrimary" defaultChecked={res?.isPrimary} className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"/>
+              <Crown size={16} className="text-yellow-500" />
+              <span className="text-sm font-medium text-gray-700">דייר ראשי</span>
+            </label>
           </div>
+          
           <div className="flex gap-3 mt-6">
             <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors" type="submit">
               {isEdit?"עדכן":"הוסף"}
             </button>
             <button 
               type="button" 
-              onClick={() => {setAddingRes(null); setEditingRes(null);}}
+              onClick={() => {setAddingRes(null); setEditingRes(null); setSelectedApartment("");}}
               className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
             >
               בטל
@@ -108,6 +167,28 @@ export default function BuildingManager(){
   const grouped = streets.map(st=>({
     st, houses:buildings.filter(b=>b.streetId===st.id).sort((a,b)=>a.number-b.number)
   })).filter(g=>g.houses.length);
+
+  // קיבוץ דיירים לפי דירות
+  const groupResidentsByApartment = (residents: Resident[]) => {
+    const grouped = residents.reduce((acc, resident) => {
+      if (!acc[resident.apartment]) {
+        acc[resident.apartment] = [];
+      }
+      acc[resident.apartment].push(resident);
+      return acc;
+    }, {} as Record<string, Resident[]>);
+    
+    // מיון הדיירים בכל דירה - דייר ראשי קודם
+    Object.keys(grouped).forEach(apartment => {
+      grouped[apartment].sort((a, b) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return 0;
+      });
+    });
+    
+    return grouped;
+  };
 
   return(
     <section className="mt-4">
@@ -167,64 +248,73 @@ export default function BuildingManager(){
                     <th className="text-right p-3 font-semibold text-gray-700">כניסה</th>
                     <th className="text-right p-3 font-semibold text-gray-700">קוד</th>
                     <th className="text-right p-3 font-semibold text-gray-700">דיירים</th>
+                    <th className="text-right p-3 font-semibold text-gray-700">דירות</th>
                     <th className="text-right p-3 font-semibold text-gray-700">כניסות</th>
                     <th className="text-right p-3 font-semibold text-gray-700">פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {g.houses.map(b=>(
-                    <tr key={b.id} className={`hover:bg-gray-50 transition-colors ${b.number%2===0?"bg-blue-25":""}`}>
-                      <td className="p-3 text-center font-medium">{b.number}</td>
-                      <td className="p-3 text-center">{b.entrance||"—"}</td>
-                      <td className="p-3 text-center">{b.code||"—"}</td>
-                      <td className="p-3 text-center">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {b.residents.length}
-                        </span>
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {b.entrances?.length || 0}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex gap-1 justify-center">
-                          <button 
-                            className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors" 
-                            onClick={()=>setAddingRes(b)}
-                            title="הוסף דייר"
-                          >
-                            <Users size={14} />
-                          </button>
-                          <button 
-                            className="p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors" 
-                            onClick={()=>setManagingEntrances(b)}
-                            title="ניהול כניסות"
-                          >
-                            <Building2 size={14} />
-                          </button>
-                          <button 
-                            className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors" 
-                            onClick={()=>setEditingB(b)}
-                            title="עריכת בניין"
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                            onClick={() => {
-                              if (window.confirm("בטוח למחוק בניין זה?")) {
-                                deleteBuilding(b.id);
-                              }
-                            }}
-                            title="מחיקת בניין"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {g.houses.map(b=>{
+                    const apartmentCount = new Set(b.residents.map(r => r.apartment)).size;
+                    return (
+                      <tr key={b.id} className={`hover:bg-gray-50 transition-colors ${b.number%2===0?"bg-blue-25":""}`}>
+                        <td className="p-3 text-center font-medium">{b.number}</td>
+                        <td className="p-3 text-center">{b.entrance||"—"}</td>
+                        <td className="p-3 text-center">{b.code||"—"}</td>
+                        <td className="p-3 text-center">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {b.residents.length}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {apartmentCount}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            {b.entrances?.length || 0}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-1 justify-center">
+                            <button 
+                              className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors" 
+                              onClick={()=>setAddingRes(b)}
+                              title="הוסף דייר"
+                            >
+                              <UserPlus size={14} />
+                            </button>
+                            <button 
+                              className="p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors" 
+                              onClick={()=>setManagingEntrances(b)}
+                              title="ניהול כניסות"
+                            >
+                              <Building2 size={14} />
+                            </button>
+                            <button 
+                              className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors" 
+                              onClick={()=>setEditingB(b)}
+                              title="עריכת בניין"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                              onClick={() => {
+                                if (window.confirm("בטוח למחוק בניין זה?")) {
+                                  deleteBuilding(b.id);
+                                }
+                              }}
+                              title="מחיקת בניין"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -291,76 +381,102 @@ export default function BuildingManager(){
         </div>
       )}
 
-      {/* דיירים לכל בניין */}
-      {buildings.map(b=>b.residents.length > 0 && (
-        <div key={b.id+"-res"} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden mt-4">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 border-b border-gray-200">
-            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-              <Users size={20} className="text-green-600" />
-              {b.streetId} {b.number}{b.entrance&&` ${b.entrance}`} – דיירים ({b.residents.length})
-            </h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-right p-3 font-semibold text-gray-700">שם</th>
-                  <th className="text-right p-3 font-semibold text-gray-700">דירה</th>
-                  <th className="text-right p-3 font-semibold text-gray-700">טלפונים</th>
-                  <th className="text-right p-3 font-semibold text-gray-700">תיבה</th>
-                  <th className="text-right p-3 font-semibold text-gray-700">דלת</th>
-                  <th className="text-right p-3 font-semibold text-gray-700">פעולות</th>
-                </tr>
-              </thead>
-              <tbody>
-                {b.residents.map(r=>(
-                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-3 font-medium">{r.fullName}</td>
-                    <td className="p-3 text-center">{r.apartment}</td>
-                    <td className="p-3 text-center text-sm">
-                      {[r.phone,...(r.familyPhones||[])].filter(Boolean).join(", ")||"—"}
-                    </td>
-                    <td className="p-3 text-center">
-                      {r.allowMailbox ? 
-                        <span className="text-green-600 font-bold">✓</span> : 
-                        <span className="text-gray-400">—</span>
-                      }
-                    </td>
-                    <td className="p-3 text-center">
-                      {r.allowDoor ? 
-                        <span className="text-green-600 font-bold">✓</span> : 
-                        <span className="text-gray-400">—</span>
-                      }
-                    </td>
-                    <td className="p-3">
-                      <div className="flex gap-1 justify-center">
-                        <button 
-                          className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors" 
-                          onClick={()=>setEditingRes({b,r})}
-                          title="עריכת דייר"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                          onClick={() => {
-                            if (window.confirm("בטוח למחוק דייר זה?")) {
-                              deleteResident(b.id, r.id);
-                            }
-                          }}
-                          title="מחיקת דייר"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+      {/* דיירים לכל בניין - מקובצים לפי דירות */}
+      {buildings.map(b => {
+        const apartmentGroups = groupResidentsByApartment(b.residents);
+        const apartmentCount = Object.keys(apartmentGroups).length;
+        
+        if (apartmentCount === 0) return null;
+        
+        return (
+          <div key={b.id+"-res"} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden mt-4">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <Users size={20} className="text-green-600" />
+                {b.streetId} {b.number}{b.entrance&&` ${b.entrance}`} – {apartmentCount} דירות, {b.residents.length} דיירים
+              </h3>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              {Object.entries(apartmentGroups).sort(([a], [b]) => a.localeCompare(b)).map(([apartment, residents]) => (
+                <div key={apartment} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 p-3 border-b border-gray-200">
+                    <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                      <Home size={16} className="text-gray-600" />
+                      דירה {apartment} ({residents.length} דיירים)
+                    </h4>
+                  </div>
+                  
+                  <div className="divide-y divide-gray-100">
+                    {residents.map(r => (
+                      <div key={r.id} className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              {r.isPrimary && (
+                                <Crown size={16} className="text-yellow-500" title="דייר ראשי" />
+                              )}
+                              <span className="font-medium text-gray-800">{r.fullName}</span>
+                              {r.relationship && (
+                                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                  {r.relationship}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-1">
+                            <button 
+                              className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors" 
+                              onClick={()=>setEditingRes({b,r})}
+                              title="עריכת דייר"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                              onClick={() => {
+                                if (window.confirm("בטוח למחוק דייר זה?")) {
+                                  deleteResident(b.id, r.id);
+                                }
+                              }}
+                              title="מחיקת דייר"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Phone size={14} className="text-green-500" />
+                            <span className="text-gray-600">
+                              {[r.phone,...(r.familyPhones||[])].filter(Boolean).join(", ")||"אין טלפון"}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            {r.allowMailbox && (
+                              <div className="flex items-center gap-1 text-green-600">
+                                <span className="text-xs">✓ תיבה</span>
+                              </div>
+                            )}
+                            {r.allowDoor && (
+                              <div className="flex items-center gap-1 text-blue-600">
+                                <span className="text-xs">✓ דלת</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </section>
   );
 }

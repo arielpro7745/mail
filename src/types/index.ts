@@ -20,6 +20,8 @@ export interface Resident {
   familyPhones?: string[];
   allowMailbox?: boolean;
   allowDoor?: boolean;
+  isPrimary?: boolean; // דייר ראשי בדירה
+  relationship?: string; // קשר משפחתי (בן/בת, הורה, וכו')
 }
 
 export interface Building {
