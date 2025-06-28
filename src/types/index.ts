@@ -30,14 +30,15 @@ export interface Resident {
   allowDoor?: boolean;
   isPrimary?: boolean; // דייר ראשי בדירה
   relationship?: string; // קשר משפחתי (בן/בת, הורה, וכו')
+  entranceId?: string | null; // קישור לכניסה ספציפית
 }
 
 export interface Building {
   id: string;
   streetId: string;
   number: number;
-  entrance?: string;
-  code?: string;
+  entrance?: string | null;
+  code?: string | null;
   residents: Resident[];
   entrances?: BuildingEntrance[]; // כניסות מרובות
 }
@@ -45,17 +46,17 @@ export interface Building {
 export interface BuildingEntrance {
   id: string;
   name: string; // כניסה א', כניסה ב' וכו'
-  code?: string;
+  code?: string | null;
   mailboxes?: Mailbox[];
 }
 
 export interface Mailbox {
   id: string;
   number: string;
-  familyName?: string; // שם משפחה
+  familyName?: string | null; // שם משפחה
   contacts?: Contact[]; // אנשי קשר עם שמות וטלפונים
   hasKey?: boolean;
-  notes?: string; // הערות נוספות
+  notes?: string | null; // הערות נוספות
   allowDoor?: boolean; // מאשר דלת
   allowMailbox?: boolean; // מאשר תיבה
   residentId?: string; // קישור לדייר (אופציונלי)

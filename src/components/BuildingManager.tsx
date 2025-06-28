@@ -190,9 +190,13 @@ export default function BuildingManager(){
   function ResidentForm({b,res}:{b:Building;res?:Resident}){
     const isEdit=Boolean(res);
     const [contacts, setContacts] = useState<Contact[]>(res?.contacts || []);
+    const [selectedEntrance, setSelectedEntrance] = useState<string>(res?.entranceId || "");
     
     // קבלת דירות קיימות בבניין
     const existingApartments = [...new Set(b.residents.map(r => r.apartment))].sort();
+    
+    // קבלת כניסות זמינות בבניין
+    const availableEntrances = b.entrances || [];
     
     function submit(e:React.FormEvent<HTMLFormElement>){
       e.preventDefault();
@@ -211,7 +215,8 @@ export default function BuildingManager(){
         allowMailbox:f.allowMailbox.checked,
         allowDoor:f.allowDoor.checked,
         isPrimary: existingResidentsInApartment.length === 0 || f.isPrimary?.checked || false,
-        relationship: f.relationship.value.trim() || null
+        relationship: f.relationship.value.trim() || null,
+        entranceId: selectedEntrance || null
       };
       
       // אם זה דייר ראשי חדש, צריך לעדכן את הדיירים הקיימים בדירה
@@ -222,7 +227,7 @@ export default function BuildingManager(){
       }
       
       if(isEdit) updateResident(b.id,res!.id,r); else addResident(b.id,r);
-      setAddingRes(null); setEditingRes(null); setSelectedApartment(""); setContacts([]);
+      setAddingRes(null); setEditingRes(null); setSelectedApartment(""); setContacts([]); setSelectedEntrance("");
     }
     
     return(
@@ -243,7 +248,7 @@ export default function BuildingManager(){
           </div>
           <button
             type="button"
-            onClick={() => {setAddingRes(null); setEditingRes(null); setSelectedApartment(""); setContacts([]);}}
+            onClick={() => {setAddingRes(null); setEditingRes(null); setSelectedApartment(""); setContacts([]); setSelectedEntrance("");}}
             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
           >
             <X size={20} />
@@ -283,6 +288,29 @@ export default function BuildingManager(){
                 )}
               </div>
             </div>
+
+            {/* בחירת כניסה */}
+            {availableEntrances.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-gray-700">כניסה</span>
+                <select 
+                  value={selectedEntrance}
+                  onChange={(e) => setSelectedEntrance(e.target.value)}
+                  className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">בחר כניסה (אופציונלי)</option>
+                  {availableEntrances.map(entrance => (
+                    <option key={entrance.id} value={entrance.id}>
+                      {entrance.name}
+                      {entrance.code && ` (קוד: ${entrance.code})`}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500">
+                  אם לא תבחר כניסה, הדייר יהיה משויך לבניין הכללי
+                </p>
+              </div>
+            )}
             
             <Field label="טלפון ראשי" name="phone" defaultValue={res?.phone} placeholder="050-1234567"/>
             <Field label="טלפונים נוספים (פסיקים)" name="familyPhones"
@@ -317,7 +345,7 @@ export default function BuildingManager(){
             </button>
             <button 
               type="button" 
-              onClick={() => {setAddingRes(null); setEditingRes(null); setSelectedApartment(""); setContacts([]);}}
+              onClick={() => {setAddingRes(null); setEditingRes(null); setSelectedApartment(""); setContacts([]); setSelectedEntrance("");}}
               className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
             >
               בטל
@@ -344,13 +372,14 @@ export default function BuildingManager(){
       })
   })).filter(g=>g.houses.length);
 
-  // קיבוץ דיירים לפי דירות
-  const groupResidentsByApartment = (residents: Resident[]) => {
+  // קיבוץ דיירים לפי דירות וכניסות
+  const groupResidentsByApartmentAndEntrance = (residents: Resident[], building: Building) => {
     const grouped = residents.reduce((acc, resident) => {
-      if (!acc[resident.apartment]) {
-        acc[resident.apartment] = [];
+      const key = `${resident.apartment}`;
+      if (!acc[key]) {
+        acc[key] = [];
       }
-      acc[resident.apartment].push(resident);
+      acc[key].push(resident);
       return acc;
     }, {} as Record<string, Resident[]>);
     
@@ -364,6 +393,13 @@ export default function BuildingManager(){
     });
     
     return grouped;
+  };
+
+  // פונקציה לקבלת שם הכניסה
+  const getEntranceName = (building: Building, entranceId?: string | null) => {
+    if (!entranceId) return null;
+    const entrance = building.entrances?.find(e => e.id === entranceId);
+    return entrance ? entrance.name : null;
   };
 
   return(
@@ -424,7 +460,7 @@ export default function BuildingManager(){
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {g.houses.map(b=>{
                   const apartmentCount = new Set(b.residents.map(r => r.apartment)).size;
-                  const apartmentGroups = groupResidentsByApartment(b.residents);
+                  const apartmentGroups = groupResidentsByApartmentAndEntrance(b.residents, b);
                   
                   return (
                     <div key={b.id} className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all duration-300">
@@ -483,6 +519,11 @@ export default function BuildingManager(){
                                     <div key={r.id} className="flex items-center gap-2 text-xs">
                                       {r.isPrimary && <Crown size={10} className="text-yellow-500" />}
                                       <span className={r.isPrimary ? "font-medium" : ""}>{r.fullName}</span>
+                                      {getEntranceName(b, r.entranceId) && (
+                                        <span className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded text-xs">
+                                          {getEntranceName(b, r.entranceId)}
+                                        </span>
+                                      )}
                                       {r.phone && (
                                         <span className="text-gray-500 flex items-center gap-1">
                                           <Phone size={8} />
@@ -610,7 +651,7 @@ export default function BuildingManager(){
 
       {/* רשימת דיירים מפורטת לכל בניין */}
       {buildings.filter(b => b.residents.length > 0).map(b => {
-        const apartmentGroups = groupResidentsByApartment(b.residents);
+        const apartmentGroups = groupResidentsByApartmentAndEntrance(b.residents, b);
         const apartmentCount = Object.keys(apartmentGroups).length;
         
         return (
@@ -642,6 +683,11 @@ export default function BuildingManager(){
                                 <Crown size={20} className="text-yellow-500" title="דייר ראשי" />
                               )}
                               <span className="font-bold text-lg text-gray-800">{r.fullName}</span>
+                              {getEntranceName(b, r.entranceId) && (
+                                <span className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded-full font-medium">
+                                  {getEntranceName(b, r.entranceId)}
+                                </span>
+                              )}
                               {r.relationship && (
                                 <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                                   {r.relationship}
