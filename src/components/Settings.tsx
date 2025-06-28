@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSettings } from "../hooks/useSettings";
-import { Settings as SettingsIcon, Bell, Volume2, Route } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Volume2, Map } from "lucide-react";
 
 export default function Settings() {
   const { settings, updateSettings, loading } = useSettings();
@@ -63,7 +63,7 @@ export default function Settings() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Route size={16} />
+                <Map size={16} />
                 <span>אופטימיזציה אוטומטית</span>
               </div>
               <input
