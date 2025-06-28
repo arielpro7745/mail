@@ -8,6 +8,7 @@ import Notifications from "./components/Notifications";
 import BuildingManager from "./components/BuildingManager";
 import CompletedToday from "./components/CompletedToday";
 import WalkingOrder from "./components/WalkingOrder";
+import LoadingSpinner from "./components/LoadingSpinner";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings">("regular");
@@ -20,6 +21,7 @@ export default function App() {
     markDelivered,
     undoDelivered,
     endDay,
+    loading,
   } = useDistribution();
 
   const overdue = pendingToday.filter((s) => {
@@ -28,6 +30,10 @@ export default function App() {
       (Date.now() - new Date(s.lastDelivered).getTime()) / 86_400_000 >= 14
     );
   }).length;
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <>
@@ -40,14 +46,14 @@ export default function App() {
             <AreaToggle area={todayArea} onEnd={endDay} />
 
             <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-2">מומלץ להיום</h2>
+              <h2 className="text-lg font-semibold mb-2">מומלץ להיום</h2>
               <div className="overflow-x-auto">
                 <StreetTable list={recommended} onDone={markDelivered} />
               </div>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold mb-2">רחובות נותרים</h2>
+              <h2 className="text-lg font-semibold mb-2">רחובות נותרים</h2>
               <div className="overflow-x-auto">
                 <StreetTable list={pendingToday} onDone={markDelivered} />
               </div>

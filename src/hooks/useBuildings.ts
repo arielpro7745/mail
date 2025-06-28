@@ -1,24 +1,128 @@
 import { useEffect, useState } from "react";
+import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 import { Building, Resident } from "../types";
-import { buildings as seed } from "../data/buildings";
+import { buildings as initialBuildings } from "../data/buildings";
 
-const LS_KEY="post-buildings";
+const COLLECTION_NAME = "buildings";
 
-export function useBuildings(){
-  const [data,setData]=useState<Building[]>(()=>{
-    const raw=localStorage.getItem(LS_KEY);
-    try{return raw?JSON.parse(raw):seed;}catch{return seed;}
-  });
+export function useBuildings() {
+  const [data, setData] = useState<Building[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>localStorage.setItem(LS_KEY,JSON.stringify(data)),[data]);
+  // Initialize data if collection is empty
+  const initializeData = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+      if (snapshot.empty && initialBuildings.length > 0) {
+        // Initialize with default buildings data
+        const batch = initialBuildings.map(building => 
+          setDoc(doc(db, COLLECTION_NAME, building.id), building)
+        );
+        await Promise.all(batch);
+        console.log("Initialized buildings data in Firestore");
+      }
+    } catch (error) {
+      console.error("Error initializing buildings data:", error);
+    }
+  };
 
-  const addBuilding=(b:Building)=>setData(p=>[...p,b]);
-  const updateBuilding=(id:string,patch:Partial<Building>)=>setData(p=>p.map(b=>b.id===id?{...b,...patch}:b));
-  const deleteBuilding=(id:string)=>setData(p=>p.filter(b=>b.id!==id));
+  useEffect(() => {
+    const initializeApp = async () => {
+      await initializeData();
+      setLoading(false);
+    };
 
-  const addResident=(bid:string,r:Resident)=>setData(p=>p.map(b=>b.id===bid?{...b,residents:[...b.residents,r]}:b));
-  const updateResident=(bid:string,rid:string,patch:Partial<Resident>)=>setData(p=>p.map(b=>b.id===bid?{...b,residents:b.residents.map(r=>r.id===rid?{...r,...patch}:r)}:b));
-  const deleteResident=(bid:string,rid:string)=>setData(p=>p.map(b=>b.id===bid?{...b,residents:b.residents.filter(r=>r.id!==rid)}:b));
+    initializeApp();
 
-  return {buildings:data,addBuilding,updateBuilding,deleteBuilding,addResident,updateResident,deleteResident};
+    // Listen to real-time updates for buildings
+    const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+      const buildings: Building[] = [];
+      snapshot.forEach((doc) => {
+        buildings.push({ id: doc.id, ...doc.data() } as Building);
+      });
+      setData(buildings);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const addBuilding = async (building: Building) => {
+    try {
+      await setDoc(doc(db, COLLECTION_NAME, building.id), building);
+    } catch (error) {
+      console.error("Error adding building:", error);
+    }
+  };
+
+  const updateBuilding = async (id: string, patch: Partial<Building>) => {
+    try {
+      await updateDoc(doc(db, COLLECTION_NAME, id), patch);
+    } catch (error) {
+      console.error("Error updating building:", error);
+    }
+  };
+
+  const deleteBuilding = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, COLLECTION_NAME, id));
+    } catch (error) {
+      console.error("Error deleting building:", error);
+    }
+  };
+
+  const addResident = async (buildingId: string, resident: Resident) => {
+    try {
+      const building = data.find(b => b.id === buildingId);
+      if (building) {
+        const updatedResidents = [...building.residents, resident];
+        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+          residents: updatedResidents
+        });
+      }
+    } catch (error) {
+      console.error("Error adding resident:", error);
+    }
+  };
+
+  const updateResident = async (buildingId: string, residentId: string, patch: Partial<Resident>) => {
+    try {
+      const building = data.find(b => b.id === buildingId);
+      if (building) {
+        const updatedResidents = building.residents.map(r => 
+          r.id === residentId ? { ...r, ...patch } : r
+        );
+        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+          residents: updatedResidents
+        });
+      }
+    } catch (error) {
+      console.error("Error updating resident:", error);
+    }
+  };
+
+  const deleteResident = async (buildingId: string, residentId: string) => {
+    try {
+      const building = data.find(b => b.id === buildingId);
+      if (building) {
+        const updatedResidents = building.residents.filter(r => r.id !== residentId);
+        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+          residents: updatedResidents
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting resident:", error);
+    }
+  };
+
+  return {
+    buildings: data,
+    addBuilding,
+    updateBuilding,
+    deleteBuilding,
+    addResident,
+    updateResident,
+    deleteResident,
+    loading,
+  };
 }

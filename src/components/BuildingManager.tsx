@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { useBuildings } from "../hooks/useBuildings";
 import { streets } from "../data/streets";
 import { Building, Resident } from "../types";
+import LoadingSpinner from "./LoadingSpinner";
 
 /* רכיב אינפוט ממותג */
 function Field({label, ...rest}:{label:string;name:string;type?:string;defaultValue?:string}) {
@@ -16,14 +17,18 @@ function Field({label, ...rest}:{label:string;name:string;type?:string;defaultVa
 
 export default function BuildingManager(){
   const {buildings,addBuilding,updateBuilding,deleteBuilding,
-         addResident,updateResident,deleteResident}=useBuildings();
+         addResident,updateResident,deleteResident,loading}=useBuildings();
 
-  /*‑‑‑ מצבי טפסים ‑‑‑*/
+  /*‑‑‑ מצבי טפסים ‑‑‑*/
   const [editingB,setEditingB]=useState<Building|null>(null);
   const [addingRes,setAddingRes]=useState<Building|null>(null);
   const [editingRes,setEditingRes]=useState<{b:Building;r:Resident}|null>(null);
 
-  /*‑‑‑ בניין חדש ‑‑‑*/
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  /*‑‑‑ בניין חדש ‑‑‑*/
   function submitBuilding(e:React.FormEvent<HTMLFormElement>){
     e.preventDefault();
     const f=e.currentTarget as any;
@@ -64,10 +69,10 @@ export default function BuildingManager(){
           <Field label="טלפונים נוספים (פסיקים)" name="familyPhones"
                  defaultValue={res?.familyPhones?.join(", ")}/>
           <label className="flex gap-1 items-center">
-            <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox}/> מאשר תיבה
+            <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox}/> מאשר תיבה
           </label>
           <label className="flex gap-1 items-center">
-            <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor}/> מאשר דלת
+            <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor}/> מאשר דלת
           </label>
           <button className="btn-sm" type="submit">{isEdit?"עדכן":"הוסף"}</button>
         </div>
@@ -82,32 +87,32 @@ export default function BuildingManager(){
 
   return(
     <section className="mt-4">
-      <h2 className="text-lg font-semibold mb-4">בניינים ↠ דיירים</h2>
+      <h2 className="text-lg font-semibold mb-4">בניינים ↠ דיירים</h2>
 
       {/* טופס בניין חדש */}
       <form onSubmit={submitBuilding} className="flex flex-wrap gap-2 items-end border p-3 rounded mb-6">
         <label className="flex flex-col gap-1">
-          רחוב / מקטע
+          רחוב / מקטע
           <select name="streetId" className="border p-1 rounded">
-            <optgroup label="אזור 45">
+            <optgroup label="אזור 45">
               {streets.filter(s=>s.area===45).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
             </optgroup>
-            <optgroup label="אזור 14">
+            <optgroup label="אזור 14">
               {streets.filter(s=>s.area===14).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
             </optgroup>
           </select>
         </label>
-        <Field label="מס׳ בית" name="number" type="number"/>
+        <Field label="מס׳ בית" name="number" type="number"/>
         <Field label="כניסה"  name="entrance"/>
         <Field label="קוד‑דלת" name="code"/>
-        <button className="btn-sm" type="submit">הוסף בניין</button>
+        <button className="btn-sm" type="submit">הוסף בניין</button>
       </form>
 
       {/* הצגת רחובות ↓ */}
       {grouped.map(g=>(
         <details key={g.st.id} className="border rounded mb-4">
           <summary className="cursor-pointer p-2 bg-gray-100 select-none">
-            {g.st.name} ({g.houses.length})
+            {g.st.name} ({g.houses.length})
           </summary>
           <table className="w-full">
             <thead>
@@ -170,7 +175,7 @@ export default function BuildingManager(){
       {buildings.map(b=>b.residents.length && (
         <details key={b.id+"-res"} className="border rounded mt-4">
           <summary className="cursor-pointer p-2 bg-gray-50 select-none">
-            {b.streetId} {b.number}{b.entrance&&` ${b.entrance}`} – דיירים ({b.residents.length})
+            {b.streetId} {b.number}{b.entrance&&` ${b.entrance}`} – דיירים ({b.residents.length})
           </summary>
           <table className="w-full">
             <thead>
