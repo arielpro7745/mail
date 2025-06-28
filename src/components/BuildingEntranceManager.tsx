@@ -1,17 +1,152 @@
 import { useState } from "react";
 import { nanoid } from "nanoid";
-import { Building, BuildingEntrance, Mailbox } from "../types";
-import { Plus, Edit, Trash2, Mail, Home, Phone, User, Key, DoorOpen, CheckCircle, XCircle } from "lucide-react";
+import { Building, BuildingEntrance, Mailbox, Contact } from "../types";
+import { Plus, Edit, Trash2, Mail, Home, Phone, User, Key, DoorOpen, CheckCircle, XCircle, MapPin } from "lucide-react";
+import { streets } from "../data/streets";
 
 interface Props {
   building: Building;
   onUpdateBuilding: (id: string, patch: Partial<Building>) => void;
 }
 
+/* רכיב ניהול אנשי קשר לתיבות */
+function MailboxContactsManager({ contacts, onChange }: { contacts: Contact[], onChange: (contacts: Contact[]) => void }) {
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+
+  const addContact = () => {
+    const newContact: Contact = {
+      id: nanoid(6),
+      name: "",
+      phone: "",
+      relationship: ""
+    };
+    setEditingContact(newContact);
+  };
+
+  const saveContact = (contact: Contact) => {
+    if (contact.name.trim() && contact.phone.trim()) {
+      const existingIndex = contacts.findIndex(c => c.id === contact.id);
+      if (existingIndex >= 0) {
+        const updated = [...contacts];
+        updated[existingIndex] = contact;
+        onChange(updated);
+      } else {
+        onChange([...contacts, contact]);
+      }
+    }
+    setEditingContact(null);
+  };
+
+  const deleteContact = (id: string) => {
+    onChange(contacts.filter(c => c.id !== id));
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700">אנשי קשר</label>
+        <button
+          type="button"
+          onClick={addContact}
+          className="text-xs px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1"
+        >
+          <Plus size={12} />
+          הוסף
+        </button>
+      </div>
+
+      {contacts.map(contact => (
+        <div key={contact.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border">
+          <User size={14} className="text-gray-500" />
+          <div className="flex-1">
+            <div className="font-medium text-sm">{contact.name}</div>
+            <div className="text-xs text-gray-600 flex items-center gap-2">
+              <Phone size={10} />
+              {contact.phone}
+              {contact.relationship && (
+                <span className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs">
+                  {contact.relationship}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setEditingContact(contact)}
+              className="p-1 text-blue-500 hover:text-blue-700 transition-colors"
+            >
+              <Edit size={10} />
+            </button>
+            <button
+              type="button"
+              onClick={() => deleteContact(contact.id)}
+              className="p-1 text-red-500 hover:text-red-700 transition-colors"
+            >
+              <Trash2 size={10} />
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {editingContact && (
+        <div className="p-3 bg-white border border-gray-300 rounded-lg shadow-sm">
+          <h6 className="font-medium text-gray-800 mb-2 text-sm">עריכת איש קשר</h6>
+          <div className="grid grid-cols-1 gap-2">
+            <input
+              type="text"
+              placeholder="שם מלא"
+              value={editingContact.name}
+              onChange={(e) => setEditingContact({...editingContact, name: e.target.value})}
+              className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+            <input
+              type="tel"
+              placeholder="טלפון"
+              value={editingContact.phone}
+              onChange={(e) => setEditingContact({...editingContact, phone: e.target.value})}
+              className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+            <input
+              type="text"
+              placeholder="קשר משפחתי"
+              value={editingContact.relationship || ""}
+              onChange={(e) => setEditingContact({...editingContact, relationship: e.target.value})}
+              className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => saveContact(editingContact)}
+              className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition-colors"
+            >
+              שמור
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingContact(null)}
+              className="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs transition-colors"
+            >
+              בטל
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BuildingEntranceManager({ building, onUpdateBuilding }: Props) {
   const [editingEntrance, setEditingEntrance] = useState<BuildingEntrance | null>(null);
   const [editingMailbox, setEditingMailbox] = useState<{entrance: BuildingEntrance, mailbox: Mailbox} | null>(null);
   const [showMailboxes, setShowMailboxes] = useState<string | null>(null);
+
+  // פונקציה לקבלת שם הרחוב
+  const getStreetName = (streetId: string) => {
+    const street = streets.find(s => s.id === streetId);
+    return street ? street.name : streetId;
+  };
 
   const addEntrance = () => {
     const newEntrance: BuildingEntrance = {
@@ -48,6 +183,7 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
       number: String((entrance.mailboxes?.length || 0) + 1),
       allowMailbox: true,
       allowDoor: false,
+      contacts: [],
     };
 
     const updatedMailboxes = [...(entrance.mailboxes || []), newMailbox];
@@ -83,7 +219,10 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
           </div>
           <div>
             <h4 className="font-bold text-xl text-gray-800">ניהול כניסות ותיבות דואר</h4>
-            <p className="text-sm text-gray-600 font-medium">{building.streetId} {building.number}</p>
+            <p className="text-sm text-gray-600 font-medium flex items-center gap-1">
+              <MapPin size={14} />
+              {getStreetName(building.streetId)} {building.number}
+            </p>
           </div>
         </div>
         <button 
@@ -186,10 +325,29 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
                       </div>
 
                       <div className="space-y-3">
-                        {mailbox.phone && (
-                          <div className="flex items-center gap-2 text-gray-700 bg-gray-50 p-2 rounded-lg">
-                            <Phone size={14} className="text-green-500" />
-                            <span className="font-mono text-sm">{mailbox.phone}</span>
+                        {/* אנשי קשר */}
+                        {mailbox.contacts && mailbox.contacts.length > 0 && (
+                          <div>
+                            <h6 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                              <User size={12} className="text-purple-500" />
+                              אנשי קשר:
+                            </h6>
+                            <div className="space-y-1">
+                              {mailbox.contacts.map(contact => (
+                                <div key={contact.id} className="bg-gray-50 p-2 rounded-lg border text-xs">
+                                  <div className="font-medium text-gray-800">{contact.name}</div>
+                                  <div className="text-gray-600 flex items-center gap-2">
+                                    <Phone size={10} />
+                                    {contact.phone}
+                                    {contact.relationship && (
+                                      <span className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
+                                        {contact.relationship}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                         
@@ -295,7 +453,7 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
       {/* Modal עריכת תיבה */}
       {editingMailbox && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
               <h4 className="text-xl font-bold text-gray-800">עריכת תיבת דואר</h4>
               <p className="text-sm text-gray-600 mt-1">תיבה {editingMailbox.mailbox.number} - {editingMailbox.entrance.name}</p>
@@ -305,17 +463,16 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 const familyName = (formData.get('familyName') as string)?.trim();
-                const phone = (formData.get('phone') as string)?.trim();
                 const notes = (formData.get('notes') as string)?.trim();
                 
                 updateMailbox(editingMailbox.entrance.id, editingMailbox.mailbox.id, {
                   number: formData.get('number') as string,
                   familyName: familyName || null,
-                  phone: phone || null,
                   hasKey: formData.get('hasKey') === 'on',
                   allowMailbox: formData.get('allowMailbox') === 'on',
                   allowDoor: formData.get('allowDoor') === 'on',
                   notes: notes || null,
+                  contacts: editingMailbox.mailbox.contacts || [],
                 });
                 setEditingMailbox(null);
               }}
@@ -346,17 +503,6 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 mb-2">
-                    טלפון
-                  </label>
-                  <input
-                    name="phone"
-                    defaultValue={editingMailbox.mailbox.phone}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="050-1234567"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     הערות
                   </label>
                   <textarea
@@ -367,6 +513,18 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
                     placeholder="הערות נוספות..."
                   />
                 </div>
+              </div>
+
+              <div className="mt-6">
+                <MailboxContactsManager 
+                  contacts={editingMailbox.mailbox.contacts || []} 
+                  onChange={(contacts) => {
+                    setEditingMailbox({
+                      ...editingMailbox,
+                      mailbox: { ...editingMailbox.mailbox, contacts }
+                    });
+                  }} 
+                />
               </div>
               
               <div className="mt-6 p-4 bg-gray-50 rounded-xl">

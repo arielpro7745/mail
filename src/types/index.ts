@@ -12,12 +12,20 @@ export interface Street {
 }
 
 /* ---------- בניינים ‑↠‑ דיירים ---------- */
+export interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+  relationship?: string; // קשר משפחתי
+}
+
 export interface Resident {
   id: string;
   fullName: string;
   apartment: string;
   phone?: string;
   familyPhones?: string[];
+  contacts?: Contact[]; // רשימת אנשי קשר עם שמות
   allowMailbox?: boolean;
   allowDoor?: boolean;
   isPrimary?: boolean; // דייר ראשי בדירה
@@ -45,7 +53,7 @@ export interface Mailbox {
   id: string;
   number: string;
   familyName?: string; // שם משפחה
-  phone?: string; // טלפון
+  contacts?: Contact[]; // אנשי קשר עם שמות וטלפונים
   hasKey?: boolean;
   notes?: string; // הערות נוספות
   allowDoor?: boolean; // מאשר דלת
