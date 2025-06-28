@@ -240,9 +240,10 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
               onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
+                const code = (formData.get('code') as string)?.trim();
                 updateEntrance(editingEntrance.id, {
                   name: formData.get('name') as string,
-                  code: formData.get('code') as string || undefined,
+                  code: code || null,
                 });
               }}
               className="p-6"
@@ -303,14 +304,18 @@ export default function BuildingEntranceManager({ building, onUpdateBuilding }: 
               onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
+                const familyName = (formData.get('familyName') as string)?.trim();
+                const phone = (formData.get('phone') as string)?.trim();
+                const notes = (formData.get('notes') as string)?.trim();
+                
                 updateMailbox(editingMailbox.entrance.id, editingMailbox.mailbox.id, {
                   number: formData.get('number') as string,
-                  familyName: formData.get('familyName') as string || undefined,
-                  phone: formData.get('phone') as string || undefined,
+                  familyName: familyName || null,
+                  phone: phone || null,
                   hasKey: formData.get('hasKey') === 'on',
                   allowMailbox: formData.get('allowMailbox') === 'on',
                   allowDoor: formData.get('allowDoor') === 'on',
-                  notes: formData.get('notes') as string || undefined,
+                  notes: notes || null,
                 });
                 setEditingMailbox(null);
               }}
