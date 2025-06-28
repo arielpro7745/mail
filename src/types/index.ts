@@ -46,6 +46,8 @@ export interface Mailbox {
   phone?: string; // טלפון
   hasKey?: boolean;
   notes?: string; // הערות נוספות
+  allowDoor?: boolean; // מאשר דלת
+  allowMailbox?: boolean; // מאשר תיבה
   residentId?: string; // קישור לדייר (אופציונלי)
 }
 
