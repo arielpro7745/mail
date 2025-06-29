@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { Task } from "../types";
 import { streets } from "../data/streets";
-import { 
-  FileTemplate, Plus, Clock, MapPin, Building, 
-  Truck, Wrench, Package, AlertTriangle 
-} from "lucide-react";
+import { BookTemplate as FileTemplate, Plus, Clock, MapPin, Building, Truck, Wrench, Package, AlertTriangle } from "lucide-react";
 
 interface TaskTemplate {
   id: string;
