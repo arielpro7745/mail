@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Task, Street, Building } from "../types";
-import { streets } from "../data/streets";
+import { useDistribution } from "../hooks/useDistribution";
 import { totalDaysBetween, getUrgencyLevel } from "../utils/dates";
-import { Zap, MapPin, Clock, TrendingUp, Lightbulb, Plus, AlertTriangle, CheckCircle } from "lucide-react";
+import { Zap, MapPin, Clock, TrendingUp, Lightbulb, Plus, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
 
 interface OptimizedTask extends Task {
   optimizationScore: number;
@@ -28,25 +28,39 @@ export default function TaskOptimizer({
 }: Props) {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [lastOptimization, setLastOptimization] = useState<Date | null>(null);
+  
+  // קבלת נתוני רחובות מעודכנים מ-useDistribution
+  const { pendingToday, completedToday, allCompletedToday } = useDistribution();
 
-  // קבלת מצב הרחובות באזור הנוכחי
+  // קבלת מצב הרחובות באזור הנוכחי מהנתונים המעודכנים
   const getAreaStreetStatus = () => {
-    const areaStreets = streets.filter(s => s.area === currentArea);
     const today = new Date();
     
-    return areaStreets.map(street => {
+    // שילוב כל הרחובות - ממתינים ומושלמים
+    const allAreaStreets = [...pendingToday, ...completedToday, ...allCompletedToday]
+      .filter((street, index, self) => 
+        // הסרת כפילויות לפי ID
+        index === self.findIndex(s => s.id === street.id)
+      )
+      .filter(street => street.area === currentArea);
+    
+    return allAreaStreets.map(street => {
       const daysSinceDelivery = street.lastDelivered 
         ? totalDaysBetween(new Date(street.lastDelivered), today)
         : 999;
       
       const urgencyLevel = getUrgencyLevel(street.lastDelivered);
       const needsDelivery = !street.lastDelivered || daysSinceDelivery >= 14;
+      const deliveredToday = street.lastDelivered && 
+        new Date(street.lastDelivered).toDateString() === today.toDateString();
       
       return {
         ...street,
         daysSinceDelivery,
         urgencyLevel,
-        needsDelivery
+        needsDelivery,
+        deliveredToday
       };
     });
   };
@@ -55,6 +69,7 @@ export default function TaskOptimizer({
   const calculateOptimizationScore = (task: Task): { score: number; reason: string } => {
     let score = 0;
     let reasons: string[] = [];
+    const areaStreetStatus = getAreaStreetStatus();
 
     // ציון לפי עדיפות (בסיסי)
     const priorityScores = { urgent: 100, high: 75, medium: 50, low: 25 };
@@ -86,24 +101,25 @@ export default function TaskOptimizer({
 
       // בונוס נוסף אם המשימה קשורה לרחוב דחוף
       if (task.streetId) {
-        const street = streets.find(s => s.id === task.streetId);
+        const street = areaStreetStatus.find(s => s.id === task.streetId);
         if (street) {
-          const daysSinceDelivery = street.lastDelivered 
-            ? totalDaysBetween(new Date(street.lastDelivered), new Date())
-            : 999;
-          
-          const urgencyLevel = getUrgencyLevel(street.lastDelivered);
-          
-          if (urgencyLevel === 'critical') {
-            score += 70;
-            reasons.push(`רחוב קריטי (${daysSinceDelivery} ימים): +70`);
-          } else if (urgencyLevel === 'urgent') {
-            score += 50;
-            reasons.push(`רחוב דחוף (${daysSinceDelivery} ימים): +50`);
-          } else if (daysSinceDelivery < 7) {
-            // רחוב שחולק לאחרונה - מעט פחות עדיפות
-            score -= 20;
-            reasons.push(`רחוב חולק לאחרונה: -20`);
+          // אם הרחוב חולק היום, הפחת עדיפות משמעותית
+          if (street.deliveredToday) {
+            score -= 60;
+            reasons.push(`רחוב חולק היום: -60`);
+          } else {
+            // אם הרחוב לא חולק היום, בדוק דחיפות
+            if (street.urgencyLevel === 'critical') {
+              score += 70;
+              reasons.push(`רחוב קריטי (${street.daysSinceDelivery} ימים): +70`);
+            } else if (street.urgencyLevel === 'urgent') {
+              score += 50;
+              reasons.push(`רחוב דחוף (${street.daysSinceDelivery} ימים): +50`);
+            } else if (street.daysSinceDelivery < 7) {
+              // רחוב שחולק לאחרונה - מעט פחות עדיפות
+              score -= 20;
+              reasons.push(`רחוב חולק לאחרונה: -20`);
+            }
           }
         }
       }
@@ -129,11 +145,10 @@ export default function TaskOptimizer({
 
     // בונוס למשימות חלוקה ברחובות שלא חולקו זמן רב
     if (task.type === 'delivery' && task.streetId) {
-      const street = streets.find(s => s.id === task.streetId);
-      if (street && (!street.lastDelivered || 
-          totalDaysBetween(new Date(street.lastDelivered), new Date()) >= 14)) {
+      const street = areaStreetStatus.find(s => s.id === task.streetId);
+      if (street && !street.deliveredToday && street.needsDelivery) {
         score += 40;
-        reasons.push("חלוקה ברחוב שלא חולק: +40");
+        reasons.push("חלוקה ברחוב שצריך חלוקה: +40");
       }
     }
 
@@ -177,6 +192,7 @@ export default function TaskOptimizer({
     setTimeout(() => {
       onOptimize(optimizedTasks);
       setIsOptimizing(false);
+      setLastOptimization(new Date());
     }, 1000);
   };
 
@@ -185,9 +201,12 @@ export default function TaskOptimizer({
     const suggestions: Array<Omit<Task, 'id' | 'createdAt'>> = [];
     const areaStreetStatus = getAreaStreetStatus();
 
-    // הצעות לפי רחובות דחופים
+    // הצעות לפי רחובות דחופים שלא חולקו היום
     const urgentStreets = areaStreetStatus
-      .filter(s => s.urgencyLevel === 'critical' || s.urgencyLevel === 'urgent')
+      .filter(s => 
+        (s.urgencyLevel === 'critical' || s.urgencyLevel === 'urgent') && 
+        !s.deliveredToday
+      )
       .sort((a, b) => b.daysSinceDelivery - a.daysSinceDelivery)
       .slice(0, 3);
 
@@ -208,12 +227,12 @@ export default function TaskOptimizer({
 
     // הצעות תחזוקה לבניינים באזור הנוכחי
     const areaBuildings = buildings.filter(b => {
-      const street = streets.find(s => s.id === b.streetId);
+      const street = areaStreetStatus.find(s => s.id === b.streetId);
       return street?.area === currentArea;
     });
 
     areaBuildings.slice(0, 2).forEach(building => {
-      const street = streets.find(s => s.id === building.streetId);
+      const street = areaStreetStatus.find(s => s.id === building.streetId);
       suggestions.push({
         title: `בדיקת תיבות - ${street?.name} ${building.number}`,
         description: `בדיקה שגרתית של תיבות הדואר בבניין`,
@@ -242,7 +261,10 @@ export default function TaskOptimizer({
 
   const suggestions = generateSmartSuggestions();
   const areaStreetStatus = getAreaStreetStatus();
-  const urgentStreetsCount = areaStreetStatus.filter(s => s.urgencyLevel === 'critical' || s.urgencyLevel === 'urgent').length;
+  const urgentStreetsCount = areaStreetStatus.filter(s => 
+    (s.urgencyLevel === 'critical' || s.urgencyLevel === 'urgent') && !s.deliveredToday
+  ).length;
+  const deliveredTodayCount = areaStreetStatus.filter(s => s.deliveredToday).length;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-lg mb-6">
@@ -253,8 +275,13 @@ export default function TaskOptimizer({
             <div>
               <h3 className="font-bold text-xl text-gray-800">אופטימיזציה חכמה מתקדמת</h3>
               <p className="text-sm text-gray-600">
-                מיון משימות לפי דחיפות רחובות ויעילות אזורית
+                מיון משימות לפי דחיפות רחובות ויעילות אזורית (מעודכן בזמן אמת)
               </p>
+              {lastOptimization && (
+                <p className="text-xs text-gray-500 mt-1">
+                  אופטימיזציה אחרונה: {lastOptimization.toLocaleTimeString('he-IL')}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex gap-3">
@@ -273,21 +300,21 @@ export default function TaskOptimizer({
               {isOptimizing ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               ) : (
-                <TrendingUp size={16} />
+                <RefreshCw size={16} />
               )}
-              {isOptimizing ? 'מבצע אופטימיזציה...' : 'בצע אופטימיזציה'}
+              {isOptimizing ? 'מבצע אופטימיזציה...' : 'רענן אופטימיזציה'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* סטטוס אזור נוכחי */}
+      {/* סטטוס אזור נוכחי מעודכן */}
       <div className="p-4 bg-blue-50 border-b border-gray-200">
         <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
           <MapPin size={18} className="text-blue-600" />
-          מצב אזור {currentArea}
+          מצב אזור {currentArea} (מעודכן)
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg p-3 border">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">רחובות דחופים</span>
@@ -301,6 +328,19 @@ export default function TaskOptimizer({
                 דורש טיפול דחוף
               </div>
             )}
+          </div>
+          
+          <div className="bg-white rounded-lg p-3 border">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">חולקו היום</span>
+              <span className="font-bold text-lg text-green-600">
+                {deliveredTodayCount}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 mt-1 text-xs text-green-600">
+              <CheckCircle size={12} />
+              הושלמו בהצלחה
+            </div>
           </div>
           
           <div className="bg-white rounded-lg p-3 border">
@@ -332,54 +372,62 @@ export default function TaskOptimizer({
         <div className="p-6 border-b border-gray-200 bg-green-50">
           <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <Lightbulb size={18} className="text-green-600" />
-            הצעות משימות מבוססות דחיפות
+            הצעות משימות מבוססות דחיפות (מעודכן)
           </h4>
-          <div className="space-y-3">
-            {suggestions.map((suggestion, index) => (
-              <div key={index} className="bg-white border border-green-200 rounded-lg p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h5 className="font-medium text-gray-800">{suggestion.title}</h5>
-                      {suggestion.priority === 'urgent' && (
-                        <AlertTriangle size={16} className="text-red-500" />
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{suggestion.description}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span className={`px-2 py-1 rounded-full ${
-                        suggestion.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                        suggestion.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                        suggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-green-100 text-green-700'
-                      }`}>
-                        {suggestion.priority === 'urgent' ? 'דחוף' :
-                         suggestion.priority === 'high' ? 'גבוה' :
-                         suggestion.priority === 'medium' ? 'בינוני' : 'נמוך'}
-                      </span>
-                      {suggestion.estimatedTime && (
+          {suggestions.length > 0 ? (
+            <div className="space-y-3">
+              {suggestions.map((suggestion, index) => (
+                <div key={index} className="bg-white border border-green-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h5 className="font-medium text-gray-800">{suggestion.title}</h5>
+                        {suggestion.priority === 'urgent' && (
+                          <AlertTriangle size={16} className="text-red-500" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{suggestion.description}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span className={`px-2 py-1 rounded-full ${
+                          suggestion.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                          suggestion.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                          suggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {suggestion.priority === 'urgent' ? 'דחוף' :
+                           suggestion.priority === 'high' ? 'גבוה' :
+                           suggestion.priority === 'medium' ? 'בינוני' : 'נמוך'}
+                        </span>
+                        {suggestion.estimatedTime && (
+                          <div className="flex items-center gap-1">
+                            <Clock size={12} />
+                            {suggestion.estimatedTime} דק׳
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
-                          <Clock size={12} />
-                          {suggestion.estimatedTime} דק׳
+                          <MapPin size={12} />
+                          אזור {suggestion.assignedArea}
                         </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <MapPin size={12} />
-                        אזור {suggestion.assignedArea}
                       </div>
                     </div>
+                    <button
+                      onClick={() => onCreateSuggestedTask(suggestion)}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
+                    >
+                      <Plus size={14} />
+                      הוסף
+                    </button>
                   </div>
-                  <button
-                    onClick={() => onCreateSuggestedTask(suggestion)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
-                  >
-                    <Plus size={14} />
-                    הוסף
-                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              <CheckCircle size={48} className="mx-auto mb-3 opacity-50" />
+              <h5 className="font-medium mb-1">כל הרחובות הדחופים טופלו!</h5>
+              <p className="text-sm">אין הצעות חדשות כרגע - כל הרחובות הדחופים חולקו היום</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -397,12 +445,22 @@ export default function TaskOptimizer({
           </div>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <h5 className="font-medium text-blue-800 mb-1">איזון עומסים</h5>
-            <p className="text-sm text-blue-600">פחות עדיפות לאזורים שחולקו</p>
+            <p className="text-sm text-blue-600">פחות עדיפות לרחובות שחולקו היום</p>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <h5 className="font-medium text-green-800 mb-1">יעילות זמן</h5>
             <p className="text-sm text-green-600">משימות קצרות ודדליינים</p>
           </div>
+        </div>
+        
+        <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex items-center gap-2 mb-1">
+            <RefreshCw size={16} className="text-purple-600" />
+            <span className="font-medium text-purple-800">סנכרון בזמן אמת</span>
+          </div>
+          <p className="text-sm text-purple-600">
+            האופטימיזציה מתעדכנת אוטומטית לפי מצב הרחובות הנוכחי ולוקחת בחשבון רחובות שחולקו היום
+          </p>
         </div>
       </div>
     </div>
