@@ -32,6 +32,9 @@ export default function App() {
     undoDelivered,
     endDay,
     loading,
+    allCompletedToday,
+    totalStreetsInArea,
+    isAllCompleted,
   } = useDistribution();
 
   // Initialize notifications
@@ -75,6 +78,35 @@ export default function App() {
           <>
             <AreaToggle area={todayArea} onEnd={endDay} />
 
+            {/* סטטיסטיקת התקדמות */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-gray-800">התקדמות יומית</h3>
+                <span className="text-sm text-gray-600">
+                  אזור {todayArea}
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
+                    style={{ width: `${(allCompletedToday.length / totalStreetsInArea) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  {allCompletedToday.length} / {totalStreetsInArea}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>
+                  {isAllCompleted ? "כל הרחובות חולקו!" : `נותרו ${totalStreetsInArea - allCompletedToday.length} רחובות`}
+                </span>
+                <span>
+                  {Math.round((allCompletedToday.length / totalStreetsInArea) * 100)}%
+                </span>
+              </div>
+            </div>
+
             {currentStreet && (
               <div className="mb-6">
                 <DeliveryTimer
@@ -84,35 +116,58 @@ export default function App() {
               </div>
             )}
 
-            <RouteOptimizer
-              streets={pendingToday}
-              area={todayArea}
-              onOptimize={handleOptimizeRoute}
-            />
+            {!isAllCompleted && (
+              <RouteOptimizer
+                streets={pendingToday}
+                area={todayArea}
+                onOptimize={handleOptimizeRoute}
+              />
+            )}
 
             <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-2">מומלץ להיום</h2>
+              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                {isAllCompleted ? "כל הרחובות (לפי סדר חלוקה)" : "מומלץ להיום"}
+                {!isAllCompleted && (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                    {recommended.length}
+                  </span>
+                )}
+              </h2>
               <div className="overflow-x-auto">
                 <StreetTable 
-                  list={recommended} 
+                  list={isAllCompleted ? displayStreets : recommended} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
+                  showCompletionStatus={isAllCompleted}
                 />
               </div>
             </section>
 
-            <section>
-              <h2 className="text-lg font-semibold mb-2">רחובות נותרים</h2>
-              <div className="overflow-x-auto">
-                <StreetTable 
-                  list={displayStreets} 
-                  onDone={markDelivered}
-                  onStartTimer={handleStartTimer}
-                />
-              </div>
-            </section>
+            {!isAllCompleted && (
+              <section className="mb-8">
+                <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  רחובות נותרים
+                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
+                    {displayStreets.length}
+                  </span>
+                </h2>
+                <div className="overflow-x-auto">
+                  <StreetTable 
+                    list={displayStreets} 
+                    onDone={markDelivered}
+                    onStartTimer={handleStartTimer}
+                  />
+                </div>
+              </section>
+            )}
 
-            <CompletedToday list={completedToday} onUndo={undoDelivered} />
+            <CompletedToday 
+              list={completedToday} 
+              onUndo={undoDelivered}
+              isAllCompleted={isAllCompleted}
+              totalCompleted={allCompletedToday.length}
+            />
+            
             <Notifications count={overdue} />
             <WalkingOrder area={todayArea} />
           </>

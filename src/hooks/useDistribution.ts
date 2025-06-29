@@ -81,19 +81,54 @@ export function useDistribution() {
   }, []);
 
   const today = new Date();
-  let todayList = sortByUrgency(data.filter(s => s.area === todayArea), today);
+  const areaStreets = data.filter(s => s.area === todayArea);
   
-  // Apply route optimization if enabled
-  if (settings.optimizeRoutes) {
-    todayList = optimizeRoute(todayList, todayArea);
-  }
-
-  const completedToday = todayList.filter(
+  // חלוקה לרחובות שחולקו היום ושלא חולקו
+  const completedToday = areaStreets.filter(
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
   );
-  const pendingToday = todayList.filter(
+  
+  const notCompletedToday = areaStreets.filter(
     s => !s.lastDelivered || !isSameDay(new Date(s.lastDelivered), today)
   );
+
+  // לוגיקה חדשה: אם יש רחובות שלא חולקו, הצג רק אותם
+  // אם כל הרחובות חולקו, הצג הכל לפי סדר חלוקה ודחיפות
+  let pendingToday: Street[];
+  let displayCompletedToday: Street[];
+
+  if (notCompletedToday.length > 0) {
+    // יש עדיין רחובות שלא חולקו - הצג רק אותם
+    pendingToday = sortByUrgency(notCompletedToday, today);
+    displayCompletedToday = completedToday; // רק לסטטיסטיקה
+  } else {
+    // כל הרחובות חולקו - הצג הכל לפי סדר חלוקה ודחיפות
+    const allStreetsSorted = [...areaStreets].sort((a, b) => {
+      // קודם לפי תאריך חלוקה (מי שחולק קודם יופיע ראשון)
+      if (a.lastDelivered && b.lastDelivered) {
+        const dateA = new Date(a.lastDelivered).getTime();
+        const dateB = new Date(b.lastDelivered).getTime();
+        if (dateA !== dateB) {
+          return dateA - dateB; // מוקדם יותר = ראשון
+        }
+      }
+      
+      // אם אחד חולק והשני לא
+      if (a.lastDelivered && !b.lastDelivered) return -1;
+      if (!a.lastDelivered && b.lastDelivered) return 1;
+      
+      // אם שניהם לא חולקו או חולקו באותו זמן, מיין לפי דחיפות
+      return sortByUrgency([a, b], today)[0].id === a.id ? -1 : 1;
+    });
+    
+    pendingToday = allStreetsSorted;
+    displayCompletedToday = [];
+  }
+
+  // Apply route optimization if enabled
+  if (settings.optimizeRoutes && notCompletedToday.length > 0) {
+    pendingToday = optimizeRoute(pendingToday, todayArea);
+  }
 
   const recommended = pickForToday(pendingToday);
 
@@ -139,11 +174,15 @@ export function useDistribution() {
   return {
     todayArea,
     pendingToday,
-    completedToday,
+    completedToday: displayCompletedToday,
     recommended,
     markDelivered,
     undoDelivered,
     endDay,
     loading,
+    // נתונים נוספים לסטטיסטיקה
+    allCompletedToday: completedToday,
+    totalStreetsInArea: areaStreets.length,
+    isAllCompleted: notCompletedToday.length === 0,
   };
 }
