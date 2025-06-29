@@ -17,6 +17,7 @@ import Reports from "./components/Reports";
 import PhoneDirectory from "./components/PhoneDirectory";
 import DataExport from "./components/DataExport";
 import { Street } from "./types";
+import { businessDaysBetween } from "./utils/dates";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
@@ -35,6 +36,7 @@ export default function App() {
     allCompletedToday,
     totalStreetsInArea,
     isAllCompleted,
+    streetsNeedingDelivery,
   } = useDistribution();
 
   // Initialize notifications
@@ -42,9 +44,7 @@ export default function App() {
 
   const overdue = pendingToday.filter((s) => {
     if (!s.lastDelivered) return true;
-    return (
-      (Date.now() - new Date(s.lastDelivered).getTime()) / 86_400_000 >= 14
-    );
+    return businessDaysBetween(new Date(s.lastDelivered), new Date()) >= 10;
   }).length;
 
   const handleStartTimer = (street: Street) => {
@@ -81,30 +81,46 @@ export default function App() {
             {/* סטטיסטיקת התקדמות */}
             <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-800">התקדמות יומית</h3>
+                <h3 className="font-semibold text-gray-800">מחזור חלוקה (10 ימי עסקים)</h3>
                 <span className="text-sm text-gray-600">
                   אזור {todayArea}
                 </span>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex-1 bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${(allCompletedToday.length / totalStreetsInArea) * 100}%` }}
-                  ></div>
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {allCompletedToday.length} / {totalStreetsInArea}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>
-                  {isAllCompleted ? "כל הרחובות חולקו!" : `נותרו ${totalStreetsInArea - allCompletedToday.length} רחובות`}
-                </span>
-                <span>
-                  {Math.round((allCompletedToday.length / totalStreetsInArea) * 100)}%
-                </span>
-              </div>
+              
+              {!isAllCompleted ? (
+                <>
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${((totalStreetsInArea - streetsNeedingDelivery) / totalStreetsInArea) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      {totalStreetsInArea - streetsNeedingDelivery} / {totalStreetsInArea}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>נותרו {streetsNeedingDelivery} רחובות לחלוקה</span>
+                    <span>{Math.round(((totalStreetsInArea - streetsNeedingDelivery) / totalStreetsInArea) * 100)}%</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-3">
+                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full w-full"></div>
+                    </div>
+                    <span className="text-sm font-medium text-green-700">
+                      {allCompletedToday.length} היום
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-green-600">
+                    <span>כל הרחובות במחזור הנוכחי חולקו</span>
+                    <span>100%</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {currentStreet && (

@@ -6,6 +6,7 @@ import { Street, Area } from "../types";
 import { sortByUrgency, pickForToday } from "../utils/schedule";
 import { optimizeRoute } from "../utils/routeOptimizer";
 import { isSameDay } from "../utils/isSameDay";
+import { shouldStreetReappear, businessDaysBetween } from "../utils/dates";
 import { useSettings } from "./useSettings";
 
 const COLLECTION_NAME = "streets";
@@ -83,26 +84,35 @@ export function useDistribution() {
   const today = new Date();
   const areaStreets = data.filter(s => s.area === todayArea);
   
-  // חלוקה לרחובות שחולקו היום ושלא חולקו
+  // רחובות שחולקו היום
   const completedToday = areaStreets.filter(
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
   );
   
-  const notCompletedToday = areaStreets.filter(
-    s => !s.lastDelivered || !isSameDay(new Date(s.lastDelivered), today)
-  );
+  // רחובות שצריכים להופיע (לא חולקו היום + עברו 10 ימי עסקים מהחלוקה האחרונה)
+  const streetsNeedingDelivery = areaStreets.filter(s => {
+    // אם חולק היום, לא צריך להופיע
+    if (s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)) {
+      return false;
+    }
+    
+    // אם לא חולק מעולם או עברו 10 ימי עסקים, צריך להופיע
+    return shouldStreetReappear(s.lastDelivered);
+  });
 
-  // לוגיקה חדשה: אם יש רחובות שלא חולקו, הצג רק אותם
-  // אם כל הרחובות חולקו, הצג הכל לפי סדר חלוקה ודחיפות
+  // לוגיקה חדשה: אם יש רחובות שצריכים חלוקה, הצג רק אותם
+  // אם כל הרחובות לא צריכים חלוקה, הצג הכל לפי סדר חלוקה
   let pendingToday: Street[];
   let displayCompletedToday: Street[];
+  let isAllCompleted: boolean;
 
-  if (notCompletedToday.length > 0) {
-    // יש עדיין רחובות שלא חולקו - הצג רק אותם
-    pendingToday = sortByUrgency(notCompletedToday, today);
-    displayCompletedToday = completedToday; // רק לסטטיסטיקה
+  if (streetsNeedingDelivery.length > 0) {
+    // יש רחובות שצריכים חלוקה - הצג רק אותם
+    pendingToday = sortByUrgency(streetsNeedingDelivery, today);
+    displayCompletedToday = completedToday;
+    isAllCompleted = false;
   } else {
-    // כל הרחובות חולקו - הצג הכל לפי סדר חלוקה ודחיפות
+    // כל הרחובות לא צריכים חלוקה - הצג הכל לפי סדר חלוקה
     const allStreetsSorted = [...areaStreets].sort((a, b) => {
       // קודם לפי תאריך חלוקה (מי שחולק קודם יופיע ראשון)
       if (a.lastDelivered && b.lastDelivered) {
@@ -123,10 +133,11 @@ export function useDistribution() {
     
     pendingToday = allStreetsSorted;
     displayCompletedToday = [];
+    isAllCompleted = true;
   }
 
   // Apply route optimization if enabled
-  if (settings.optimizeRoutes && notCompletedToday.length > 0) {
+  if (settings.optimizeRoutes && streetsNeedingDelivery.length > 0) {
     pendingToday = optimizeRoute(pendingToday, todayArea);
   }
 
@@ -183,6 +194,7 @@ export function useDistribution() {
     // נתונים נוספים לסטטיסטיקה
     allCompletedToday: completedToday,
     totalStreetsInArea: areaStreets.length,
-    isAllCompleted: notCompletedToday.length === 0,
+    isAllCompleted,
+    streetsNeedingDelivery: streetsNeedingDelivery.length,
   };
 }

@@ -1,7 +1,7 @@
 import { Street } from "../types";
-import { businessDaysBetween } from "../utils/dates";
+import { businessDaysBetween, daysUntilReappear, getUrgencyLevel } from "../utils/dates";
 import { isSameDay } from "../utils/isSameDay";
-import { Clock, CheckCircle, RotateCcw } from "lucide-react";
+import { Clock, CheckCircle, RotateCcw, Calendar, AlertTriangle } from "lucide-react";
 
 export default function StreetRow({
   s,
@@ -19,15 +19,15 @@ export default function StreetRow({
   completionOrder?: number;
 }) {
   const today = new Date();
-  const days = s.lastDelivered
+  const businessDays = s.lastDelivered
     ? businessDaysBetween(new Date(s.lastDelivered), today)
     : undefined;
 
   const doneToday =
     s.lastDelivered && isSameDay(new Date(s.lastDelivered), today);
 
-  const isOverdue = days !== undefined && days >= 10;
-  const isUrgent = days !== undefined && days >= 7;
+  const urgencyLevel = getUrgencyLevel(s.lastDelivered);
+  const daysUntilNext = s.lastDelivered ? daysUntilReappear(s.lastDelivered) : 0;
 
   // זמן חלוקה מעוצב
   const getDeliveryTime = () => {
@@ -42,12 +42,31 @@ export default function StreetRow({
     return deliveryDate.toLocaleDateString('he-IL');
   };
 
+  // צבע רקע לפי דחיפות
+  const getRowBackground = () => {
+    if (doneToday) return "bg-green-50";
+    if (showCompletionStatus) return "";
+    
+    switch (urgencyLevel) {
+      case 'critical': return "bg-red-50";
+      case 'urgent': return "bg-orange-50";
+      default: return "";
+    }
+  };
+
+  // אייקון דחיפות
+  const getUrgencyIcon = () => {
+    if (urgencyLevel === 'critical') {
+      return <AlertTriangle size={14} className="text-red-500" />;
+    }
+    if (urgencyLevel === 'urgent') {
+      return <AlertTriangle size={14} className="text-orange-500" />;
+    }
+    return null;
+  };
+
   return (
-    <tr className={`
-      ${doneToday ? "done-today bg-green-50" : ""} 
-      ${isOverdue ? "bg-red-50" : isUrgent ? "bg-yellow-50" : ""}
-      hover:bg-gray-50 transition-colors
-    `}>
+    <tr className={`${getRowBackground()} hover:bg-gray-50 transition-colors`}>
       <td className="relative py-2 px-3">
         {doneToday && (
           <div className="absolute inset-0 bg-green-200 opacity-30 rounded"></div>
@@ -56,6 +75,7 @@ export default function StreetRow({
           {doneToday && (
             <CheckCircle size={16} className="text-green-600 flex-shrink-0" />
           )}
+          {getUrgencyIcon()}
           <span className={doneToday ? "line-through text-gray-500" : ""}>
             {s.name}
           </span>
@@ -81,13 +101,21 @@ export default function StreetRow({
             </span>
           </div>
         ) : (
-          <span className={`font-medium ${
-            isOverdue ? "text-red-600" : 
-            isUrgent ? "text-orange-600" : 
-            "text-gray-700"
-          }`}>
-            {days ?? "—"}
-          </span>
+          <div className="flex flex-col items-center">
+            <span className={`font-medium ${
+              urgencyLevel === 'critical' ? "text-red-600" : 
+              urgencyLevel === 'urgent' ? "text-orange-600" : 
+              "text-gray-700"
+            }`}>
+              {businessDays ?? "—"}
+            </span>
+            {s.lastDelivered && daysUntilNext > 0 && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Calendar size={10} />
+                <span>עוד {daysUntilNext} ימים</span>
+              </div>
+            )}
+          </div>
         )}
       </td>
       
