@@ -354,7 +354,7 @@ export default function BuildingManager(){
     return grouped;
   };
 
-  // פונקציית חיפוש
+  // פונקציית חיפוש מדויקת יותר
   const filterBuildings = (buildings: Building[], searchTerm: string) => {
     if (!searchTerm.trim()) return buildings;
     
@@ -362,18 +362,40 @@ export default function BuildingManager(){
     
     return buildings.filter(building => {
       const streetName = getStreetName(building.streetId).toLowerCase();
-      const fullAddress = getFullAddress(building).toLowerCase();
       const buildingNumber = building.number.toString();
       const entrance = building.entrance?.toLowerCase() || "";
       const code = building.code?.toLowerCase() || "";
       
-      // חיפוש בפרטי הבניין
-      if (streetName.includes(term) || 
-          fullAddress.includes(term) || 
-          buildingNumber.includes(term) ||
-          entrance.includes(term) ||
-          code.includes(term)) {
-        return true;
+      // חיפוש מדויק יותר בכתובת
+      const streetWords = streetName.split(' ');
+      const searchWords = term.split(' ');
+      
+      // בדיקה אם החיפוש מכיל מספר בית
+      const searchNumber = term.match(/\d+/)?.[0];
+      
+      // אם יש מספר בחיפוש, בדוק התאמה מדויקת למספר הבית
+      if (searchNumber) {
+        const exactNumberMatch = buildingNumber === searchNumber;
+        const streetMatch = searchWords.some(word => 
+          streetWords.some(streetWord => streetWord.includes(word))
+        );
+        
+        // רק אם יש התאמה מדויקת למספר הבית ולרחוב
+        if (exactNumberMatch && streetMatch) {
+          return true;
+        }
+        
+        // אם רק מספר הבית תואם בלי שם רחוב
+        if (searchWords.length === 1 && exactNumberMatch) {
+          return true;
+        }
+      } else {
+        // חיפוש רגיל ללא מספרים
+        if (streetName.includes(term) || 
+            entrance.includes(term) ||
+            code.includes(term)) {
+          return true;
+        }
       }
       
       // חיפוש בדיירים
