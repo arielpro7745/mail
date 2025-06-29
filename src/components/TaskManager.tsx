@@ -1,30 +1,42 @@
 import { useState } from "react";
 import { useTasks } from "../hooks/useTasks";
 import { useBuildings } from "../hooks/useBuildings";
+import { useDistribution } from "../hooks/useDistribution";
 import { Task } from "../types";
 import { streets } from "../data/streets";
 import LoadingSpinner from "./LoadingSpinner";
+import TaskOptimizer from "./TaskOptimizer";
+import TaskTemplates from "./TaskTemplates";
 import { 
   Plus, Edit, Trash2, Clock, CheckCircle, AlertTriangle, 
   Calendar, MapPin, Building, User, Play, Pause, Square,
-  Filter, Search, X
+  Filter, Search, X, Zap
 } from "lucide-react";
 import { nanoid } from "nanoid";
+
+interface OptimizedTask extends Task {
+  optimizationScore: number;
+  suggestedOrder: number;
+  estimatedEfficiency: number;
+}
 
 export default function TaskManager() {
   const { tasks, addTask, updateTask, deleteTask, completeTask, loading } = useTasks();
   const { buildings } = useBuildings();
+  const { todayArea } = useDistribution();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'overdue'>('all');
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTimer, setActiveTimer] = useState<string | null>(null);
   const [timerStart, setTimerStart] = useState<Date | null>(null);
+  const [optimizedTasks, setOptimizedTasks] = useState<OptimizedTask[]>([]);
+  const [showOptimized, setShowOptimized] = useState(false);
 
   if (loading) return <LoadingSpinner />;
 
   // סינון משימות
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = (showOptimized ? optimizedTasks : tasks).filter(task => {
     const matchesSearch = !searchTerm || 
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -77,6 +89,31 @@ export default function TaskManager() {
     if (!building) return buildingId;
     const streetName = getStreetName(building.streetId);
     return `${streetName} ${building.number}${building.entrance ? ` כניסה ${building.entrance}` : ''}`;
+  };
+
+  // יצירת משימה מתבנית
+  const handleCreateFromTemplate = (template: any, customData?: Partial<Task>) => {
+    const taskData = {
+      title: template.name,
+      description: template.description,
+      type: template.type,
+      priority: template.priority,
+      status: 'pending' as const,
+      estimatedTime: template.estimatedTime,
+      ...customData
+    };
+    addTask(taskData);
+  };
+
+  // יצירת משימה מהצעה חכמה
+  const handleCreateSuggestedTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
+    addTask(taskData);
+  };
+
+  // אופטימיזציה של משימות
+  const handleOptimize = (optimized: OptimizedTask[]) => {
+    setOptimizedTasks(optimized);
+    setShowOptimized(true);
   };
 
   // טופס הוספת/עריכת משימה
@@ -320,18 +357,61 @@ export default function TaskManager() {
             <CheckCircle size={28} className="text-white" />
           </div>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">ניהול משימות</h2>
-            <p className="text-gray-600 font-medium text-sm md:text-base">משימות יומיות ומיון דואר</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">ניהול משימות חכם</h2>
+            <p className="text-gray-600 font-medium text-sm md:text-base">
+              משימות יומיות עם אופטימיזציה אוטומטית
+            </p>
           </div>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl transition-all duration-200 shadow-lg"
-        >
-          <Plus size={18} />
-          <span className="hidden sm:inline">משימה חדשה</span>
-        </button>
+        <div className="flex gap-2">
+          {showOptimized && (
+            <button
+              onClick={() => setShowOptimized(false)}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors"
+            >
+              <X size={16} />
+              <span className="hidden sm:inline">בטל אופטימיזציה</span>
+            </button>
+          )}
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl transition-all duration-200 shadow-lg"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">משימה חדשה</span>
+          </button>
+        </div>
       </div>
+
+      {/* תבניות משימות */}
+      <TaskTemplates 
+        onCreateFromTemplate={handleCreateFromTemplate}
+        currentArea={todayArea}
+      />
+
+      {/* אופטימיזציה חכמה */}
+      <TaskOptimizer
+        tasks={tasks}
+        buildings={buildings}
+        currentArea={todayArea}
+        onOptimize={handleOptimize}
+        onCreateSuggestedTask={handleCreateSuggestedTask}
+      />
+
+      {/* הודעה על אופטימיזציה */}
+      {showOptimized && (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Zap size={20} className="text-purple-600" />
+            <div>
+              <h3 className="font-semibold text-purple-800">רשימה מותאמת</h3>
+              <p className="text-sm text-purple-600">
+                המשימות מוצגות לפי סדר אופטימלי בהתבסס על עדיפות, מיקום וזמן
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* סינון וחיפוש */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
@@ -373,20 +453,27 @@ export default function TaskManager() {
 
       {/* רשימת משימות */}
       <div className="space-y-4">
-        {filteredTasks.map(task => {
+        {filteredTasks.map((task, index) => {
           const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
           const isActive = activeTimer === task.id;
+          const isOptimized = 'optimizationScore' in task;
 
           return (
             <div
               key={task.id}
               className={`bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 ${
                 isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200'
-              }`}
+              } ${isOptimized ? 'border-purple-300 bg-purple-50' : ''}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
+                    {isOptimized && (
+                      <div className="flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">
+                        <Zap size={12} />
+                        #{(task as OptimizedTask).suggestedOrder}
+                      </div>
+                    )}
                     <h3 className="font-semibold text-gray-800">{task.title}</h3>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
                       {task.priority === 'urgent' ? 'דחוף' : 
@@ -398,6 +485,11 @@ export default function TaskManager() {
                        task.status === 'in-progress' ? 'בביצוע' :
                        task.status === 'cancelled' ? 'בוטל' : 'ממתין'}
                     </span>
+                    {isOptimized && (
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                        יעילות: {(task as OptimizedTask).estimatedEfficiency}%
+                      </span>
+                    )}
                   </div>
                   
                   {task.description && (
@@ -517,7 +609,7 @@ export default function TaskManager() {
           <CheckCircle size={48} className="mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">אין משימות</h3>
           <p className="text-sm">
-            {searchTerm ? 'לא נמצאו משימות התואמות לחיפוש' : 'התחל בהוספת משימה חדשה'}
+            {searchTerm ? 'לא נמצאו משימות התואמות לחיפוש' : 'התחל בהוספת משימה חדשה או השתמש בתבניות'}
           </p>
         </div>
       )}
