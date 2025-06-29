@@ -76,4 +76,102 @@ export interface DeliveryStats {
   averageTimePerStreet: number;
   completionRate: number;
   streetsPerDay: number;
+  dailyStats: DailyStats[];
+  weeklyStats: WeeklyStats[];
+  monthlyStats: MonthlyStats[];
+}
+
+export interface DailyStats {
+  date: string;
+  streetsCompleted: number;
+  totalTime: number;
+  area: Area;
+  efficiency: number;
+}
+
+export interface WeeklyStats {
+  weekStart: string;
+  weekEnd: string;
+  streetsCompleted: number;
+  totalTime: number;
+  averageDaily: number;
+  efficiency: number;
+}
+
+export interface MonthlyStats {
+  month: string;
+  year: number;
+  streetsCompleted: number;
+  totalTime: number;
+  averageDaily: number;
+  efficiency: number;
+  bestDay: string;
+  worstDay: string;
+}
+
+/* ---------- משימות ---------- */
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'delivery' | 'sorting' | 'maintenance' | 'other';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
+  dueDate?: string;
+  assignedArea?: Area;
+  streetId?: string;
+  buildingId?: string;
+  estimatedTime?: number; // בדקות
+  actualTime?: number; // בדקות
+  createdAt: string;
+  completedAt?: string;
+  notes?: string;
+}
+
+/* ---------- דוחות ---------- */
+export interface ReportData {
+  undeliveredStreets: UndeliveredStreet[];
+  overdueStreets: Street[];
+  performanceMetrics: PerformanceMetrics;
+  phoneDirectory: PhoneDirectoryEntry[];
+}
+
+export interface UndeliveredStreet {
+  street: Street;
+  daysSinceLastDelivery: number;
+  urgencyLevel: 'normal' | 'urgent' | 'critical';
+  estimatedTime: number;
+}
+
+export interface PerformanceMetrics {
+  dailyAverage: number;
+  weeklyAverage: number;
+  monthlyAverage: number;
+  efficiency: number;
+  completionRate: number;
+  timePerStreet: number;
+}
+
+export interface PhoneDirectoryEntry {
+  name: string;
+  phone: string;
+  address: string;
+  apartment?: string;
+  relationship?: string;
+  allowsMailbox: boolean;
+  allowsDoor: boolean;
+  isPrimary: boolean;
+  additionalPhones: string[];
+  contacts: Contact[];
+}
+
+/* ---------- ייצוא נתונים ---------- */
+export interface ExportData {
+  streets: Street[];
+  buildings: Building[];
+  residents: Resident[];
+  tasks: Task[];
+  stats: DeliveryStats;
+  exportDate: string;
+  version: string;
 }

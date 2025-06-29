@@ -12,10 +12,14 @@ import WalkingOrder from "./components/WalkingOrder";
 import LoadingSpinner from "./components/LoadingSpinner";
 import DeliveryTimer from "./components/DeliveryTimer";
 import RouteOptimizer from "./components/RouteOptimizer";
+import TaskManager from "./components/TaskManager";
+import Reports from "./components/Reports";
+import PhoneDirectory from "./components/PhoneDirectory";
+import DataExport from "./components/DataExport";
 import { Street } from "./types";
 
 export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings">("regular");
+  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
 
@@ -62,9 +66,9 @@ export default function App() {
   const displayStreets = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="max-w-5xl mx-auto p-4">
+      <main className="max-w-7xl mx-auto p-4">
         <TabBar current={tab} setTab={setTab} />
 
         {tab === "regular" && (
@@ -115,7 +119,11 @@ export default function App() {
         )}
 
         {tab === "buildings" && <BuildingManager />}
+        {tab === "tasks" && <TaskManager />}
+        {tab === "reports" && <Reports />}
+        {tab === "phones" && <PhoneDirectory />}
+        {tab === "export" && <DataExport />}
       </main>
-    </>
+    </div>
   );
 }
