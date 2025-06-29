@@ -4,7 +4,7 @@ import { useBuildings } from "../hooks/useBuildings";
 import { streets } from "../data/streets";
 import { Building, Resident, Contact } from "../types";
 import LoadingSpinner from "./LoadingSpinner";
-import { Home, Users, Plus, Edit, Trash2, Building2, UserPlus, Phone, Crown, MapPin, User, X, DoorOpen, Mail, Key, ChevronDown, ChevronUp } from "lucide-react";
+import { Home, Users, Plus, Edit, Trash2, Building2, UserPlus, Phone, Crown, MapPin, User, X, DoorOpen, Mail, Key, ChevronDown, ChevronUp, Search } from "lucide-react";
 
 /* רכיב אינפוט ממותג */
 function Field({label, ...rest}:{label:string;name:string;type?:string;defaultValue?:string;placeholder?:string;required?:boolean}) {
@@ -153,6 +153,7 @@ export default function BuildingManager(){
   const [addingRes,setAddingRes]=useState<Building|null>(null);
   const [editingRes,setEditingRes]=useState<{b:Building;r:Resident}|null>(null);
   const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
 
   if (loading) {
     return <LoadingSpinner />;
@@ -353,8 +354,67 @@ export default function BuildingManager(){
     return grouped;
   };
 
+  // פונקציית חיפוש
+  const filterBuildings = (buildings: Building[], searchTerm: string) => {
+    if (!searchTerm.trim()) return buildings;
+    
+    const term = searchTerm.toLowerCase().trim();
+    
+    return buildings.filter(building => {
+      const streetName = getStreetName(building.streetId).toLowerCase();
+      const fullAddress = getFullAddress(building).toLowerCase();
+      const buildingNumber = building.number.toString();
+      const entrance = building.entrance?.toLowerCase() || "";
+      const code = building.code?.toLowerCase() || "";
+      
+      // חיפוש בפרטי הבניין
+      if (streetName.includes(term) || 
+          fullAddress.includes(term) || 
+          buildingNumber.includes(term) ||
+          entrance.includes(term) ||
+          code.includes(term)) {
+        return true;
+      }
+      
+      // חיפוש בדיירים
+      return building.residents.some(resident => {
+        const residentName = resident.fullName.toLowerCase();
+        const apartment = resident.apartment.toLowerCase();
+        const phone = resident.phone?.toLowerCase() || "";
+        const relationship = resident.relationship?.toLowerCase() || "";
+        
+        // חיפוש בפרטי הדייר
+        if (residentName.includes(term) ||
+            apartment.includes(term) ||
+            phone.includes(term) ||
+            relationship.includes(term)) {
+          return true;
+        }
+        
+        // חיפוש בטלפונים נוספים
+        if (resident.familyPhones?.some(phone => phone.toLowerCase().includes(term))) {
+          return true;
+        }
+        
+        // חיפוש באנשי קשר
+        if (resident.contacts?.some(contact => 
+          contact.name.toLowerCase().includes(term) ||
+          contact.phone.toLowerCase().includes(term) ||
+          contact.relationship?.toLowerCase().includes(term)
+        )) {
+          return true;
+        }
+        
+        return false;
+      });
+    });
+  };
+
+  // סינון הבניינים לפי החיפוש
+  const filteredBuildings = filterBuildings(buildings, searchTerm);
+
   // קיבוץ בניינים לפי רחוב ומספר
-  const groupedBuildings = buildings.reduce((acc, building) => {
+  const groupedBuildings = filteredBuildings.reduce((acc, building) => {
     const streetName = getStreetName(building.streetId);
     const key = `${streetName}-${building.number}`;
     
@@ -378,6 +438,9 @@ export default function BuildingManager(){
     return a.number - b.number;
   });
 
+  // פתיחה אוטומטית של תוצאות חיפוש
+  const shouldAutoExpand = searchTerm.trim().length > 0;
+
   return(
     <section className="mt-4 pb-20">
       <div className="flex items-center gap-3 mb-6">
@@ -388,6 +451,33 @@ export default function BuildingManager(){
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800">בניינים ודיירים</h2>
           <p className="text-gray-600 font-medium text-sm md:text-base">ניהול מידע על בניינים ודיירים</p>
         </div>
+      </div>
+
+      {/* שורת חיפוש */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
+        <div className="relative">
+          <Search size={20} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="חפש בניין, דייר, טלפון, דירה..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+        {searchTerm && (
+          <div className="mt-2 text-sm text-gray-600">
+            נמצאו {filteredBuildings.length} תוצאות עבור "{searchTerm}"
+          </div>
+        )}
       </div>
 
       {/* טופס בניין חדש */}
@@ -424,185 +514,200 @@ export default function BuildingManager(){
 
       {/* הצגת בניינים */}
       <div className="space-y-4">
-        {sortedGroups.map(group => (
-          <div key={`${group.streetName}-${group.number}`} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <MapPin size={20} className="text-blue-600" />
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-800">{group.streetName} {group.number}</h3>
-                    <p className="text-sm text-gray-600">{group.buildings.length} כניסות</p>
+        {sortedGroups.map(group => {
+          const groupKey = `${group.streetName}-${group.number}`;
+          const isExpanded = shouldAutoExpand || expandedBuildings.has(groupKey);
+          
+          return (
+            <div key={groupKey} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <MapPin size={20} className="text-blue-600" />
+                    <div>
+                      <h3 className="font-bold text-lg text-gray-800">{group.streetName} {group.number}</h3>
+                      <p className="text-sm text-gray-600">{group.buildings.length} כניסות</p>
+                    </div>
+                  </div>
+                  {!shouldAutoExpand && (
+                    <button
+                      onClick={() => toggleBuilding(groupKey)}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {isExpanded && (
+                <div className="p-4">
+                  <div className="space-y-4">
+                    {group.buildings.map(b => {
+                      const apartmentGroups = groupResidentsByApartment(b.residents);
+                      const apartmentCount = Object.keys(apartmentGroups).length;
+                      
+                      return (
+                        <div key={b.id} className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
+                          {/* כותרת הכניסה */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                                <span className="text-white font-bold text-sm">
+                                  {b.entrance || 'א'}
+                                </span>
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-base text-gray-800">
+                                  כניסה {b.entrance || 'ראשית'}
+                                </h4>
+                                {b.code && (
+                                  <p className="text-xs text-gray-600 flex items-center gap-1">
+                                    <Key size={12} className="text-yellow-500" />
+                                    קוד: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">{b.code}</span>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button 
+                                className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 shadow-md" 
+                                onClick={()=>setAddingRes(b)}
+                                title="הוסף דייר"
+                              >
+                                <UserPlus size={14} />
+                              </button>
+                              <button 
+                                className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg transition-all duration-200 shadow-md" 
+                                onClick={()=>setEditingB(b)}
+                                title="עריכת בניין"
+                              >
+                                <Edit size={14} />
+                              </button>
+                              <button
+                                className="p-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 shadow-md"
+                                onClick={() => {
+                                  if (window.confirm("בטוח למחוק כניסה זו?")) {
+                                    deleteBuilding(b.id);
+                                  }
+                                }}
+                                title="מחיקת כניסה"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* סטטיסטיקות */}
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="text-center p-2 bg-white rounded-lg border">
+                              <div className="text-base font-bold text-blue-600">{b.residents.length}</div>
+                              <div className="text-xs text-gray-600">דיירים</div>
+                            </div>
+                            <div className="text-center p-2 bg-white rounded-lg border">
+                              <div className="text-base font-bold text-green-600">{apartmentCount}</div>
+                              <div className="text-xs text-gray-600">דירות</div>
+                            </div>
+                          </div>
+
+                          {/* דירות ודיירים */}
+                          {apartmentCount > 0 && (
+                            <div className="space-y-3">
+                              {Object.entries(apartmentGroups)
+                                .sort(([a], [b]) => a.localeCompare(b))
+                                .map(([apartment, residents]) => (
+                                <div key={apartment} className="bg-white p-3 rounded-lg border">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="font-medium text-gray-800 flex items-center gap-2">
+                                      <Home size={14} className="text-gray-500" />
+                                      דירה {apartment}
+                                    </div>
+                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                      {residents.length} דיירים
+                                    </span>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {residents.map(r => (
+                                      <div key={r.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                          {r.isPrimary && <Crown size={12} className="text-yellow-500 flex-shrink-0" />}
+                                          <div className="min-w-0 flex-1">
+                                            <div className={`text-sm truncate ${r.isPrimary ? "font-medium" : ""}`}>
+                                              {r.fullName}
+                                            </div>
+                                            {r.phone && (
+                                              <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                <Phone size={10} />
+                                                <span className="truncate">{r.phone}</span>
+                                              </div>
+                                            )}
+                                            {r.relationship && (
+                                              <div className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded mt-1 inline-block">
+                                                {r.relationship}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex gap-1 items-center flex-shrink-0">
+                                            {r.allowMailbox && <Mail size={12} className="text-green-500" title="מאשר תיבה" />}
+                                            {r.allowDoor && <DoorOpen size={12} className="text-blue-500" title="מאשר דלת" />}
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-1 flex-shrink-0 mr-2">
+                                          <button 
+                                            className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors" 
+                                            onClick={()=>setEditingRes({b,r})}
+                                            title="עריכת דייר"
+                                          >
+                                            <Edit size={12} />
+                                          </button>
+                                          <button
+                                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                            onClick={() => {
+                                              if (window.confirm("בטוח למחוק דייר זה?")) {
+                                                deleteResident(b.id, r.id);
+                                              }
+                                            }}
+                                            title="מחיקת דייר"
+                                          >
+                                            <Trash2 size={12} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {apartmentCount === 0 && (
+                            <div className="text-center py-4 text-gray-500">
+                              <Users size={24} className="mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">אין דיירים רשומים</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                <button
-                  onClick={() => toggleBuilding(`${group.streetName}-${group.number}`)}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  {expandedBuildings.has(`${group.streetName}-${group.number}`) ? 
-                    <ChevronUp size={20} /> : <ChevronDown size={20} />
-                  }
-                </button>
-              </div>
+              )}
             </div>
-            
-            {expandedBuildings.has(`${group.streetName}-${group.number}`) && (
-              <div className="p-4">
-                <div className="space-y-4">
-                  {group.buildings.map(b => {
-                    const apartmentGroups = groupResidentsByApartment(b.residents);
-                    const apartmentCount = Object.keys(apartmentGroups).length;
-                    
-                    return (
-                      <div key={b.id} className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
-                        {/* כותרת הכניסה */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-                              <span className="text-white font-bold text-sm">
-                                {b.entrance || 'א'}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-base text-gray-800">
-                                כניסה {b.entrance || 'ראשית'}
-                              </h4>
-                              {b.code && (
-                                <p className="text-xs text-gray-600 flex items-center gap-1">
-                                  <Key size={12} className="text-yellow-500" />
-                                  קוד: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">{b.code}</span>
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <button 
-                              className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 shadow-md" 
-                              onClick={()=>setAddingRes(b)}
-                              title="הוסף דייר"
-                            >
-                              <UserPlus size={14} />
-                            </button>
-                            <button 
-                              className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg transition-all duration-200 shadow-md" 
-                              onClick={()=>setEditingB(b)}
-                              title="עריכת בניין"
-                            >
-                              <Edit size={14} />
-                            </button>
-                            <button
-                              className="p-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 shadow-md"
-                              onClick={() => {
-                                if (window.confirm("בטוח למחוק כניסה זו?")) {
-                                  deleteBuilding(b.id);
-                                }
-                              }}
-                              title="מחיקת כניסה"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* סטטיסטיקות */}
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="text-center p-2 bg-white rounded-lg border">
-                            <div className="text-base font-bold text-blue-600">{b.residents.length}</div>
-                            <div className="text-xs text-gray-600">דיירים</div>
-                          </div>
-                          <div className="text-center p-2 bg-white rounded-lg border">
-                            <div className="text-base font-bold text-green-600">{apartmentCount}</div>
-                            <div className="text-xs text-gray-600">דירות</div>
-                          </div>
-                        </div>
-
-                        {/* דירות ודיירים */}
-                        {apartmentCount > 0 && (
-                          <div className="space-y-3">
-                            {Object.entries(apartmentGroups)
-                              .sort(([a], [b]) => a.localeCompare(b))
-                              .map(([apartment, residents]) => (
-                              <div key={apartment} className="bg-white p-3 rounded-lg border">
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="font-medium text-gray-800 flex items-center gap-2">
-                                    <Home size={14} className="text-gray-500" />
-                                    דירה {apartment}
-                                  </div>
-                                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                    {residents.length} דיירים
-                                  </span>
-                                </div>
-                                <div className="space-y-2">
-                                  {residents.map(r => (
-                                    <div key={r.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        {r.isPrimary && <Crown size={12} className="text-yellow-500 flex-shrink-0" />}
-                                        <div className="min-w-0 flex-1">
-                                          <div className={`text-sm truncate ${r.isPrimary ? "font-medium" : ""}`}>
-                                            {r.fullName}
-                                          </div>
-                                          {r.phone && (
-                                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                                              <Phone size={10} />
-                                              <span className="truncate">{r.phone}</span>
-                                            </div>
-                                          )}
-                                          {r.relationship && (
-                                            <div className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded mt-1 inline-block">
-                                              {r.relationship}
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex gap-1 items-center flex-shrink-0">
-                                          {r.allowMailbox && <Mail size={12} className="text-green-500" title="מאשר תיבה" />}
-                                          {r.allowDoor && <DoorOpen size={12} className="text-blue-500" title="מאשר דלת" />}
-                                        </div>
-                                      </div>
-                                      <div className="flex gap-1 flex-shrink-0 mr-2">
-                                        <button 
-                                          className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors" 
-                                          onClick={()=>setEditingRes({b,r})}
-                                          title="עריכת דייר"
-                                        >
-                                          <Edit size={12} />
-                                        </button>
-                                        <button
-                                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                                          onClick={() => {
-                                            if (window.confirm("בטוח למחוק דייר זה?")) {
-                                              deleteResident(b.id, r.id);
-                                            }
-                                          }}
-                                          title="מחיקת דייר"
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {apartmentCount === 0 && (
-                          <div className="text-center py-4 text-gray-500">
-                            <Users size={24} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">אין דיירים רשומים</p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {buildings.length === 0 && (
+      {/* הודעה כשאין תוצאות חיפוש */}
+      {searchTerm && sortedGroups.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          <Search size={48} className="mx-auto mb-4 opacity-50" />
+          <h3 className="text-lg font-medium mb-2">לא נמצאו תוצאות</h3>
+          <p className="text-sm">נסה לחפש במילים אחרות או בדוק את האיות</p>
+        </div>
+      )}
+
+      {/* הודעה כשאין בניינים כלל */}
+      {!searchTerm && buildings.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           <Building2 size={48} className="mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">אין בניינים רשומים</h3>
