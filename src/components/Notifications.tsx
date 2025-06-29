@@ -9,11 +9,11 @@ export default function Notifications({count}:{count:number}){
         <div>
           <h3 className="font-semibold text-red-800 mb-1">רחובות דחופים לחלוקה</h3>
           <p className="text-sm">
-            <span className="font-medium">{count} רחובות</span> עברו 10 ימי עסקים ללא חלוקה – דורשים טיפול דחוף!
+            <span className="font-medium">{count} רחובות</span> עברו 14 ימים ללא חלוקה – דורשים טיפול דחוף!
           </p>
           <div className="flex items-center gap-1 mt-2 text-xs text-red-700">
             <Calendar size={12} />
-            <span>מחזור חלוקה: 10 ימי עסקים (לא כולל שישי ושבת)</span>
+            <span>מחזור חלוקה: 14 ימים כוללים (כולל שישי ושבת)</span>
           </div>
         </div>
       </div>

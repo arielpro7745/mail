@@ -1,5 +1,5 @@
 import { Street } from "../types";
-import { businessDaysBetween, daysUntilReappear, getUrgencyLevel } from "../utils/dates";
+import { totalDaysBetween, daysUntilReappear, getUrgencyLevel } from "../utils/dates";
 import { isSameDay } from "../utils/isSameDay";
 import { Clock, CheckCircle, RotateCcw, Calendar, AlertTriangle } from "lucide-react";
 
@@ -19,8 +19,8 @@ export default function StreetRow({
   completionOrder?: number;
 }) {
   const today = new Date();
-  const businessDays = s.lastDelivered
-    ? businessDaysBetween(new Date(s.lastDelivered), today)
+  const totalDays = s.lastDelivered
+    ? totalDaysBetween(new Date(s.lastDelivered), today)
     : undefined;
 
   const doneToday =
@@ -107,7 +107,7 @@ export default function StreetRow({
               urgencyLevel === 'urgent' ? "text-orange-600" : 
               "text-gray-700"
             }`}>
-              {businessDays ?? "—"}
+              {totalDays ?? "—"}
             </span>
             {s.lastDelivered && daysUntilNext > 0 && (
               <div className="flex items-center gap-1 text-xs text-gray-500">

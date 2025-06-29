@@ -17,7 +17,7 @@ import Reports from "./components/Reports";
 import PhoneDirectory from "./components/PhoneDirectory";
 import DataExport from "./components/DataExport";
 import { Street } from "./types";
-import { businessDaysBetween } from "./utils/dates";
+import { totalDaysBetween } from "./utils/dates";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
@@ -44,7 +44,7 @@ export default function App() {
 
   const overdue = pendingToday.filter((s) => {
     if (!s.lastDelivered) return true;
-    return businessDaysBetween(new Date(s.lastDelivered), new Date()) >= 10;
+    return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
   }).length;
 
   const handleStartTimer = (street: Street) => {
@@ -81,7 +81,7 @@ export default function App() {
             {/* סטטיסטיקת התקדמות */}
             <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-800">מחזור חלוקה (10 ימי עסקים)</h3>
+                <h3 className="font-semibold text-gray-800">מחזור חלוקה (14 ימים כוללים)</h3>
                 <span className="text-sm text-gray-600">
                   אזור {todayArea}
                 </span>
@@ -104,6 +104,9 @@ export default function App() {
                     <span>נותרו {streetsNeedingDelivery} רחובות לחלוקה</span>
                     <span>{Math.round(((totalStreetsInArea - streetsNeedingDelivery) / totalStreetsInArea) * 100)}%</span>
                   </div>
+                  <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                    💡 כולל שישי ושבת בספירה - מחזור של 14 ימים מלאים
+                  </div>
                 </>
               ) : (
                 <>
@@ -118,6 +121,9 @@ export default function App() {
                   <div className="flex justify-between text-xs text-green-600">
                     <span>כל הרחובות במחזור הנוכחי חולקו</span>
                     <span>100%</span>
+                  </div>
+                  <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                    ✅ מחזור 14 ימים הושלם - הרשימה מציגה לפי סדר חלוקה
                   </div>
                 </>
               )}

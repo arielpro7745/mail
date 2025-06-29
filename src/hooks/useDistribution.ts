@@ -6,7 +6,7 @@ import { Street, Area } from "../types";
 import { sortByUrgency, pickForToday } from "../utils/schedule";
 import { optimizeRoute } from "../utils/routeOptimizer";
 import { isSameDay } from "../utils/isSameDay";
-import { shouldStreetReappear, businessDaysBetween } from "../utils/dates";
+import { shouldStreetReappear, totalDaysBetween } from "../utils/dates";
 import { useSettings } from "./useSettings";
 
 const COLLECTION_NAME = "streets";
@@ -89,14 +89,14 @@ export function useDistribution() {
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
   );
   
-  // רחובות שצריכים להופיע (לא חולקו היום + עברו 10 ימי עסקים מהחלוקה האחרונה)
+  // רחובות שצריכים להופיע (לא חולקו היום + עברו 14 ימים מהחלוקה האחרונה)
   const streetsNeedingDelivery = areaStreets.filter(s => {
     // אם חולק היום, לא צריך להופיע
     if (s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)) {
       return false;
     }
     
-    // אם לא חולק מעולם או עברו 10 ימי עסקים, צריך להופיע
+    // אם לא חולק מעולם או עברו 14 ימים כוללים, צריך להופיע
     return shouldStreetReappear(s.lastDelivered);
   });
 
