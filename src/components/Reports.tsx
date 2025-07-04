@@ -19,6 +19,13 @@ export default function Reports() {
   if (loading) return <LoadingSpinner />;
 
   const { undeliveredStreets, overdueStreets, performanceMetrics } = reportData;
+  const today = new Date();
+  const recentDeliveries = allStreets
+    .filter(s => s.lastDelivered)
+    .filter(s => totalDaysBetween(new Date(s.lastDelivered), today) <= 14)
+    .sort((a, b) =>
+      new Date(b.lastDelivered!).getTime() - new Date(a.lastDelivered!).getTime()
+    );
 
   // פונקציה להורדת דוח
   const downloadReport = (type: 'undelivered' | 'performance' | 'overdue') => {
@@ -279,6 +286,42 @@ export default function Reports() {
         </div>
       )}
 
+       {/* חלוקות אחרונות */}
+    <div className="bg-white border border-green-200 rounded-xl shadow-lg mb-8">
+      <div className="p-6 border-b border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        <div className="flex items-center gap-3">
+          <CheckCircle size={24} className="text-green-600" />
+          <div>
+            <h3 className="font-bold text-xl text-gray-800">חלוקות אחרונות</h3>
+            <p className="text-sm text-gray-600">עד 14 ימים אחורה</p>
+          </div>
+                </div>
+
+      <div className="p-6">
+        {recentDeliveries.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700">רחוב</th>
+                  <th className="text-center py-3 px-4 font-semibold text-gray-700">סוג</th>
+                  <th className="text-center py-3 px-4 font-semibold text-gray-700">ימים מאז</th>
+                  <th className="text-center py-3 px-4 font-semibold text-gray-700">זמן ממוצע</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentDeliveries.map(street => (
+                  <StreetRow key={street.id} s={street} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center text-gray-500">אין חלוקות אחרונות</div>
+        )}
+      </div>
+    </div>
+      
       {/* דוח ביצועים מפורט */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-lg">
         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
