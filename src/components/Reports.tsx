@@ -12,6 +12,7 @@ import {
 
 export default function Reports() {
   const { reportData } = useReports();
+    const { loading, allStreets } = useDistribution();
   const { loading } = useDistribution();
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
