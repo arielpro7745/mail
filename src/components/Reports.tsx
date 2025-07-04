@@ -3,36 +3,65 @@ import { useReports } from "../hooks/useReports";
 import { useDistribution } from "../hooks/useDistribution";
 import { totalDaysBetween } from "../utils/dates";
 import LoadingSpinner from "./LoadingSpinner";
-import StreetRow from "./StreetRow";
 import { 
   BarChart3, TrendingUp, AlertTriangle, Clock, 
   Calendar, Download, FileText, Users, MapPin,
-  CheckCircle, XCircle, Target
+  CheckCircle, XCircle, Target, History, Filter
 } from "lucide-react";
 
 export default function Reports() {
   const { reportData } = useReports();
   const { loading, allStreets } = useDistribution();
-  
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'recent' | 'old'>('all');
 
   if (loading) return <LoadingSpinner />;
 
   const { undeliveredStreets, overdueStreets, performanceMetrics } = reportData;
   const today = new Date();
-  const recentDeliveries = allStreets
-    .filter(s => s.lastDelivered)
-    .filter(s => totalDaysBetween(new Date(s.lastDelivered), today) <= 14)
-    .sort((a, b) =>
-      new Date(b.lastDelivered!).getTime() - new Date(a.lastDelivered!).getTime()
-    );
+
+  // סינון רחובות שחולקו לפי תקופות
+  const getDeliveredStreets = () => {
+    const deliveredStreets = allStreets
+      .filter(s => s.lastDelivered)
+      .map(street => {
+        const deliveryDate = new Date(street.lastDelivered!);
+        const daysAgo = totalDaysBetween(deliveryDate, today);
+        return {
+          ...street,
+          daysAgo,
+          deliveryDate
+        };
+      })
+      .sort((a, b) => b.deliveryDate.getTime() - a.deliveryDate.getTime());
+
+    switch (deliveryFilter) {
+      case 'recent':
+        return deliveredStreets.filter(s => s.daysAgo <= 7);
+      case 'old':
+        return deliveredStreets.filter(s => s.daysAgo > 7);
+      default:
+        return deliveredStreets;
+    }
+  };
+
+  const deliveredStreets = getDeliveredStreets();
 
   // פונקציה להורדת דוח
-  const downloadReport = (type: 'undelivered' | 'performance' | 'overdue') => {
+  const downloadReport = (type: 'undelivered' | 'performance' | 'overdue' | 'delivered') => {
     let content = '';
     let filename = '';
 
     switch (type) {
+      case 'delivered':
+        content = `דוח רחובות שחולקו - ${new Date().toLocaleDateString('he-IL')}\n\n`;
+        content += 'רחוב\tתאריך חלוקה\tימים מאז\tזמן ממוצע\tסוג\n';
+        deliveredStreets.forEach(street => {
+          content += `${street.name}\t${street.deliveryDate.toLocaleDateString('he-IL')}\t${street.daysAgo}\t${street.averageTime || 0} דק׳\t${street.isBig ? 'גדול' : 'קטן'}\n`;
+        });
+        filename = `delivered-streets-${new Date().toISOString().split('T')[0]}.txt`;
+        break;
+
       case 'undelivered':
         content = `דוח רחובות שלא חולקו - ${new Date().toLocaleDateString('he-IL')}\n\n`;
         content += 'רחוב\tימים מאז חלוקה\tרמת דחיפות\tזמן משוער\n';
@@ -76,6 +105,15 @@ export default function Reports() {
     URL.revokeObjectURL(url);
   };
 
+  // פונקציה לקבלת צבע לפי ימים
+  const getDaysColor = (days: number) => {
+    if (days === 0) return 'text-green-600 bg-green-100';
+    if (days <= 3) return 'text-blue-600 bg-blue-100';
+    if (days <= 7) return 'text-yellow-600 bg-yellow-100';
+    if (days <= 14) return 'text-orange-600 bg-orange-100';
+    return 'text-red-600 bg-red-100';
+  };
+
   return (
     <section className="mt-4 pb-20">
       <div className="flex items-center gap-3 mb-6">
@@ -106,14 +144,14 @@ export default function Reports() {
         <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="p-2 bg-green-500 rounded-lg">
-              <TrendingUp size={20} className="text-white" />
+              <CheckCircle size={20} className="text-white" />
             </div>
             <span className="text-2xl font-bold text-green-600">
-              {performanceMetrics.efficiency.toFixed(1)}%
+              {deliveredStreets.length}
             </span>
           </div>
-          <h3 className="font-semibold text-gray-800">יעילות</h3>
-          <p className="text-sm text-gray-600">אחוז השלמת משימות</p>
+          <h3 className="font-semibold text-gray-800">רחובות שחולקו</h3>
+          <p className="text-sm text-gray-600">סה״כ רחובות עם חלוקה</p>
         </div>
 
         <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-xl p-6 shadow-sm">
@@ -140,6 +178,140 @@ export default function Reports() {
           </div>
           <h3 className="font-semibold text-gray-800">רחובות באיחור</h3>
           <p className="text-sm text-gray-600">מעל 10 ימים</p>
+        </div>
+      </div>
+
+      {/* היסטוריית חלוקות */}
+      <div className="bg-white border border-green-200 rounded-xl shadow-lg mb-8">
+        <div className="p-6 border-b border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <History size={24} className="text-green-600" />
+              <div>
+                <h3 className="font-bold text-xl text-gray-800">היסטוריית חלוקות</h3>
+                <p className="text-sm text-gray-600">{deliveredStreets.length} רחובות שחולקו</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => downloadReport('delivered')}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+              >
+                <Download size={16} />
+                הורד דוח
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* סינון */}
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">סינון:</span>
+            <div className="flex gap-2">
+              {[
+                { key: 'all', label: 'הכל' },
+                { key: 'recent', label: 'שבוע אחרון' },
+                { key: 'old', label: 'יותר משבוע' }
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setDeliveryFilter(key as any)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    deliveryFilter === key
+                      ? 'bg-green-500 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {deliveredStreets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-right py-3 px-4 font-semibold text-gray-700">רחוב</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-700">אזור</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-700">סוג</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-700">תאריך חלוקה</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-700">ימים מאז</th>
+                    <th className="text-center py-3 px-4 font-semibold text-gray-700">זמן ממוצע</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deliveredStreets.map(street => (
+                    <tr key={street.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <MapPin size={16} className="text-gray-400" />
+                          <span className="font-medium">{street.name}</span>
+                        </div>
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                          {street.area}
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          street.isBig ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {street.isBig ? 'גדול' : 'קטן'}
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <div className="flex flex-col items-center">
+                          <span className="font-medium text-gray-800">
+                            {street.deliveryDate.toLocaleDateString('he-IL')}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {street.deliveryDate.toLocaleTimeString('he-IL', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDaysColor(street.daysAgo)}`}>
+                          {street.daysAgo === 0 ? 'היום' : 
+                           street.daysAgo === 1 ? 'אתמול' : 
+                           `לפני ${street.daysAgo} ימים`}
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-4 text-gray-600">
+                        {street.averageTime ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <Clock size={14} />
+                            <span>{street.averageTime} דק׳</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <History size={48} className="mx-auto mb-4 opacity-50" />
+              <h4 className="text-lg font-medium mb-2">אין חלוקות להצגה</h4>
+              <p className="text-sm">
+                {deliveryFilter === 'recent' ? 'אין חלוקות בשבוע האחרון' :
+                 deliveryFilter === 'old' ? 'אין חלוקות ישנות יותר משבוע' :
+                 'עדיין לא בוצעו חלוקות'}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -286,43 +458,6 @@ export default function Reports() {
         </div>
       )}
 
-       {/* חלוקות אחרונות */}
-    <div className="bg-white border border-green-200 rounded-xl shadow-lg mb-8">
-      <div className="p-6 border-b border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
-        <div className="flex items-center gap-3">
-          <CheckCircle size={24} className="text-green-600" />
-          <div>
-            <h3 className="font-bold text-xl text-gray-800">חלוקות אחרונות</h3>
-            <p className="text-sm text-gray-600">עד 14 ימים אחורה</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6">
-        {recentDeliveries.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-right py-3 px-4 font-semibold text-gray-700">רחוב</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">סוג</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">ימים מאז</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">זמן ממוצע</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentDeliveries.map(street => (
-                  <StreetRow key={street.id} s={street} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center text-gray-500">אין חלוקות אחרונות</div>
-        )}
-      </div>
-    </div>
-      
       {/* דוח ביצועים מפורט */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-lg">
         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
