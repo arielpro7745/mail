@@ -14,16 +14,18 @@ export default function Reports() {
   const { loading, allStreets } = useDistribution();
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'recent' | 'old'>('all');
+  const [areaFilter, setAreaFilter] = useState<'all' | '14' | '45'>('all');
 
   if (loading) return <LoadingSpinner />;
 
   const { undeliveredStreets, overdueStreets, performanceMetrics } = reportData;
   const today = new Date();
 
-  // סינון רחובות שחולקו לפי תקופות
+  // סינון רחובות שחולקו לפי תקופות ואזורים
   const getDeliveredStreets = () => {
     const deliveredStreets = allStreets
       .filter(s => s.lastDelivered)
+      .filter(s => areaFilter === 'all' || s.area.toString() === areaFilter)
       .map(street => {
         const deliveryDate = new Date(street.lastDelivered!);
         const daysAgo = totalDaysBetween(deliveryDate, today);
@@ -55,11 +57,11 @@ export default function Reports() {
     switch (type) {
       case 'delivered':
         content = `דוח רחובות שחולקו - ${new Date().toLocaleDateString('he-IL')}\n\n`;
-        content += 'רחוב\tתאריך חלוקה\tימים מאז\tזמן ממוצע\tסוג\n';
+        content += 'רחוב\tאזור\tתאריך חלוקה\tימים מאז\tזמן ממוצע\tסוג\n';
         deliveredStreets.forEach(street => {
-          content += `${street.name}\t${street.deliveryDate.toLocaleDateString('he-IL')}\t${street.daysAgo}\t${street.averageTime || 0} דק׳\t${street.isBig ? 'גדול' : 'קטן'}\n`;
+          content += `${street.name}\t${street.area}\t${street.deliveryDate.toLocaleDateString('he-IL')}\t${street.daysAgo}\t${street.averageTime || 0} דק׳\t${street.isBig ? 'גדול' : 'קטן'}\n`;
         });
-        filename = `delivered-streets-${new Date().toISOString().split('T')[0]}.txt`;
+        filename = `delivered-streets-${areaFilter !== 'all' ? `area-${areaFilter}-` : ''}${new Date().toISOString().split('T')[0]}.txt`;
         break;
 
       case 'undelivered':
@@ -113,6 +115,20 @@ export default function Reports() {
     if (days <= 14) return 'text-orange-600 bg-orange-100';
     return 'text-red-600 bg-red-100';
   };
+
+  // סטטיסטיקות לפי אזור
+  const getAreaStats = () => {
+    const area14Streets = allStreets.filter(s => s.area === 14 && s.lastDelivered);
+    const area45Streets = allStreets.filter(s => s.area === 45 && s.lastDelivered);
+    
+    return {
+      area14: area14Streets.length,
+      area45: area45Streets.length,
+      total: area14Streets.length + area45Streets.length
+    };
+  };
+
+  const areaStats = getAreaStats();
 
   return (
     <section className="mt-4 pb-20">
@@ -189,7 +205,10 @@ export default function Reports() {
               <History size={24} className="text-green-600" />
               <div>
                 <h3 className="font-bold text-xl text-gray-800">היסטוריית חלוקות</h3>
-                <p className="text-sm text-gray-600">{deliveredStreets.length} רחובות שחולקו</p>
+                <p className="text-sm text-gray-600">
+                  {deliveredStreets.length} רחובות שחולקו
+                  {areaFilter !== 'all' && ` באזור ${areaFilter}`}
+                </p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -204,29 +223,93 @@ export default function Reports() {
           </div>
         </div>
 
+        {/* סטטיסטיקות לפי אזור */}
+        <div className="p-4 border-b border-gray-200 bg-blue-50">
+          <h4 className="font-semibold text-gray-800 mb-3">פילוח לפי אזורים</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-3 border">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">אזור 14</span>
+                <span className="font-bold text-lg text-blue-600">{areaStats.area14}</span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {areaStats.total > 0 ? Math.round((areaStats.area14 / areaStats.total) * 100) : 0}% מסך הכל
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg p-3 border">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">אזור 45</span>
+                <span className="font-bold text-lg text-indigo-600">{areaStats.area45}</span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {areaStats.total > 0 ? Math.round((areaStats.area45 / areaStats.total) * 100) : 0}% מסך הכל
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg p-3 border">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">סה״כ</span>
+                <span className="font-bold text-lg text-green-600">{areaStats.total}</span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                כל הרחובות שחולקו
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* סינון */}
         <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">סינון:</span>
-            <div className="flex gap-2">
-              {[
-                { key: 'all', label: 'הכל' },
-                { key: 'recent', label: 'שבוע אחרון' },
-                { key: 'old', label: 'יותר משבוע' }
-              ].map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setDeliveryFilter(key as any)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    deliveryFilter === key
-                      ? 'bg-green-500 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-100 border'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* סינון לפי תקופה */}
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">תקופה:</span>
+              <div className="flex gap-2">
+                {[
+                  { key: 'all', label: 'הכל' },
+                  { key: 'recent', label: 'שבוע אחרון' },
+                  { key: 'old', label: 'יותר משבוע' }
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setDeliveryFilter(key as any)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      deliveryFilter === key
+                        ? 'bg-green-500 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* סינון לפי אזור */}
+            <div className="flex items-center gap-2">
+              <MapPin size={16} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">אזור:</span>
+              <div className="flex gap-2">
+                {[
+                  { key: 'all', label: 'כל האזורים', count: areaStats.total },
+                  { key: '14', label: 'אזור 14', count: areaStats.area14 },
+                  { key: '45', label: 'אזור 45', count: areaStats.area45 }
+                ].map(({ key, label, count }) => (
+                  <button
+                    key={key}
+                    onClick={() => setAreaFilter(key as any)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      areaFilter === key
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                    }`}
+                  >
+                    {label} ({count})
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -255,13 +338,15 @@ export default function Reports() {
                         </div>
                       </td>
                       <td className="text-center py-3 px-4">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          street.area === 14 ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
+                        }`}>
                           {street.area}
                         </span>
                       </td>
                       <td className="text-center py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          street.isBig ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800'
+                          street.isBig ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
                         }`}>
                           {street.isBig ? 'גדול' : 'קטן'}
                         </span>
@@ -306,7 +391,8 @@ export default function Reports() {
               <History size={48} className="mx-auto mb-4 opacity-50" />
               <h4 className="text-lg font-medium mb-2">אין חלוקות להצגה</h4>
               <p className="text-sm">
-                {deliveryFilter === 'recent' ? 'אין חלוקות בשבוע האחרון' :
+                {areaFilter !== 'all' ? `אין חלוקות באזור ${areaFilter}` :
+                 deliveryFilter === 'recent' ? 'אין חלוקות בשבוע האחרון' :
                  deliveryFilter === 'old' ? 'אין חלוקות ישנות יותר משבוע' :
                  'עדיין לא בוצעו חלוקות'}
               </p>
