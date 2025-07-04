@@ -196,5 +196,6 @@ export function useDistribution() {
     totalStreetsInArea: areaStreets.length,
     isAllCompleted,
     streetsNeedingDelivery: streetsNeedingDelivery.length,
+        allStreets: data,
   };
 }
