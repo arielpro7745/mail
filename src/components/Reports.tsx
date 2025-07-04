@@ -295,7 +295,8 @@ export default function Reports() {
             <h3 className="font-bold text-xl text-gray-800">חלוקות אחרונות</h3>
             <p className="text-sm text-gray-600">עד 14 ימים אחורה</p>
           </div>
-                </div>
+        </div>
+      </div>
 
       <div className="p-6">
         {recentDeliveries.length > 0 ? (
@@ -413,5 +414,5 @@ export default function Reports() {
         </div>
       </div>
     </section>
-  );,
-      }
+  );
+}
