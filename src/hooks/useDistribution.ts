@@ -178,6 +178,30 @@ export function useDistribution() {
 
   const endDay = async () => {
     const newArea: Area = todayArea === 14 ? 45 : 14;
+    
+    // בדיקה אם האזור הנוכחי הושלם לחלוטין
+    const currentAreaStreets = data.filter(s => s.area === todayArea);
+    const allStreetsDelivered = currentAreaStreets.every(street => 
+      street.lastDelivered && shouldStreetReappear(street.lastDelivered) === false
+    );
+    
+    // אם האזור הושלם לחלוטין, איפוס המחזור
+    if (allStreetsDelivered) {
+      try {
+        const resetPromises = currentAreaStreets.map(street => 
+          updateDoc(doc(db, COLLECTION_NAME, street.id), {
+            lastDelivered: "",
+            deliveryTimes: [],
+            averageTime: undefined
+          })
+        );
+        await Promise.all(resetPromises);
+        console.log(`מחזור חלוקה באזור ${todayArea} אופס בהצלחה`);
+      } catch (error) {
+        console.error("Error resetting delivery cycle:", error);
+      }
+    }
+    
     setTodayArea(newArea);
     await saveCurrentArea(newArea);
   };
