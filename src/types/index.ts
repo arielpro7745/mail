@@ -7,6 +7,7 @@ export interface Street {
   area: Area;
   isBig: boolean;
   lastDelivered: string;
+  cycleStartDate?: string; // תאריך תחילת המחזור הנוכחי
   deliveryTimes?: number[]; // זמני חלוקה בדקות
   averageTime?: number; // זמן ממוצע בדקות
 }

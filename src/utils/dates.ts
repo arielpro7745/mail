@@ -27,6 +27,22 @@ export function shouldStreetReappear(lastDelivered: string | null): boolean {
   return totalDaysElapsed >= 14;
 }
 
+// פונקציה לחישוב ימים מתחילת המחזור הנוכחי
+export function daysSinceCycleStart(cycleStartDate: string | null): number {
+  if (!cycleStartDate) return 0;
+  
+  const startDate = new Date(cycleStartDate);
+  const today = new Date();
+  return totalDaysBetween(startDate, today);
+}
+
+// פונקציה לחישוב ימים נותרים במחזור (14 ימים מתחילת המחזור)
+export function daysRemainingInCycle(cycleStartDate: string | null): number {
+  if (!cycleStartDate) return 14;
+  
+  const daysSinceStart = daysSinceCycleStart(cycleStartDate);
+  return Math.max(0, 14 - daysSinceStart);
+}
 // פונקציה לחישוב כמה ימים נותרו עד שהרחוב יחזור (14 ימים כוללים)
 export function daysUntilReappear(lastDelivered: string): number {
   const deliveryDate = new Date(lastDelivered);

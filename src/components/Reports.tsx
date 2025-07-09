@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useReports } from "../hooks/useReports";
 import { useDistribution } from "../hooks/useDistribution";
-import { totalDaysBetween } from "../utils/dates";
+import { totalDaysBetween, daysSinceCycleStart, daysRemainingInCycle } from "../utils/dates";
 import LoadingSpinner from "./LoadingSpinner";
 import { 
   BarChart3, TrendingUp, AlertTriangle, Clock, 
@@ -362,6 +362,11 @@ export default function Reports() {
                               minute: '2-digit' 
                             })}
                           </span>
+                          {street.cycleStartDate && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              מחזור: {daysSinceCycleStart(street.cycleStartDate)}/14
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="text-center py-3 px-4">
@@ -370,6 +375,11 @@ export default function Reports() {
                            street.daysAgo === 1 ? 'אתמול' : 
                            `לפני ${street.daysAgo} ימים`}
                         </span>
+                        {street.cycleStartDate && (
+                          <div className="text-xs text-green-600 mt-1">
+                            נותרו: {daysRemainingInCycle(street.cycleStartDate)} ימים
+                          </div>
+                        )}
                       </td>
                       <td className="text-center py-3 px-4 text-gray-600">
                         {street.averageTime ? (

@@ -1,5 +1,5 @@
 import { Street } from "../types";
-import { totalDaysBetween, daysUntilReappear, getUrgencyLevel } from "../utils/dates";
+import { totalDaysBetween, daysUntilReappear, getUrgencyLevel, daysSinceCycleStart, daysRemainingInCycle } from "../utils/dates";
 import { isSameDay } from "../utils/isSameDay";
 import { Clock, CheckCircle, RotateCcw, Calendar, AlertTriangle } from "lucide-react";
 
@@ -28,6 +28,12 @@ export default function StreetRow({
 
   const urgencyLevel = getUrgencyLevel(s.lastDelivered);
   const daysUntilNext = s.lastDelivered ? daysUntilReappear(s.lastDelivered) : 0;
+
+  // מידע על המחזור הנוכחי
+  const cycleInfo = s.cycleStartDate ? {
+    daysSinceStart: daysSinceCycleStart(s.cycleStartDate),
+    daysRemaining: daysRemainingInCycle(s.cycleStartDate)
+  } : null;
 
   // זמן חלוקה מעוצב
   const getDeliveryTime = () => {
@@ -109,7 +115,14 @@ export default function StreetRow({
             }`}>
               {totalDays ?? "—"}
             </span>
-            {s.lastDelivered && daysUntilNext > 0 && (
+            {cycleInfo && (
+              <div className="flex flex-col items-center gap-1 text-xs text-gray-500">
+                <Calendar size={10} />
+                <span>מחזור: {cycleInfo.daysSinceStart}/14</span>
+                <span className="text-blue-600">נותרו: {cycleInfo.daysRemaining}</span>
+              </div>
+            )}
+            {!cycleInfo && s.lastDelivered && daysUntilNext > 0 && (
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Calendar size={10} />
                 <span>עוד {daysUntilNext} ימים</span>

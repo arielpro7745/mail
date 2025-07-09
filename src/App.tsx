@@ -104,8 +104,8 @@ export default function App() {
                     <span>נותרו {streetsNeedingDelivery} רחובות לחלוקה</span>
                     <span>{Math.round(((totalStreetsInArea - streetsNeedingDelivery) / totalStreetsInArea) * 100)}%</span>
                   </div>
-                  <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                    💡 כולל שישי ושבת בספירה - מחזור של 14 ימים מלאים
+                  <div className="mt-2 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                    🔄 כשמסיימים אזור שלם - המחזור מתאפס ל-14 ימים חדשים
                   </div>
                 </>
               ) : (
@@ -122,8 +122,14 @@ export default function App() {
                     <span>כל הרחובות במחזור הנוכחי חולקו</span>
                     <span>100%</span>
                   </div>
-                  <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                    ✅ מחזור 14 ימים הושלם - הרשימה מציגה לפי סדר חלוקה
+                  <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded flex items-center gap-2">
+                    <span>✅ מחזור הושלם</span>
+                    <button 
+                      onClick={endDay}
+                      className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded transition-colors"
+                    >
+                      איפוס מחזור
+                    </button>
                   </div>
                 </>
               )}

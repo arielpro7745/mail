@@ -188,13 +188,17 @@ export function useDistribution() {
     // אם האזור הושלם לחלוטין, איפוס המחזור
     if (allStreetsDelivered) {
       try {
-        const resetPromises = currentAreaStreets.map(street => 
-          updateDoc(doc(db, COLLECTION_NAME, street.id), {
-            lastDelivered: "",
-            deliveryTimes: [],
-            averageTime: undefined
-          })
-        );
+        // שמירת תאריך החלוקה האחרון כתאריך התחלת מחזור חדש
+        const resetPromises = currentAreaStreets.map(street => {
+          const updates: Partial<Street> = {
+            cycleStartDate: street.lastDelivered, // שמירת תאריך החלוקה האחרון
+            lastDelivered: "", // איפוס לתחילת מחזור חדש
+            // שמירת נתוני זמנים
+            deliveryTimes: street.deliveryTimes || [],
+            averageTime: street.averageTime
+          };
+          return updateDoc(doc(db, COLLECTION_NAME, street.id), updates);
+        });
         await Promise.all(resetPromises);
         console.log(`מחזור חלוקה באזור ${todayArea} אופס בהצלחה`);
       } catch (error) {
