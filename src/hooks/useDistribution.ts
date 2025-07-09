@@ -84,6 +84,38 @@ export function useDistribution() {
   const today = new Date();
   const areaStreets = data.filter(s => s.area === todayArea);
   
+  // מיון רחובות לפי דחיפות - מהישן לחדש
+  const sortStreetsByUrgency = (streets: Street[]) => {
+    return [...streets].sort((a, b) => {
+      // אם יש מחזור פעיל, מיין לפי תאריך החלוקה האחרון (ישן לחדש)
+      if (a.cycleStartDate && b.cycleStartDate) {
+        // רחובות שלא חולקו במחזור הנוכחי - עדיפות גבוהה
+        const aDelivered = a.lastDelivered && new Date(a.lastDelivered) > new Date(a.cycleStartDate);
+        const bDelivered = b.lastDelivered && new Date(b.lastDelivered) > new Date(b.cycleStartDate);
+        
+        if (aDelivered !== bDelivered) {
+          return aDelivered ? 1 : -1; // לא חולק = עדיפות גבוהה
+        }
+        
+        // אם שניהם חולקו או לא חולקו, מיין לפי תאריך החלוקה האחרון
+        if (a.lastDelivered && b.lastDelivered) {
+          return new Date(a.lastDelivered).getTime() - new Date(b.lastDelivered).getTime(); // ישן לחדש
+        }
+      }
+      
+      // מיון רגיל לפי דחיפות
+      const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
+      const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
+      
+      if (aDays !== bDays) return bDays - aDays; // יותר ימים = עדיפות גבוהה
+      
+      // אם אותו מספר ימים, רחובות גדולים קודם
+      if (a.isBig !== b.isBig) return a.isBig ? -1 : 1;
+      
+      return 0;
+    });
+  };
+
   // רחובות שחולקו היום
   const completedToday = areaStreets.filter(
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
@@ -216,38 +248,6 @@ export function useDistribution() {
       resetCycle();
     }
   }, [data, todayArea, loading]);
-
-  // מיון רחובות לפי דחיפות - מהישן לחדש
-  const sortStreetsByUrgency = (streets: Street[]) => {
-    return [...streets].sort((a, b) => {
-      // אם יש מחזור פעיל, מיין לפי תאריך החלוקה האחרון (ישן לחדש)
-      if (a.cycleStartDate && b.cycleStartDate) {
-        // רחובות שלא חולקו במחזור הנוכחי - עדיפות גבוהה
-        const aDelivered = a.lastDelivered && new Date(a.lastDelivered) > new Date(a.cycleStartDate);
-        const bDelivered = b.lastDelivered && new Date(b.lastDelivered) > new Date(b.cycleStartDate);
-        
-        if (aDelivered !== bDelivered) {
-          return aDelivered ? 1 : -1; // לא חולק = עדיפות גבוהה
-        }
-        
-        // אם שניהם חולקו או לא חולקו, מיין לפי תאריך החלוקה האחרון
-        if (a.lastDelivered && b.lastDelivered) {
-          return new Date(a.lastDelivered).getTime() - new Date(b.lastDelivered).getTime(); // ישן לחדש
-        }
-      }
-      
-      // מיון רגיל לפי דחיפות
-      const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
-      const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
-      
-      if (aDays !== bDays) return bDays - aDays; // יותר ימים = עדיפות גבוהה
-      
-      // אם אותו מספר ימים, רחובות גדולים קודם
-      if (a.isBig !== b.isBig) return a.isBig ? -1 : 1;
-      
-      return 0;
-    });
-  };
 
   return {
     todayArea,
