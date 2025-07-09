@@ -195,7 +195,7 @@ export function useDistribution() {
             lastDelivered: "", // איפוס לתחילת מחזור חדש
             // שמירת נתוני זמנים
             deliveryTimes: street.deliveryTimes || [],
-            averageTime: street.averageTime
+            averageTime: street.averageTime ?? null
           };
           return updateDoc(doc(db, COLLECTION_NAME, street.id), updates);
         });
