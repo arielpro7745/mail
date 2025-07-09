@@ -37,6 +37,7 @@ export default function App() {
     totalStreetsInArea,
     isAllCompleted,
     streetsNeedingDelivery,
+    resetCycle,
   } = useDistribution();
 
   // Initialize notifications
@@ -105,7 +106,7 @@ export default function App() {
                     <span>{Math.round(((totalStreetsInArea - streetsNeedingDelivery) / totalStreetsInArea) * 100)}%</span>
                   </div>
                   <div className="mt-2 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded">
-                    🔄 כשמסיימים אזור שלם - המחזור מתאפס ל-14 ימים חדשים
+                    🔄 איפוס אוטומטי כשכל הרחובות חולקו - מחזור חדש של 14 ימים
                   </div>
                 </>
               ) : (
@@ -123,11 +124,12 @@ export default function App() {
                     <span>100%</span>
                   </div>
                   <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded flex items-center gap-2">
-                    <span>✅ מחזור הושלם</span>
+                    <span>✅ כל הרחובות חולקו</span>
                     <button 
-                      onClick={endDay}
-                      className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded transition-colors"
+                      onClick={resetCycle}
+                      className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded transition-colors flex items-center gap-1"
                     >
+                      🔄
                       איפוס מחזור
                     </button>
                   </div>

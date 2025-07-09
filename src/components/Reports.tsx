@@ -364,7 +364,10 @@ export default function Reports() {
                           </span>
                           {street.cycleStartDate && (
                             <div className="text-xs text-blue-600 mt-1">
-                              מחזור: {daysSinceCycleStart(street.cycleStartDate)}/14
+                              <div>מחזור: {daysSinceCycleStart(street.cycleStartDate)}/14</div>
+                              <div className="text-gray-500">
+                                החל: {new Date(street.cycleStartDate).toLocaleDateString('he-IL')}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -377,7 +380,12 @@ export default function Reports() {
                         </span>
                         {street.cycleStartDate && (
                           <div className="text-xs text-green-600 mt-1">
-                            נותרו: {daysRemainingInCycle(street.cycleStartDate)} ימים
+                            <div>נותרו: {daysRemainingInCycle(street.cycleStartDate)} ימים</div>
+                            {street.lastDelivered && (
+                              <div className="text-gray-500">
+                                חולק: {new Date(street.lastDelivered).toLocaleDateString('he-IL')}
+                              </div>
+                            )}
                           </div>
                         )}
                       </td>

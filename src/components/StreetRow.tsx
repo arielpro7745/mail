@@ -117,9 +117,18 @@ export default function StreetRow({
             </span>
             {cycleInfo && (
               <div className="flex flex-col items-center gap-1 text-xs text-gray-500">
-                <Calendar size={10} />
-                <span>מחזור: {cycleInfo.daysSinceStart}/14</span>
-                <span className="text-blue-600">נותרו: {cycleInfo.daysRemaining}</span>
+                <div className="flex items-center gap-1">
+                  <Calendar size={10} />
+                  <span>מחזור: {cycleInfo.daysSinceStart}/14</span>
+                </div>
+                {cycleInfo.daysRemaining > 0 && (
+                  <span className="text-blue-600">נותרו: {cycleInfo.daysRemaining}</span>
+                )}
+                {s.lastDelivered && (
+                  <div className="text-xs text-gray-400">
+                    {new Date(s.lastDelivered).toLocaleDateString('he-IL')}
+                  </div>
+                )}
               </div>
             )}
             {!cycleInfo && s.lastDelivered && daysUntilNext > 0 && (
