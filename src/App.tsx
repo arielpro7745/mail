@@ -39,6 +39,8 @@ export default function App() {
     streetsNeedingDelivery,
     overdueStreets,
     resetCycle,
+    getUrgencyLabel,
+    groupStreetsByUrgency,
   } = useDistribution();
 
   // Initialize notifications
@@ -89,7 +91,7 @@ export default function App() {
                 </span>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-blue-700 font-medium">חולקו היום</span>
@@ -106,14 +108,28 @@ export default function App() {
                 
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-red-700 font-medium">דחופים (14+ ימים)</span>
+                    <span className="text-sm text-red-700 font-medium">דחופים</span>
                     <span className="text-xl font-bold text-red-600">{overdueStreets}</span>
                   </div>
+                  <div className="text-xs text-red-600 mt-1">14+ ימים</div>
+                </div>
+                
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-purple-700 font-medium">קריטיים</span>
+                    <span className="text-xl font-bold text-purple-600">
+                      {pendingToday.filter(s => {
+                        const days = s.lastDelivered ? totalDaysBetween(new Date(s.lastDelivered), new Date()) : 999;
+                        return days >= 20 || days >= 999;
+                      }).length}
+                    </span>
+                  </div>
+                  <div className="text-xs text-purple-600 mt-1">20+ ימים או לא חולק</div>
                 </div>
               </div>
               
-              <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
-                💡 רחובות מסודרים לפי דחיפות: רחובות שעברו 14 ימים מופיעים ראשונים
+              <div className="mt-4 text-xs text-gray-600 bg-gradient-to-r from-gray-50 to-blue-50 px-3 py-2 rounded-lg border">
+                🎯 <strong>מיון חכם לפי דחיפות:</strong> קריטי (20+ ימים/לא חולק) → דחוף (14-19 ימים) → בינוני (10-13 ימים) → נמוך (7-9 ימים) → רגיל (פחות מ-7 ימים)
               </div>
             </div>
 
@@ -151,6 +167,7 @@ export default function App() {
                   list={recommended} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
+                  getUrgencyLabel={getUrgencyLabel}
                 />
               </div>
             </section>
@@ -167,6 +184,7 @@ export default function App() {
                   list={displayStreets} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
+                  getUrgencyLabel={getUrgencyLabel}
                 />
               </div>
             </section>
@@ -175,6 +193,7 @@ export default function App() {
               list={completedToday} 
               onUndo={undoDelivered}
               totalCompleted={allCompletedToday.length}
+              getUrgencyLabel={getUrgencyLabel}
             />
             
             <Notifications count={overdue} />

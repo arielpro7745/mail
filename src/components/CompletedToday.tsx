@@ -6,10 +6,12 @@ export default function CompletedToday({
   list,
   onUndo,
   totalCompleted,
+  getUrgencyLabel,
 }: {
   list: Street[];
   onUndo: (id: string) => void;
   totalCompleted?: number;
+  getUrgencyLabel?: (days: number) => { label: string; color: string; priority: string };
 }) {
   if (!list.length) return null;
   
@@ -34,7 +36,7 @@ export default function CompletedToday({
           </thead>
           <tbody>
             {list.map((s) => (
-              <StreetRow key={s.id} s={s} onUndo={onUndo} />
+              <StreetRow key={s.id} s={s} onUndo={onUndo} getUrgencyLabel={getUrgencyLabel} />
             ))}
           </tbody>
         </table>

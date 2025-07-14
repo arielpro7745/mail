@@ -1,29 +1,32 @@
 import { Street } from "../types";
 import { totalDaysBetween, daysUntilReappear, getUrgencyLevel, daysSinceCycleStart, daysRemainingInCycle } from "../utils/dates";
 import { isSameDay } from "../utils/isSameDay";
-import { Clock, CheckCircle, RotateCcw, Calendar, AlertTriangle } from "lucide-react";
+import { Clock, CheckCircle, RotateCcw, Calendar, AlertTriangle, Zap } from "lucide-react";
 
 export default function StreetRow({
   s,
   onDone,
   onUndo,
   onStartTimer,
+  getUrgencyLabel,
 }: {
   s: Street;
   onDone?: (id: string) => void;
   onUndo?: (id: string) => void;
   onStartTimer?: (street: Street) => void;
+  getUrgencyLabel?: (days: number) => { label: string; color: string; priority: string };
 }) {
   const today = new Date();
   const totalDays = s.lastDelivered
     ? totalDaysBetween(new Date(s.lastDelivered), today)
-    : undefined;
+    : 999;
 
   const doneToday =
     s.lastDelivered && isSameDay(new Date(s.lastDelivered), today);
 
-  const urgencyLevel = getUrgencyLevel(s.lastDelivered);
-  const isOverdue = totalDays !== undefined && totalDays >= 14;
+  const urgencyInfo = getUrgencyLabel ? getUrgencyLabel(totalDays) : null;
+  const isOverdue = totalDays >= 14;
+  const isCritical = totalDays >= 20 || totalDays >= 999;
 
   // זמן חלוקה מעוצב
   const getDeliveryTime = () => {
@@ -41,9 +44,9 @@ export default function StreetRow({
   // צבע רקע לפי דחיפות
   const getRowBackground = () => {
     if (doneToday) return "bg-green-50";
-    if (isOverdue) return "bg-red-50 border-red-200";
-    if (urgencyLevel === 'urgent') return "bg-orange-50 border-orange-200";
-
+    if (isCritical) return "bg-red-50 border-red-200";
+    if (isOverdue) return "bg-orange-50 border-orange-200";
+    if (totalDays >= 10) return "bg-yellow-50 border-yellow-200";
     switch (urgencyLevel) {
       case 'critical': return "bg-red-50";
       case 'urgent': return "bg-orange-50";
@@ -53,13 +56,13 @@ export default function StreetRow({
 
   // אייקון דחיפות
   const getUrgencyIcon = () => {
+    if (isCritical) {
+      return <AlertTriangle size={16} className="text-red-600 animate-bounce" />;
+    }
     if (isOverdue) {
-      return <AlertTriangle size={16} className="text-red-600 animate-pulse" />;
+      return <AlertTriangle size={16} className="text-orange-600 animate-pulse" />;
     }
-    if (urgencyLevel === 'critical') {
-      return <AlertTriangle size={14} className="text-red-500" />;
-    }
-    if (urgencyLevel === 'urgent') {
+    if (totalDays >= 10) {
       return <AlertTriangle size={14} className="text-orange-500" />;
     }
     return null;
@@ -79,11 +82,14 @@ export default function StreetRow({
           <span className={doneToday ? "line-through text-gray-500" : ""}>
             {s.name}
           </span>
-          {isOverdue && (
-            <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold animate-pulse">
-              איחור!
+          {urgencyInfo && !doneToday && (
+            <span className={`px-2 py-1 rounded-full text-xs font-bold ${urgencyInfo.color} ${
+              urgencyInfo.priority === 'critical' ? 'animate-pulse' : ''
+            }`}>
+              {urgencyInfo.label}
             </span>
           )}
+          {s.isBig && <Zap size={12} className="text-blue-500" title="רחוב גדול" />}
         </div>
       </td>
       
@@ -100,21 +106,21 @@ export default function StreetRow({
       <td className="text-center py-2 px-3">
         <div className="flex flex-col items-center">
           <span className={`font-medium ${
-            isOverdue ? "text-red-600 font-bold" :
-            urgencyLevel === 'critical' ? "text-red-600" : 
-            urgencyLevel === 'urgent' ? "text-orange-600" : 
+            isCritical ? "text-red-600 font-bold" :
+            isOverdue ? "text-orange-600 font-bold" : 
+            totalDays >= 10 ? "text-yellow-600" : 
             "text-gray-700"
           }`}>
-            {totalDays ?? "לא חולק"}
+            {totalDays >= 999 ? "לא חולק" : `${totalDays} ימים`}
           </span>
           {s.lastDelivered && (
             <div className="text-xs text-gray-500 mt-1">
               {new Date(s.lastDelivered).toLocaleDateString('he-IL')}
             </div>
           )}
-          {isOverdue && (
+          {isCritical && (
             <div className="text-xs text-red-600 font-medium mt-1">
-              דחוף לחלוקה!
+              {totalDays >= 999 ? "טרם חולק!" : "דחוף מאוד!"}
             </div>
           )}
         </div>
