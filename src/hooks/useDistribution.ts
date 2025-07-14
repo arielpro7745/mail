@@ -87,103 +87,26 @@ export function useDistribution() {
   // מיון רחובות לפי דחיפות - מהישן לחדש
   const sortStreetsByUrgency = (streets: Street[]) => {
     return [...streets].sort((a, b) => {
-      // חישוב ימים מהחלוקה האחרונה - רחובות שלא חולקו מעולם מקבלים 999 ימים
+      // חישוב ימים מהחלוקה האחרונה
       const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
       const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
       
-      // קטגוריות דחיפות:
-      // 1. לא חולק מעולם (999 ימים) - דחיפות קריטית
-      // 2. מעל 20 ימים - דחיפות קריטית
-      // 3. 14-19 ימים - דחיפות גבוהה
-      // 4. 10-13 ימים - דחיפות בינונית
-      // 5. פחות מ-10 ימים - דחיפות נמוכה
+      // רחובות שעברו 14 ימים - עדיפות עליונה (דחוף)
+      const aOverdue = aDays >= 14;
+      const bOverdue = bDays >= 14;
       
-      const getUrgencyScore = (days: number, isBig: boolean) => {
-        let score = 0;
-        
-        // ציון בסיסי לפי ימים
-        if (days >= 999) score = 1000; // לא חולק מעולם
-        else if (days >= 20) score = 900; // מעל 20 ימים - קריטי
-        else if (days >= 14) score = 800; // 14-19 ימים - דחוף
-        else if (days >= 10) score = 600; // 10-13 ימים - בינוני
-        else if (days >= 7) score = 400; // 7-9 ימים - נמוך
-        else score = 200; // פחות מ-7 ימים - רגיל
-        
-        // בונוס לרחובות גדולים (יותר חשובים)
-        if (isBig) score += 50;
-        
-        // בונוס נוסף לפי מספר הימים (יותר ימים = יותר דחוף)
-        score += Math.min(days, 30); // מקסימום 30 נקודות בונוס
-        
-        return score;
-      };
-      
-      const aScore = getUrgencyScore(aDays, a.isBig);
-      const bScore = getUrgencyScore(bDays, b.isBig);
-      
-      // מיון לפי ציון דחיפות (גבוה יותר = דחוף יותר)
-      if (aScore !== bScore) {
-        return bScore - aScore; // ציון גבוה יותר קודם
+      if (aOverdue !== bOverdue) {
+        return aOverdue ? -1 : 1; // רחוב שעבר 14 ימים קודם
       }
       
-      // אם אותו ציון, מיין לפי מספר ימים (יותר ימים קודם)
-      if (aDays !== bDays) return bDays - aDays;
+      // אם שניהם דחופים או שניהם לא, מיין לפי מספר הימים (יותר ימים = עדיפות גבוהה)
+      if (aDays !== bDays) return bDays - aDays; // יותר ימים = עדיפות גבוהה
       
       // אם אותו מספר ימים, רחובות גדולים קודם
       if (a.isBig !== b.isBig) return a.isBig ? -1 : 1;
       
-      // לבסוף, מיון אלפביתי
-      return a.name.localeCompare(b.name);
+      return 0;
     });
-  };
-
-  // פונקציה לקבלת תווית דחיפות
-  const getUrgencyLabel = (days: number) => {
-    if (days >= 999) return { label: "לא חולק מעולם", color: "bg-red-600 text-white", priority: "critical" };
-    if (days >= 20) return { label: "קריטי", color: "bg-red-500 text-white", priority: "critical" };
-    if (days >= 14) return { label: "דחוף", color: "bg-orange-500 text-white", priority: "urgent" };
-    if (days >= 10) return { label: "בינוני", color: "bg-yellow-500 text-white", priority: "medium" };
-    if (days >= 7) return { label: "נמוך", color: "bg-blue-500 text-white", priority: "low" };
-    return { label: "רגיל", color: "bg-green-500 text-white", priority: "normal" };
-  };
-
-  // קיבוץ רחובות לפי רמת דחיפות לתצוגה
-  const groupStreetsByUrgency = (streets: Street[]) => {
-    const groups = {
-      critical: [] as Street[],
-      urgent: [] as Street[],
-      medium: [] as Street[],
-      low: [] as Street[],
-      normal: [] as Street[]
-    };
-
-    streets.forEach(street => {
-      const days = street.lastDelivered ? totalDaysBetween(new Date(street.lastDelivered), today) : 999;
-      const urgency = getUrgencyLabel(days);
-      
-      if (urgency.priority === "critical") groups.critical.push(street);
-      else if (urgency.priority === "urgent") groups.urgent.push(street);
-      else if (urgency.priority === "medium") groups.medium.push(street);
-      else if (urgency.priority === "low") groups.low.push(street);
-      else groups.normal.push(street);
-    });
-
-    return groups;
-  };
-
-  // מיון רחובות לפי דחיפות עם קיבוץ
-  const sortedStreetsWithGroups = (streets: Street[]) => {
-    const sorted = sortStreetsByUrgency(streets);
-    const groups = groupStreetsByUrgency(sorted);
-    
-    // החזרת רשימה מסודרת: קריטי -> דחוף -> בינוני -> נמוך -> רגיל
-    return [
-      ...groups.critical,
-      ...groups.urgent,
-      ...groups.medium,
-      ...groups.low,
-      ...groups.normal
-    ];
   };
 
   // רחובות שחולקו היום
@@ -303,7 +226,5 @@ export function useDistribution() {
     streetsNeedingDelivery: streetsNeedingDelivery.length,
     overdueStreets: overdueStreets.length,
     allStreets: data,
-    getUrgencyLabel,
-    groupStreetsByUrgency: () => groupStreetsByUrgency(pendingToday),
   };
 }
