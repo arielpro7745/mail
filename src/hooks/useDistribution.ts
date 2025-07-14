@@ -186,36 +186,6 @@ export function useDistribution() {
     ];
   };
 
-  // רחובות שצריכים חלוקה (לא חולקו היום) - ממוינים לפי דחיפות
-  const streetsNeedingDelivery = areaStreets.filter(s => {
-    // אם חולק היום, לא צריך להופיע
-    if (s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)) {
-      return false;
-    }
-    
-    // כל רחוב שלא חולק היום צריך להופיע ברשימה
-    return true;
-  });
-
-  // רחובות דחופים (עברו 14 ימים או לא חולקו מעולם)
-  const overdueStreets = streetsNeedingDelivery.filter(s => {
-    if (!s.lastDelivered) return true; // לא חולק מעולם
-    const days = totalDaysBetween(new Date(s.lastDelivered), today);
-    return days >= 14;
-  });
-
-  let pendingToday: Street[];
-  let displayCompletedToday: Street[];
-  let isAllCompleted: boolean;
-
-  // תמיד הצג רחובות שלא חולקו היום, ממוינים לפי דחיפות מתקדמת
-  pendingToday = sortedStreetsWithGroups(streetsNeedingDelivery);
-  displayCompletedToday = completedToday;
-  isAllCompleted = streetsNeedingDelivery.length === 0;
-      return 0;
-    });
-  };
-
   // רחובות שחולקו היום
   const completedToday = areaStreets.filter(
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
