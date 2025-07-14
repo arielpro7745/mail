@@ -5,31 +5,12 @@ import { CheckCircle, RotateCcw } from "lucide-react";
 export default function CompletedToday({
   list,
   onUndo,
-  isAllCompleted,
   totalCompleted,
 }: {
   list: Street[];
   onUndo: (id: string) => void;
-  isAllCompleted?: boolean;
   totalCompleted?: number;
 }) {
-  // אם כל הרחובות חולקו, הרשימה הראשית כבר מציגה הכל
-  if (isAllCompleted) {
-    return (
-      <section className="mt-6">
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3 mb-2">
-            <CheckCircle size={24} className="text-green-600" />
-            <h2 className="text-lg font-semibold text-green-800">כל הרחובות חולקו!</h2>
-          </div>
-          <p className="text-green-700 text-sm">
-            סה״כ {totalCompleted} רחובות חולקו היום. הרשימה למעלה מציגה את כל הרחובות לפי סדר החלוקה.
-          </p>
-        </div>
-      </section>
-    );
-  }
-
   if (!list.length) return null;
   
   return (

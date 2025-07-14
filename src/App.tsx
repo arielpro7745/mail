@@ -37,6 +37,7 @@ export default function App() {
     totalStreetsInArea,
     isAllCompleted,
     streetsNeedingDelivery,
+    overdueStreets,
     resetCycle,
   } = useDistribution();
 
@@ -82,59 +83,38 @@ export default function App() {
             {/* סטטיסטיקת התקדמות */}
             <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-800">מחזור חלוקה (14 ימים כוללים)</h3>
+                <h3 className="font-semibold text-gray-800">מעקב חלוקה יומי</h3>
                 <span className="text-sm text-gray-600">
                   אזור {todayArea}
                 </span>
               </div>
               
-              {!isAllCompleted ? (
-                <>
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="flex-1 bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${((totalStreetsInArea - streetsNeedingDelivery) / totalStreetsInArea) * 100}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-sm font-medium text-gray-700">
-                      {totalStreetsInArea - streetsNeedingDelivery} / {totalStreetsInArea}
-                    </span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-blue-700 font-medium">חולקו היום</span>
+                    <span className="text-xl font-bold text-blue-600">{allCompletedToday.length}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>נותרו {streetsNeedingDelivery} רחובות לחלוקה</span>
-                    <span>{Math.round(((totalStreetsInArea - streetsNeedingDelivery) / totalStreetsInArea) * 100)}%</span>
+                </div>
+                
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-orange-700 font-medium">ממתינים</span>
+                    <span className="text-xl font-bold text-orange-600">{streetsNeedingDelivery}</span>
                   </div>
-                  <div className="mt-2 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded">
-                    🔄 איפוס אוטומטי כשכל הרחובות חולקו - מחזור חדש של 14 ימים
+                </div>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-red-700 font-medium">דחופים (14+ ימים)</span>
+                    <span className="text-xl font-bold text-red-600">{overdueStreets}</span>
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="flex-1 bg-gray-200 rounded-full h-3">
-                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full w-full"></div>
-                    </div>
-                    <span className="text-sm font-medium text-green-700">
-                      {allCompletedToday.length} היום
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-green-600">
-                    <span>כל הרחובות במחזור הנוכחי חולקו</span>
-                    <span>100%</span>
-                  </div>
-                  <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded flex items-center gap-2">
-                    <span>✅ כל הרחובות חולקו</span>
-                    <button 
-                      onClick={resetCycle}
-                      className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded transition-colors flex items-center gap-1"
-                    >
-                      🔄
-                      איפוס מחזור
-                    </button>
-                  </div>
-                </>
-              )}
+                </div>
+              </div>
+              
+              <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
+                💡 רחובות מסודרים לפי דחיפות: רחובות שעברו 14 ימים מופיעים ראשונים
+              </div>
             </div>
 
             {currentStreet && (
@@ -156,45 +136,44 @@ export default function App() {
 
             <section className="mb-8">
               <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                {isAllCompleted ? "כל הרחובות (לפי סדר חלוקה)" : "מומלץ להיום"}
-                {!isAllCompleted && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                    {recommended.length}
+                מומלץ להיום
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                  {recommended.length}
+                </span>
+                {overdueStreets > 0 && (
+                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    ⚠️ {overdueStreets} דחופים
                   </span>
                 )}
               </h2>
               <div className="overflow-x-auto">
                 <StreetTable 
-                  list={isAllCompleted ? displayStreets : recommended} 
+                  list={recommended} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
-                  showCompletionStatus={isAllCompleted}
                 />
               </div>
             </section>
 
-            {!isAllCompleted && (
-              <section className="mb-8">
-                <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  רחובות נותרים
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
-                    {displayStreets.length}
-                  </span>
-                </h2>
-                <div className="overflow-x-auto">
-                  <StreetTable 
-                    list={displayStreets} 
-                    onDone={markDelivered}
-                    onStartTimer={handleStartTimer}
-                  />
-                </div>
-              </section>
-            )}
+            <section className="mb-8">
+              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                כל הרחובות
+                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
+                  {displayStreets.length}
+                </span>
+              </h2>
+              <div className="overflow-x-auto">
+                <StreetTable 
+                  list={displayStreets} 
+                  onDone={markDelivered}
+                  onStartTimer={handleStartTimer}
+                />
+              </div>
+            </section>
 
             <CompletedToday 
               list={completedToday} 
               onUndo={undoDelivered}
-              isAllCompleted={isAllCompleted}
               totalCompleted={allCompletedToday.length}
             />
             

@@ -87,26 +87,19 @@ export function useDistribution() {
   // מיון רחובות לפי דחיפות - מהישן לחדש
   const sortStreetsByUrgency = (streets: Street[]) => {
     return [...streets].sort((a, b) => {
-      // אם יש מחזור פעיל, מיין לפי תאריך החלוקה האחרון (ישן לחדש)
-      if (a.cycleStartDate && b.cycleStartDate) {
-        // רחובות שלא חולקו במחזור הנוכחי - עדיפות גבוהה
-        const aDelivered = a.lastDelivered && new Date(a.lastDelivered) > new Date(a.cycleStartDate);
-        const bDelivered = b.lastDelivered && new Date(b.lastDelivered) > new Date(b.cycleStartDate);
-        
-        if (aDelivered !== bDelivered) {
-          return aDelivered ? 1 : -1; // לא חולק = עדיפות גבוהה
-        }
-        
-        // אם שניהם חולקו או לא חולקו, מיין לפי תאריך החלוקה האחרון
-        if (a.lastDelivered && b.lastDelivered) {
-          return new Date(a.lastDelivered).getTime() - new Date(b.lastDelivered).getTime(); // ישן לחדש
-        }
-      }
-      
-      // מיון רגיל לפי דחיפות
+      // חישוב ימים מהחלוקה האחרונה
       const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
       const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
       
+      // רחובות שעברו 14 ימים - עדיפות עליונה (דחוף)
+      const aOverdue = aDays >= 14;
+      const bOverdue = bDays >= 14;
+      
+      if (aOverdue !== bOverdue) {
+        return aOverdue ? -1 : 1; // רחוב שעבר 14 ימים קודם
+      }
+      
+      // אם שניהם דחופים או שניהם לא, מיין לפי מספר הימים (יותר ימים = עדיפות גבוהה)
       if (aDays !== bDays) return bDays - aDays; // יותר ימים = עדיפות גבוהה
       
       // אם אותו מספר ימים, רחובות גדולים קודם
@@ -121,47 +114,35 @@ export function useDistribution() {
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
   );
   
-  // רחובות שצריכים להופיע (לא חולקו היום + עברו 14 ימים מהחלוקה האחרונה)
+  // רחובות שצריכים חלוקה (לא חולקו היום)
   const streetsNeedingDelivery = areaStreets.filter(s => {
     // אם חולק היום, לא צריך להופיע
     if (s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)) {
       return false;
     }
     
-    // אם יש מחזור פעיל, בדוק אם הרחוב חולק במחזור הנוכחי
-    if (s.cycleStartDate) {
-      // אם לא חולק במחזור הנוכחי, צריך להופיע
-      if (!s.lastDelivered || new Date(s.lastDelivered) <= new Date(s.cycleStartDate)) {
-        return true;
-      }
-      // אם חולק במחזור הנוכחי, לא צריך להופיע
-      return false;
-    }
-    
-    // אם אין מחזור פעיל, השתמש בלוגיקה הרגילה
-    return shouldStreetReappear(s.lastDelivered);
+    // כל רחוב שלא חולק היום צריך להופיע ברשימה
+    return true;
   });
 
-  // לוגיקה חדשה: אם יש רחובות שצריכים חלוקה, הצג רק אותם
-  // אם כל הרחובות לא צריכים חלוקה, הצג הכל לפי סדר חלוקה
+  // רחובות דחופים (עברו 14 ימים)
+  const overdueStreets = streetsNeedingDelivery.filter(s => {
+    if (!s.lastDelivered) return true; // לא חולק מעולם
+    const days = totalDaysBetween(new Date(s.lastDelivered), today);
+    return days >= 14;
+  });
+
   let pendingToday: Street[];
   let displayCompletedToday: Street[];
   let isAllCompleted: boolean;
 
-  if (streetsNeedingDelivery.length > 0) {
-    // יש רחובות שצריכים חלוקה - הצג רק אותם
-    pendingToday = sortStreetsByUrgency(streetsNeedingDelivery);
-    displayCompletedToday = completedToday;
-    isAllCompleted = false;
-  } else {
-    // כל הרחובות לא צריכים חלוקה - הצג הכל לפי סדר חלוקה
-    pendingToday = sortStreetsByUrgency(areaStreets);
-    displayCompletedToday = [];
-    isAllCompleted = true;
-  }
+  // תמיד הצג רחובות שלא חולקו היום, ממוינים לפי דחיפות
+  pendingToday = sortStreetsByUrgency(streetsNeedingDelivery);
+  displayCompletedToday = completedToday;
+  isAllCompleted = streetsNeedingDelivery.length === 0;
 
   // Apply route optimization if enabled
-  if (settings.optimizeRoutes && streetsNeedingDelivery.length > 0) {
+  if (settings.optimizeRoutes && pendingToday.length > 0) {
     pendingToday = optimizeRoute(pendingToday, todayArea);
   }
 
@@ -215,7 +196,7 @@ export function useDistribution() {
       const resetPromises = currentAreaStreets.map(street => {
         const updates: Partial<Street> = {
           cycleStartDate: new Date().toISOString(), // תחילת מחזור חדש
-          lastDelivered: "", // איפוס לתחילת מחזור חדש
+          // לא מאפסים את lastDelivered - שומרים את התאריך האחרון
           deliveryTimes: street.deliveryTimes || [],
           averageTime: street.averageTime || undefined
         };
@@ -227,27 +208,6 @@ export function useDistribution() {
       console.error("Error resetting delivery cycle:", error);
     }
   };
-
-  // בדיקה אוטומטית לאיפוס מחזור
-  useEffect(() => {
-    if (loading || !data.length) return;
-
-    const currentAreaStreets = data.filter(s => s.area === todayArea);
-    if (currentAreaStreets.length === 0) return;
-
-    // בדיקה אם כל הרחובות באזור חולקו ולא צריכים חלוקה נוספת
-    const allStreetsCompleted = currentAreaStreets.every(street => 
-      street.lastDelivered && !shouldStreetReappear(street.lastDelivered)
-    );
-
-    // בדיקה אם עדיין לא התחיל מחזור חדש
-    const hasActiveCycle = currentAreaStreets.some(street => street.cycleStartDate);
-
-    if (allStreetsCompleted && !hasActiveCycle) {
-      console.log(`כל הרחובות באזור ${todayArea} הושלמו - מתחיל איפוס מחזור אוטומטי`);
-      resetCycle();
-    }
-  }, [data, todayArea, loading]);
 
   return {
     todayArea,
@@ -262,8 +222,9 @@ export function useDistribution() {
     // נתונים נוספים לסטטיסטיקה
     allCompletedToday: completedToday,
     totalStreetsInArea: areaStreets.length,
-    isAllCompleted,
+    isAllCompleted: isAllCompleted,
     streetsNeedingDelivery: streetsNeedingDelivery.length,
-        allStreets: data,
+    overdueStreets: overdueStreets.length,
+    allStreets: data,
   };
 }

@@ -8,15 +8,11 @@ export default function StreetRow({
   onDone,
   onUndo,
   onStartTimer,
-  showCompletionStatus = false,
-  completionOrder,
 }: {
   s: Street;
   onDone?: (id: string) => void;
   onUndo?: (id: string) => void;
   onStartTimer?: (street: Street) => void;
-  showCompletionStatus?: boolean;
-  completionOrder?: number;
 }) {
   const today = new Date();
   const totalDays = s.lastDelivered
@@ -27,13 +23,7 @@ export default function StreetRow({
     s.lastDelivered && isSameDay(new Date(s.lastDelivered), today);
 
   const urgencyLevel = getUrgencyLevel(s.lastDelivered);
-  const daysUntilNext = s.lastDelivered ? daysUntilReappear(s.lastDelivered) : 0;
-
-  // מידע על המחזור הנוכחי
-  const cycleInfo = s.cycleStartDate ? {
-    daysSinceStart: daysSinceCycleStart(s.cycleStartDate),
-    daysRemaining: daysRemainingInCycle(s.cycleStartDate)
-  } : null;
+  const isOverdue = totalDays !== undefined && totalDays >= 14;
 
   // זמן חלוקה מעוצב
   const getDeliveryTime = () => {
@@ -51,8 +41,9 @@ export default function StreetRow({
   // צבע רקע לפי דחיפות
   const getRowBackground = () => {
     if (doneToday) return "bg-green-50";
-    if (showCompletionStatus) return "";
-    
+    if (isOverdue) return "bg-red-50 border-red-200";
+    if (urgencyLevel === 'urgent') return "bg-orange-50 border-orange-200";
+
     switch (urgencyLevel) {
       case 'critical': return "bg-red-50";
       case 'urgent': return "bg-orange-50";
@@ -62,6 +53,9 @@ export default function StreetRow({
 
   // אייקון דחיפות
   const getUrgencyIcon = () => {
+    if (isOverdue) {
+      return <AlertTriangle size={16} className="text-red-600 animate-pulse" />;
+    }
     if (urgencyLevel === 'critical') {
       return <AlertTriangle size={14} className="text-red-500" />;
     }
@@ -85,6 +79,11 @@ export default function StreetRow({
           <span className={doneToday ? "line-through text-gray-500" : ""}>
             {s.name}
           </span>
+          {isOverdue && (
+            <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+              איחור!
+            </span>
+          )}
         </div>
       </td>
       
@@ -99,46 +98,26 @@ export default function StreetRow({
       </td>
       
       <td className="text-center py-2 px-3">
-        {showCompletionStatus ? (
-          <div className="flex items-center justify-center gap-1">
-            <span className="font-medium text-gray-700">#{completionOrder}</span>
-            <span className="text-xs text-gray-500">
-              ({getDeliveryTime()})
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <span className={`font-medium ${
-              urgencyLevel === 'critical' ? "text-red-600" : 
-              urgencyLevel === 'urgent' ? "text-orange-600" : 
-              "text-gray-700"
-            }`}>
-              {totalDays ?? "—"}
-            </span>
-            {cycleInfo && (
-              <div className="flex flex-col items-center gap-1 text-xs text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Calendar size={10} />
-                  <span>מחזור: {cycleInfo.daysSinceStart}/14</span>
-                </div>
-                {cycleInfo.daysRemaining > 0 && (
-                  <span className="text-blue-600">נותרו: {cycleInfo.daysRemaining}</span>
-                )}
-                {s.lastDelivered && (
-                  <div className="text-xs text-gray-400">
-                    {new Date(s.lastDelivered).toLocaleDateString('he-IL')}
-                  </div>
-                )}
-              </div>
-            )}
-            {!cycleInfo && s.lastDelivered && daysUntilNext > 0 && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Calendar size={10} />
-                <span>עוד {daysUntilNext} ימים</span>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="flex flex-col items-center">
+          <span className={`font-medium ${
+            isOverdue ? "text-red-600 font-bold" :
+            urgencyLevel === 'critical' ? "text-red-600" : 
+            urgencyLevel === 'urgent' ? "text-orange-600" : 
+            "text-gray-700"
+          }`}>
+            {totalDays ?? "לא חולק"}
+          </span>
+          {s.lastDelivered && (
+            <div className="text-xs text-gray-500 mt-1">
+              {new Date(s.lastDelivered).toLocaleDateString('he-IL')}
+            </div>
+          )}
+          {isOverdue && (
+            <div className="text-xs text-red-600 font-medium mt-1">
+              דחוף לחלוקה!
+            </div>
+          )}
+        </div>
       </td>
       
       <td className="text-center py-2 px-3 text-gray-600">
