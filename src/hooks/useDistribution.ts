@@ -185,6 +185,22 @@ export function useDistribution() {
     return groups;
   };
 
+  // רחובות שחולקו היום
+  const completedToday = areaStreets.filter(
+    s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
+  );
+  
+  // רחובות שצריכים חלוקה (לא חולקו היום)
+  const streetsNeedingDelivery = areaStreets.filter(s => {
+    // אם חולק היום, לא צריך להופיע
+    if (s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)) {
+      return false;
+    }
+    
+    // כל רחוב שלא חולק היום צריך להופיע ברשימה
+    return true;
+  });
+
   // רחובות מקובצים לפי דחיפות
   const urgencyGroups = groupStreetsByUrgency(streetsNeedingDelivery);
   
@@ -208,28 +224,13 @@ export function useDistribution() {
 
   // רחובות דחופים (קריטי + דחוף + לא חולק מעולם)
   const urgentStreetsCount = urgencyCounts.never + urgencyCounts.critical + urgencyCounts.urgent;
-      return 0;
-    });
-  };
-
-  // רחובות שחולקו היום
-  const completedToday = areaStreets.filter(
-    s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
-  );
-  
-  // רחובות שצריכים חלוקה (לא חולקו היום)
-  const streetsNeedingDelivery = areaStreets.filter(s => {
-    // אם חולק היום, לא צריך להופיע
-    if (s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)) {
-      return false;
-    }
-    
-    // כל רחוב שלא חולק היום צריך להופיע ברשימה
-    return true;
-  });
 
   // רחובות דחופים (עברו 14 ימים)
-  const overdueStreets = urgencyCounts.never + urgencyCounts.critical;
+  const overdueStreets = streetsNeedingDelivery.filter(s => {
+    if (!s.lastDelivered) return true; // לא חולק מעולם
+    const days = totalDaysBetween(new Date(s.lastDelivered), today);
+    return days >= 14;
+  });
 
   let pendingToday: Street[];
   let displayCompletedToday: Street[];
@@ -323,12 +324,7 @@ export function useDistribution() {
     totalStreetsInArea: areaStreets.length,
     isAllCompleted: isAllCompleted,
     streetsNeedingDelivery: streetsNeedingDelivery.length,
-    overdueStreets: overdueStreets,
+    overdueStreets: overdueStreets.length,
     allStreets: data,
-    urgencyGroups,
-    urgencyCounts,
-    getStreetUrgencyLevel,
-    getUrgencyColor,
-    getUrgencyLabel,
   };
 }
