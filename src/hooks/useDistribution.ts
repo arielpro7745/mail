@@ -326,5 +326,10 @@ export function useDistribution() {
     streetsNeedingDelivery: streetsNeedingDelivery.length,
     overdueStreets: overdueStreets.length,
     allStreets: data,
+    urgencyGroups,
+    urgencyCounts,
+    getStreetUrgencyLevel,
+    getUrgencyColor,
+    getUrgencyLabel,
   };
 }
