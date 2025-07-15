@@ -8,11 +8,17 @@ export default function StreetRow({
   onDone,
   onUndo,
   onStartTimer,
+  getStreetUrgencyLevel,
+  getUrgencyColor,
+  getUrgencyLabel,
 }: {
   s: Street;
   onDone?: (id: string) => void;
   onUndo?: (id: string) => void;
   onStartTimer?: (street: Street) => void;
+  getStreetUrgencyLevel?: (street: Street) => string;
+  getUrgencyColor?: (urgencyLevel: string) => string;
+  getUrgencyLabel?: (urgencyLevel: string) => string;
 }) {
   const today = new Date();
   const totalDays = s.lastDelivered
@@ -22,8 +28,14 @@ export default function StreetRow({
   const doneToday =
     s.lastDelivered && isSameDay(new Date(s.lastDelivered), today);
 
-  const urgencyLevel = getUrgencyLevel(s.lastDelivered);
-  const isOverdue = totalDays !== undefined && totalDays >= 14;
+  // שימוש בפונקציות החדשות אם הן זמינות
+  const urgencyLevel = getStreetUrgencyLevel ? getStreetUrgencyLevel(s) : getUrgencyLevel(s.lastDelivered);
+  const urgencyColor = getUrgencyColor ? getUrgencyColor(urgencyLevel) : "";
+  const urgencyLabel = getUrgencyLabel ? getUrgencyLabel(urgencyLevel) : "";
+  
+  const isOverdue = urgencyLevel === 'critical' || urgencyLevel === 'never';
+  const isUrgent = urgencyLevel === 'urgent';
+  const isWarning = urgencyLevel === 'warning';
 
   // זמן חלוקה מעוצב
   const getDeliveryTime = () => {
@@ -41,26 +53,22 @@ export default function StreetRow({
   // צבע רקע לפי דחיפות
   const getRowBackground = () => {
     if (doneToday) return "bg-green-50";
-    if (isOverdue) return "bg-red-50 border-red-200";
-    if (urgencyLevel === 'urgent') return "bg-orange-50 border-orange-200";
-
-    switch (urgencyLevel) {
-      case 'critical': return "bg-red-50";
-      case 'urgent': return "bg-orange-50";
-      default: return "";
-    }
+    return urgencyColor || "";
   };
 
   // אייקון דחיפות
   const getUrgencyIcon = () => {
-    if (isOverdue) {
-      return <AlertTriangle size={16} className="text-red-600 animate-pulse" />;
+    if (urgencyLevel === 'never') {
+      return <AlertTriangle size={16} className="text-purple-600 animate-pulse" />;
     }
     if (urgencyLevel === 'critical') {
-      return <AlertTriangle size={14} className="text-red-500" />;
+      return <AlertTriangle size={16} className="text-red-600 animate-pulse" />;
     }
     if (urgencyLevel === 'urgent') {
       return <AlertTriangle size={14} className="text-orange-500" />;
+    }
+    if (urgencyLevel === 'warning') {
+      return <AlertTriangle size={14} className="text-yellow-500" />;
     }
     return null;
   };
@@ -79,9 +87,24 @@ export default function StreetRow({
           <span className={doneToday ? "line-through text-gray-500" : ""}>
             {s.name}
           </span>
-          {isOverdue && (
+          {urgencyLevel === 'never' && (
+            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-bold">
+              לא חולק מעולם
+            </span>
+          )}
+          {urgencyLevel === 'critical' && (
             <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold animate-pulse">
-              איחור!
+              קריטי!
+            </span>
+          )}
+          {urgencyLevel === 'urgent' && (
+            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-bold">
+              דחוף
+            </span>
+          )}
+          {urgencyLevel === 'warning' && (
+            <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-bold">
+              אזהרה
             </span>
           )}
         </div>
@@ -100,21 +123,28 @@ export default function StreetRow({
       <td className="text-center py-2 px-3">
         <div className="flex flex-col items-center">
           <span className={`font-medium ${
-            isOverdue ? "text-red-600 font-bold" :
-            urgencyLevel === 'critical' ? "text-red-600" : 
-            urgencyLevel === 'urgent' ? "text-orange-600" : 
+            urgencyLevel === 'never' ? "text-purple-600 font-bold" :
+            urgencyLevel === 'critical' ? "text-red-600 font-bold" : 
+            urgencyLevel === 'urgent' ? "text-orange-600 font-bold" : 
+            urgencyLevel === 'warning' ? "text-yellow-600 font-bold" : 
             "text-gray-700"
           }`}>
-            {totalDays ?? "לא חולק"}
+            {totalDays !== undefined ? `${totalDays} ימים` : "לא חולק"}
           </span>
           {s.lastDelivered && (
             <div className="text-xs text-gray-500 mt-1">
               {new Date(s.lastDelivered).toLocaleDateString('he-IL')}
             </div>
           )}
-          {isOverdue && (
-            <div className="text-xs text-red-600 font-medium mt-1">
-              דחוף לחלוקה!
+          {urgencyLabel && (
+            <div className={`text-xs font-medium mt-1 ${
+              urgencyLevel === 'never' ? 'text-purple-600' :
+              urgencyLevel === 'critical' ? 'text-red-600' :
+              urgencyLevel === 'urgent' ? 'text-orange-600' :
+              urgencyLevel === 'warning' ? 'text-yellow-600' :
+              'text-gray-600'
+            }`}>
+              {urgencyLabel}
             </div>
           )}
         </div>

@@ -39,6 +39,11 @@ export default function App() {
     streetsNeedingDelivery,
     overdueStreets,
     resetCycle,
+    urgencyGroups,
+    urgencyCounts,
+    getStreetUrgencyLevel,
+    getUrgencyColor,
+    getUrgencyLabel,
   } = useDistribution();
 
   // Initialize notifications
@@ -113,7 +118,7 @@ export default function App() {
               </div>
               
               <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
-                💡 רחובות מסודרים לפי דחיפות: רחובות שעברו 14 ימים מופיעים ראשונים
+                💡 רחובות מסודרים לפי דחיפות: לא חולק מעולם → קריטי (14+ ימים) → דחוף (10-13 ימים) → אזהרה (7-9 ימים) → רגיל
               </div>
             </div>
 
@@ -140,9 +145,19 @@ export default function App() {
                 <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
                   {recommended.length}
                 </span>
-                {overdueStreets > 0 && (
+                {urgencyCounts.never > 0 && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    🆕 {urgencyCounts.never} לא חולק
+                  </span>
+                )}
+                {urgencyCounts.critical > 0 && (
                   <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    ⚠️ {overdueStreets} דחופים
+                    🚨 {urgencyCounts.critical} קריטי
+                  </span>
+                )}
+                {urgencyCounts.urgent > 0 && (
+                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    ⚠️ {urgencyCounts.urgent} דחוף
                   </span>
                 )}
               </h2>
@@ -151,6 +166,9 @@ export default function App() {
                   list={recommended} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
+                  getStreetUrgencyLevel={getStreetUrgencyLevel}
+                  getUrgencyColor={getUrgencyColor}
+                  getUrgencyLabel={getUrgencyLabel}
                 />
               </div>
             </section>
@@ -161,12 +179,35 @@ export default function App() {
                 <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
                   {displayStreets.length}
                 </span>
+                {urgencyCounts.never > 0 && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                    לא חולק: {urgencyCounts.never}
+                  </span>
+                )}
+                {urgencyCounts.critical > 0 && (
+                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                    קריטי: {urgencyCounts.critical}
+                  </span>
+                )}
+                {urgencyCounts.urgent > 0 && (
+                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                    דחוף: {urgencyCounts.urgent}
+                  </span>
+                )}
+                {urgencyCounts.warning > 0 && (
+                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                    אזהרה: {urgencyCounts.warning}
+                  </span>
+                )}
               </h2>
               <div className="overflow-x-auto">
                 <StreetTable 
                   list={displayStreets} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
+                  getStreetUrgencyLevel={getStreetUrgencyLevel}
+                  getUrgencyColor={getUrgencyColor}
+                  getUrgencyLabel={getUrgencyLabel}
                 />
               </div>
             </section>

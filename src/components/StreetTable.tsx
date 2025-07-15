@@ -5,10 +5,16 @@ export default function StreetTable({
   list,
   onDone,
   onStartTimer,
+  getStreetUrgencyLevel,
+  getUrgencyColor,
+  getUrgencyLabel,
 }: {
   list: Street[];
   onDone: (id: string) => void;
   onStartTimer?: (street: Street) => void;
+  getStreetUrgencyLevel?: (street: Street) => string;
+  getUrgencyColor?: (urgencyLevel: string) => string;
+  getUrgencyLabel?: (urgencyLevel: string) => string;
 }) {
   return (
     <table className="w-full border-collapse">
@@ -30,6 +36,9 @@ export default function StreetTable({
             s={s} 
             onDone={onDone} 
             onStartTimer={onStartTimer}
+            getStreetUrgencyLevel={getStreetUrgencyLevel}
+            getUrgencyColor={getUrgencyColor}
+            getUrgencyLabel={getUrgencyLabel}
           />
         ))}
       </tbody>
