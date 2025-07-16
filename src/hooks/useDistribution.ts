@@ -118,7 +118,7 @@ export function useDistribution() {
       
       // 4. בתוך אותה קטגוריה - מיין לפי מספר ימים (יותר ימים = עדיפות גבוהה)
       if (aDays !== bDays) {
-        return bDays - aDays; // יותר ימים = עדיפות גבוהה
+        return bDays - aDays; // מהגבוה לנמוך - יותר ימים קודם
       }
       
       // 5. אם אותו מספר ימים, רחובות גדולים קודם
@@ -179,7 +179,21 @@ export function useDistribution() {
 
     // מיון בתוך כל קבוצה
     Object.keys(groups).forEach(key => {
-      groups[key as keyof typeof groups] = sortStreetsByUrgency(groups[key as keyof typeof groups]);
+      groups[key as keyof typeof groups].sort((a, b) => {
+        const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
+        const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
+        
+        // מיון מהמספר ימים הגבוה ביותר לנמוך ביותר
+        if (aDays !== bDays) {
+          return bDays - aDays; // יותר ימים קודם
+        }
+        
+        // אם אותו מספר ימים, רחובות גדולים קודם
+        if (a.isBig !== b.isBig) return a.isBig ? -1 : 1;
+        
+        // לבסוף מיין לפי שם הרחוב
+        return a.name.localeCompare(b.name);
+      });
     });
 
     return groups;
