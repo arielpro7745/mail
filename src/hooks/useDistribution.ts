@@ -118,7 +118,7 @@ export function useDistribution() {
       
       // 4. בתוך אותה קטגוריה - מיין לפי מספר ימים (יותר ימים = עדיפות גבוהה)
       if (aDays !== bDays) {
-        return bDays - aDays; // מהגבוה לנמוך - יותר ימים קודם
+        return bDays - aDays; // מהגבוה לנמוך - יותר ימים קודם (20, 19, 18, 17...)
       }
       
       // 5. אם אותו מספר ימים, רחובות גדולים קודם
@@ -183,7 +183,7 @@ export function useDistribution() {
         const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
         const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
         
-        // מיון מהמספר ימים הגבוה ביותר לנמוך ביותר
+        // מיון מהמספר ימים הגבוה ביותר לנמוך ביותר (20, 19, 18, 17...)
         if (aDays !== bDays) {
           return bDays - aDays; // יותר ימים קודם
         }
@@ -219,13 +219,7 @@ export function useDistribution() {
   const urgencyGroups = groupStreetsByUrgency(streetsNeedingDelivery);
   
   // רחובות ממוינים לפי דחיפות (רשימה שטוחה)
-  const sortedStreetsByUrgency = [
-    ...urgencyGroups.never,
-    ...urgencyGroups.critical,
-    ...urgencyGroups.urgent,
-    ...urgencyGroups.warning,
-    ...urgencyGroups.normal
-  ];
+  const sortedStreetsByUrgency = sortStreetsByUrgency(streetsNeedingDelivery);</parameter>
 
   // ספירת רחובות לפי דחיפות
   const urgencyCounts = {
@@ -250,7 +244,7 @@ export function useDistribution() {
   let displayCompletedToday: Street[];
   let isAllCompleted: boolean;
 
-  // תמיד הצג רחובות שלא חולקו היום, ממוינים לפי דחיפות
+  // השתמש ברחובות הממוינים
   pendingToday = sortedStreetsByUrgency;
   displayCompletedToday = completedToday;
   isAllCompleted = streetsNeedingDelivery.length === 0;
