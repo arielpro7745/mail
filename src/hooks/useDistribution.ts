@@ -219,7 +219,7 @@ export function useDistribution() {
   const urgencyGroups = groupStreetsByUrgency(streetsNeedingDelivery);
   
   // רחובות ממוינים לפי דחיפות (רשימה שטוחה)
-  const sortedStreetsByUrgency = sortStreetsByUrgency(streetsNeedingDelivery);</parameter>
+  const sortedStreetsByUrgency = sortStreetsByUrgency(streetsNeedingDelivery);
 
   // ספירת רחובות לפי דחיפות
   const urgencyCounts = {
