@@ -473,7 +473,7 @@ export default function BuildingManager(){
         }
         return a.number - b.number;
       })
-    }));</Action>
+    }));
 
   // פתיחה אוטומטית של תוצאות חיפוש
   const shouldAutoExpand = searchTerm.trim().length > 0;
@@ -783,7 +783,7 @@ export default function BuildingManager(){
       </div>
 
       {/* הודעה כשאין תוצאות חיפוש */}
-      {searchTerm && sortedGroups.length === 0 && (
+      {searchTerm && sortedAreaGroups.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           <Search size={48} className="mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">לא נמצאו תוצאות</h3>
