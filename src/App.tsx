@@ -25,39 +25,41 @@ const DataExport = lazy(() => import("./components/DataExport"));
 type Tab = "regular" | "buildings" | "tasks" | "reports" | "phones" | "export";
 
 // Extract the regular tab content to a separate component for better organization
-function DistributionTab({
-  todayArea,
-  pendingToday,
-  completedToday,
-  recommended,
-  markDelivered,
-  undoDelivered,
-  allCompletedToday,
-  isAllCompleted,
-  streetsNeedingDelivery,
-  overdueStreets,
-  urgencyGroups,
-  urgencyCounts,
-  getStreetUrgencyLevel,
-  getUrgencyColor,
-  getUrgencyLabel,
-}: {
-  todayArea: number;
-  pendingToday: Street[];
-  completedToday: Street[];
-  recommended: Street[];
-  markDelivered: (id: string, timeInMinutes: number) => void;
-  undoDelivered: (id: string) => void;
-  allCompletedToday: Street[];
-  isAllCompleted: boolean;
-  streetsNeedingDelivery: number;
-  overdueStreets: number;
-  urgencyGroups: Record<string, Street[]>;
-  urgencyCounts: Record<string, number>;
-  getStreetUrgencyLevel: (street: Street) => string;
-  getUrgencyColor: (level: string) => string;
-  getUrgencyLabel: (level: string) => string;
-}) {
+  function DistributionTab({
+    todayArea,
+    pendingToday,
+    completedToday,
+    recommended,
+    markDelivered,
+    undoDelivered,
+    allCompletedToday,
+    isAllCompleted,
+    streetsNeedingDelivery,
+    overdueStreets,
+    urgencyGroups,
+    urgencyCounts,
+    getStreetUrgencyLevel,
+    getUrgencyColor,
+    getUrgencyLabel,
+    onEnd,
+  }: {
+    todayArea: number;
+    pendingToday: Street[];
+    completedToday: Street[];
+    recommended: Street[];
+    markDelivered: (id: string, timeInMinutes: number) => void;
+    undoDelivered: (id: string) => void;
+    allCompletedToday: Street[];
+    isAllCompleted: boolean;
+    streetsNeedingDelivery: number;
+    overdueStreets: number;
+    urgencyGroups: Record<string, Street[]>;
+    urgencyCounts: Record<string, number>;
+    getStreetUrgencyLevel: (street: Street) => string;
+    getUrgencyColor: (level: string) => string;
+    getUrgencyLabel: (level: string) => string;
+    onEnd: () => void;
+  }) {
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
 
