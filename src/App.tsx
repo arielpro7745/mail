@@ -25,7 +25,7 @@ const DataExport = lazy(() => import("./components/DataExport"));
 type Tab = "regular" | "buildings" | "tasks" | "reports" | "phones" | "export";
 
 // Extract the regular tab content to a separate component for better organization
-  function DistributionTab({
+export function DistributionTab({
     todayArea,
     pendingToday,
     completedToday,
