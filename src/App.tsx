@@ -85,7 +85,7 @@ function DistributionTab({
 
   return (
     <>
-      <AreaToggle area={todayArea} onEnd={() => {}} /> {/* Assuming endDay is handled elsewhere */}
+      <AreaToggle area={todayArea} onEnd={endDay} />
 
       {/* סטטיסטיקת התקדמות - Improved with better styling and accessibility */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-lg transition-shadow hover:shadow-xl">
