@@ -55,7 +55,7 @@ function ContactsManager({ contacts, onChange }: { contacts: Contact[], onChange
         <button
           type="button"
           onClick={addContact}
-          className="text-xs px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+          className="text-xs px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1"
         >
           <Plus size={12} />
           הוסף
@@ -63,7 +63,7 @@ function ContactsManager({ contacts, onChange }: { contacts: Contact[], onChange
       </div>
 
       {contacts.map(contact => (
-        <div key={contact.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div key={contact.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
           <User size={16} className="text-gray-500 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm truncate">{contact.name}</div>
@@ -97,7 +97,7 @@ function ContactsManager({ contacts, onChange }: { contacts: Contact[], onChange
       ))}
 
       {editingContact && (
-        <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-md">
+        <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-sm">
           <h5 className="font-medium text-gray-800 mb-3">עריכת איש קשר</h5>
           <div className="space-y-3">
             <input
@@ -126,14 +126,14 @@ function ContactsManager({ contacts, onChange }: { contacts: Contact[], onChange
             <button
               type="button"
               onClick={() => saveContact(editingContact)}
-              className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors shadow-sm"
+              className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
             >
               שמור
             </button>
             <button
               type="button"
               onClick={() => setEditingContact(null)}
-              className="flex-1 px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors shadow-sm"
+              className="flex-1 px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors"
             >
               בטל
             </button>
@@ -258,8 +258,8 @@ export default function BuildingManager(){
             </div>
           </div>
 
-          <form onSubmit={submit} className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={submit} className="p-6">
+            <div className="space-y-4">
               <Field label="שם מלא" name="fullName" defaultValue={res?.fullName} placeholder="ישראל ישראלי" required/>
               
               <div className="space-y-1">
@@ -288,22 +288,24 @@ export default function BuildingManager(){
               <Field label="קשר משפחתי" name="relationship" defaultValue={res?.relationship} placeholder="בעל הבית, בן, בת, וכו'"/>
             </div>
             
-            <ContactsManager contacts={contacts} onChange={setContacts} />
+            <div className="mt-6">
+              <ContactsManager contacts={contacts} onChange={setContacts} />
+            </div>
             
-            <div className="p-4 bg-gray-50 rounded-xl shadow-inner">
+            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
               <h5 className="font-medium text-gray-700 mb-3">הרשאות</h5>
               <div className="space-y-3">
-                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
                   <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox} className="rounded border-gray-300 text-green-600 focus:ring-green-500 w-4 h-4"/>
                   <Mail size={16} className="text-green-500" />
                   <span className="text-sm font-medium text-gray-700">מאשר תיבה</span>
                 </label>
-                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
                   <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"/>
                   <DoorOpen size={16} className="text-blue-500" />
                   <span className="text-sm font-medium text-gray-700">מאשר דלת</span>
                 </label>
-                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
                   <input type="checkbox" name="isPrimary" defaultChecked={res?.isPrimary} className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 w-4 h-4"/>
                   <Crown size={16} className="text-yellow-500" />
                   <span className="text-sm font-medium text-gray-700">דייר ראשי</span>
@@ -311,14 +313,14 @@ export default function BuildingManager(){
               </div>
             </div>
             
-            <div className="flex gap-3">
-              <button className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-md hover:shadow-lg" type="submit">
+            <div className="flex gap-3 mt-6">
+              <button className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg" type="submit">
                 {isEdit?"עדכן דייר":"הוסף דייר"}
               </button>
               <button 
                 type="button" 
                 onClick={() => {setAddingRes(null); setEditingRes(null); setContacts([]);}}
-                className="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors font-medium shadow-md hover:shadow-lg"
+                className="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors font-medium"
               >
                 בטל
               </button>
@@ -477,7 +479,7 @@ export default function BuildingManager(){
   const shouldAutoExpand = searchTerm.trim().length > 0;
 
   return(
-    <section className="mt-4 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="mt-4 pb-20">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-md">
           <Building2 size={28} className="text-white" />
@@ -525,7 +527,7 @@ export default function BuildingManager(){
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">רחוב / מקטע</label>
-              <select name="streetId" className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm">
+              <select name="streetId" className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                 <optgroup label="אזור 45">
                   {streets.filter(s=>s.area===45).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
                 </optgroup>
@@ -540,7 +542,7 @@ export default function BuildingManager(){
             <Field label="כניסה"  name="entrance" placeholder="א, ב, ג..."/>
             <Field label="קוד‑דלת" name="code" placeholder="1234"/>
           </div>
-          <button className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg" type="submit">
+          <button className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg" type="submit">
             <Plus size={18} />
             הוסף בניין
           </button>
@@ -548,13 +550,13 @@ export default function BuildingManager(){
       </div>
 
       {/* הצגת בניינים */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {sortedAreaGroups.map(areaGroup => (
           <div key={`area-${areaGroup.area}`} className="space-y-4">
             {/* כותרת אזור */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-xl shadow-lg">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center shadow-md">
+                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
                   <span className="text-2xl font-bold">{areaGroup.area}</span>
                 </div>
                 <div>
@@ -564,36 +566,36 @@ export default function BuildingManager(){
               </div>
             </div>
 
-            {/* בניינים באזור - השתמש ב-grid למסכים גדולים */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {areaGroup.sortedBuildings.map(group => {
-                const groupKey = `${group.streetName}-${group.number}`;
-                const isExpanded = shouldAutoExpand || expandedBuildings.has(groupKey);
-                
-                return (
-                  <div key={groupKey} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-4 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <MapPin size={20} className="text-blue-600" />
-                          <div>
-                            <h3 className="font-bold text-lg text-gray-800">{group.streetName} {group.number}</h3>
-                            <p className="text-sm text-gray-600">{group.buildings.length} כניסות</p>
-                          </div>
+            {/* בניינים באזור */}
+            {areaGroup.sortedBuildings.map(group => {
+              const groupKey = `${group.streetName}-${group.number}`;
+              const isExpanded = shouldAutoExpand || expandedBuildings.has(groupKey);
+              
+              return (
+                <div key={groupKey} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <MapPin size={20} className="text-blue-600" />
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-800">{group.streetName} {group.number}</h3>
+                          <p className="text-sm text-gray-600">{group.buildings.length} כניסות</p>
                         </div>
-                        {!shouldAutoExpand && (
-                          <button
-                            onClick={() => toggleBuilding(groupKey)}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-                          >
-                            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                          </button>
-                        )}
                       </div>
+                      {!shouldAutoExpand && (
+                        <button
+                          onClick={() => toggleBuilding(groupKey)}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </button>
+                      )}
                     </div>
-                    
-                    {isExpanded && (
-                      <div className="p-4 space-y-4">
+                  </div>
+                  
+                  {isExpanded && (
+                    <div className="p-4">
+                      <div className="space-y-4">
                         {group.buildings.map(b => {
                           const apartmentGroups = groupResidentsByApartment(b.residents);
                           const apartmentCount = Object.keys(apartmentGroups).length;
@@ -622,21 +624,21 @@ export default function BuildingManager(){
                                 </div>
                                 <div className="flex gap-1">
                                   <button 
-                                    className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg" 
+                                    className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 shadow-md" 
                                     onClick={()=>setAddingRes(b)}
                                     title="הוסף דייר"
                                   >
                                     <UserPlus size={14} />
                                   </button>
                                   <button 
-                                    className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg" 
+                                    className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg transition-all duration-200 shadow-md" 
                                     onClick={()=>setEditingB(b)}
                                     title="עריכת בניין"
                                   >
                                     <Edit size={14} />
                                   </button>
                                   <button
-                                    className="p-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                                    className="p-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 shadow-md"
                                     onClick={() => {
                                       if (window.confirm("בטוח למחוק כניסה זו?")) {
                                         deleteBuilding(b.id);
@@ -651,11 +653,11 @@ export default function BuildingManager(){
 
                               {/* סטטיסטיקות */}
                               <div className="grid grid-cols-2 gap-3 mb-4">
-                                <div className="text-center p-2 bg-white rounded-lg border shadow-sm">
+                                <div className="text-center p-2 bg-white rounded-lg border">
                                   <div className="text-base font-bold text-blue-600">{b.residents.length}</div>
                                   <div className="text-xs text-gray-600">דיירים</div>
                                 </div>
-                                <div className="text-center p-2 bg-white rounded-lg border shadow-sm">
+                                <div className="text-center p-2 bg-white rounded-lg border">
                                   <div className="text-base font-bold text-green-600">{apartmentCount}</div>
                                   <div className="text-xs text-gray-600">דירות</div>
                                 </div>
@@ -667,7 +669,7 @@ export default function BuildingManager(){
                                   {Object.entries(apartmentGroups)
                                     .sort(([a], [b]) => a.localeCompare(b))
                                     .map(([apartment, residents]) => (
-                                    <div key={apartment} className="bg-white p-4 rounded-lg border shadow-sm hover:shadow-md transition-shadow">
+                                    <div key={apartment} className="bg-white p-4 rounded-lg border shadow-sm">
                                       <div className="flex items-center justify-between mb-3">
                                         <div className="font-bold text-gray-800 flex items-center gap-2">
                                           <Home size={16} className="text-gray-500" />
@@ -679,7 +681,7 @@ export default function BuildingManager(){
                                       </div>
                                       <div className="space-y-3">
                                         {residents.map(r => (
-                                          <div key={r.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:bg-gray-100 transition-colors">
+                                          <div key={r.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                                             <div className="flex items-start justify-between">
                                               <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-2">
@@ -705,26 +707,26 @@ export default function BuildingManager(){
                                                 )}
                                                 
                                                 {/* הרשאות בולטות */}
-                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                <div className="flex gap-2 mt-2">
                                                   {r.allowMailbox ? (
-                                                    <div className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1.5 rounded-lg border border-green-300 shadow-sm">
+                                                    <div className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1.5 rounded-lg border border-green-300">
                                                       <Mail size={14} />
                                                       <span className="font-medium text-sm">מאשר תיבה</span>
                                                     </div>
                                                   ) : (
-                                                    <div className="flex items-center gap-1 bg-red-100 text-red-800 px-3 py-1.5 rounded-lg border border-red-300 shadow-sm">
+                                                    <div className="flex items-center gap-1 bg-red-100 text-red-800 px-3 py-1.5 rounded-lg border border-red-300">
                                                       <X size={14} />
                                                       <span className="font-medium text-sm">לא מאשר תיבה</span>
                                                     </div>
                                                   )}
                                                   
                                                   {r.allowDoor ? (
-                                                    <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg border border-blue-300 shadow-sm">
+                                                    <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg border border-blue-300">
                                                       <DoorOpen size={14} />
                                                       <span className="font-medium text-sm">מאשר דלת</span>
                                                     </div>
                                                   ) : (
-                                                    <div className="flex items-center gap-1 bg-gray-100 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-300 shadow-sm">
+                                                    <div className="flex items-center gap-1 bg-gray-100 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-300">
                                                       <X size={14} />
                                                       <span className="font-medium text-sm">לא מאשר דלת</span>
                                                     </div>
@@ -771,11 +773,11 @@ export default function BuildingManager(){
                           );
                         })}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
@@ -811,12 +813,14 @@ export default function BuildingManager(){
                 updateBuilding(editingB.id,{entrance:f.entrance.value.trim()||null,code:f.code.value.trim()||null});
                 setEditingB(null);
               }}
-              className="p-6 space-y-4">
-              <Field label="כניסה" name="entrance" defaultValue={editingB.entrance} placeholder="א, ב, ג..."/>
-              <Field label="קוד‑דלת" name="code" defaultValue={editingB.code} placeholder="1234"/>
-              <div className="flex gap-3 pt-2">
-                <button className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-md hover:shadow-lg" type="submit">שמור</button>
-                <button className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-xl transition-colors font-medium shadow-md hover:shadow-lg" type="button" onClick={()=>setEditingB(null)}>בטל</button>
+              className="p-6">
+              <div className="space-y-4">
+                <Field label="כניסה" name="entrance" defaultValue={editingB.entrance} placeholder="א, ב, ג..."/>
+                <Field label="קוד‑דלת" name="code" defaultValue={editingB.code} placeholder="1234"/>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-lg" type="submit">שמור</button>
+                <button className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-xl transition-colors font-medium" type="button" onClick={()=>setEditingB(null)}>בטל</button>
               </div>
             </form>
           </div>
