@@ -121,29 +121,52 @@ export function useDistribution() {
   
   // מיון רחובות לפי דחיפות - מהישן לחדש
   const sortStreetsByUrgency = (streets: Street[]) => {
+    console.log("🔍 מתחיל מיון רחובות:");
+    streets.forEach(street => {
+      const days = street.lastDelivered 
+        ? totalDaysBetween(new Date(street.lastDelivered), today)
+        : 999;
+      console.log(`📍 ${street.name}: ${street.lastDelivered ? `${days} ימים (${street.lastDelivered})` : 'לא חולק מעולם'}`);
+    });
+
     return [...streets].sort((a, b) => {
       // רחובות שלא חולקו מעולם - ראשונים
       if (!a.lastDelivered && !b.lastDelivered) {
+        console.log(`🔄 שניהם לא חולקו: ${a.name} vs ${b.name} -> מיון לפי שם`);
         // אם שניהם לא חולקו, מיין לפי שם
         return a.name.localeCompare(b.name);
       }
-      if (!a.lastDelivered) return -1; // a ראשון
-      if (!b.lastDelivered) return 1;  // b ראשון
+      if (!a.lastDelivered) {
+        console.log(`🔄 ${a.name} לא חולק מעולם, ${b.name} חולק -> ${a.name} ראשון`);
+        return -1; // a ראשון
+      }
+      if (!b.lastDelivered) {
+        console.log(`🔄 ${b.name} לא חולק מעולם, ${a.name} חולק -> ${b.name} ראשון`);
+        return 1;  // b ראשון
+      }
       
       // מיון לפי תאריך - הישן ביותר ראשון
       const aDate = new Date(a.lastDelivered).getTime();
       const bDate = new Date(b.lastDelivered).getTime();
+      const aDays = totalDaysBetween(new Date(a.lastDelivered), today);
+      const bDays = totalDaysBetween(new Date(b.lastDelivered), today);
+      
+      console.log(`🔄 ${a.name} (${aDays} ימים) vs ${b.name} (${bDays} ימים)`);
       
       if (aDate !== bDate) {
+        const result = aDate - bDate; // תאריך ישן יותר ראשון
+        console.log(`📅 תאריכים שונים: ${result < 0 ? a.name : b.name} ראשון`);
         return aDate - bDate; // תאריך ישן יותר ראשון
       }
       
       // אם אותו תאריך, רחובות גדולים קודם
       if (a.isBig !== b.isBig) {
+        console.log(`🏢 אותו תאריך, רחוב גדול: ${a.isBig ? a.name : b.name} ראשון`);
         return a.isBig ? -1 : 1;
       }
       
       // לבסוף מיין לפי שם הרחוב
+      console.log(`📝 אותו תאריך ואותו סוג, מיון לפי שם: ${a.name.localeCompare(b.name) < 0 ? a.name : b.name} ראשון`);
       return a.name.localeCompare(b.name);
     });
   };
@@ -246,6 +269,14 @@ export function useDistribution() {
   
   // רחובות ממוינים לפי דחיפות (רשימה שטוחה)
   const sortedStreetsByUrgency = sortStreetsByUrgency(streetsNeedingDelivery);
+  
+  console.log("🎯 תוצאת המיון הסופית (10 ראשונים):");
+  sortedStreetsByUrgency.slice(0, 10).forEach((street, index) => {
+    const days = street.lastDelivered 
+      ? totalDaysBetween(new Date(street.lastDelivered), today)
+      : 999;
+    console.log(`${index + 1}. ${street.name}: ${street.lastDelivered ? `${days} ימים` : 'לא חולק מעולם'}`);
+  });
   
 
   // ספירת רחובות לפי דחיפות
