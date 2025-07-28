@@ -121,85 +121,30 @@ export function useDistribution() {
   
   // מיון רחובות לפי דחיפות - מהישן לחדש
   const sortStreetsByUrgency = (streets: Street[]) => {
-    console.log("🔍 מתחיל מיון רחובות:");
-    
     return [...streets].sort((a, b) => {
-      // חישוב ימים מהחלוקה האחרונה
-      const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
-      const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
+      // רחובות שלא חולקו מעולם - ראשונים
+      if (!a.lastDelivered && !b.lastDelivered) {
+        // אם שניהם לא חולקו, מיין לפי שם
+        return a.name.localeCompare(b.name);
+      }
+      if (!a.lastDelivered) return -1; // a ראשון
+      if (!b.lastDelivered) return 1;  // b ראשון
       
-      // לוג מפורט לרחוב היבנר
-      if (a.name.includes("היבנר") || b.name.includes("היבנר")) {
-        console.log(`🔍 מיון היבנר: ${a.name} (${aDays} ימים) vs ${b.name} (${bDays} ימים)`);
+      // מיון לפי תאריך - הישן ביותר ראשון
+      const aDate = new Date(a.lastDelivered).getTime();
+      const bDate = new Date(b.lastDelivered).getTime();
+      
+      if (aDate !== bDate) {
+        return aDate - bDate; // תאריך ישן יותר ראשון
       }
       
-      // קטגוריות דחיפות
-      const aCritical = aDays >= 14; // קריטי - מעל 14 ימים
-      const bCritical = bDays >= 14;
-      
-      const aUrgent = aDays >= 10 && aDays < 14; // דחוף - 10-13 ימים
-      const bUrgent = bDays >= 10 && bDays < 14;
-      
-      const aNeverDelivered = !a.lastDelivered; // לא חולק מעולם
-      const bNeverDelivered = !b.lastDelivered;
-      
-      // לוג קטגוריות
-      if (a.name.includes("היבנר") || b.name.includes("היבנר")) {
-        console.log(`📊 קטגוריות - ${a.name}: never=${aNeverDelivered}, critical=${aCritical}, urgent=${aUrgent}`);
-        console.log(`📊 קטגוריות - ${b.name}: never=${bNeverDelivered}, critical=${bCritical}, urgent=${bUrgent}`);
-      }
-      
-      // 1. רחובות שלא חולקו מעולם - עדיפות עליונה
-      if (aNeverDelivered !== bNeverDelivered) {
-        const result = aNeverDelivered ? -1 : 1;
-        if (a.name.includes("היבנר") || b.name.includes("היבנר")) {
-          console.log(`🥇 מיון לפי never delivered: ${result > 0 ? b.name : a.name} ראשון`);
-        }
-        return result;
-      }
-      
-      // 2. רחובות קריטיים (מעל 14 ימים) - עדיפות שנייה
-      if (aCritical !== bCritical) {
-        const result = aCritical ? -1 : 1;
-        if (a.name.includes("היבנר") || b.name.includes("היבנר")) {
-          console.log(`🥈 מיון לפי critical: ${result > 0 ? b.name : a.name} ראשון`);
-        }
-        return result;
-      }
-      
-      // 3. רחובות דחופים (10-13 ימים) - עדיפות שלישית
-      if (aUrgent !== bUrgent) {
-        const result = aUrgent ? -1 : 1;
-        if (a.name.includes("היבנר") || b.name.includes("היבנר")) {
-          console.log(`🥉 מיון לפי urgent: ${result > 0 ? b.name : a.name} ראשון`);
-        }
-        return result;
-      }
-      
-      // 4. בתוך אותה קטגוריה - מיין לפי מספר ימים (יותר ימים = עדיפות גבוהה)
-      if (aDays !== bDays) {
-        const result = bDays - aDays;
-        if (a.name.includes("היבנר") || b.name.includes("היבנר")) {
-          console.log(`📅 מיון לפי ימים: ${result > 0 ? a.name : b.name} ראשון (${Math.max(aDays, bDays)} ימים)`);
-        }
-        return result; // מהגבוה לנמוך - יותר ימים קודם
-      }
-      
-      // 5. אם אותו מספר ימים, רחובות גדולים קודם
+      // אם אותו תאריך, רחובות גדולים קודם
       if (a.isBig !== b.isBig) {
-        const result = a.isBig ? -1 : 1;
-        if (a.name.includes("היבנר") || b.name.includes("היבנר")) {
-          console.log(`🏢 מיון לפי גודל: ${result > 0 ? b.name : a.name} ראשון`);
-        }
-        return result;
+        return a.isBig ? -1 : 1;
       }
       
-      // 6. לבסוף מיין לפי שם הרחוב
-      const result = a.name.localeCompare(b.name);
-      if (a.name.includes("היבנר") || b.name.includes("היבנר")) {
-        console.log(`🔤 מיון לפי שם: ${result > 0 ? b.name : a.name} ראשון`);
-      }
-      return result;
+      // לבסוף מיין לפי שם הרחוב
+      return a.name.localeCompare(b.name);
     });
   };
 
@@ -254,12 +199,19 @@ export function useDistribution() {
     // מיון בתוך כל קבוצה
     Object.keys(groups).forEach(key => {
       groups[key as keyof typeof groups].sort((a, b) => {
-        const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
-        const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
+        // רחובות שלא חולקו מעולם
+        if (!a.lastDelivered && !b.lastDelivered) {
+          return a.name.localeCompare(b.name);
+        }
+        if (!a.lastDelivered) return -1;
+        if (!b.lastDelivered) return 1;
         
-        // מיון מהמספר ימים הגבוה ביותר לנמוך ביותר - הכי דחוף ראשון
-        if (aDays !== bDays) {
-          return bDays - aDays; // יותר ימים קודם (30, 25, 20, 15...)
+        // מיון לפי תאריך - הישן ביותר ראשון
+        const aDate = new Date(a.lastDelivered).getTime();
+        const bDate = new Date(b.lastDelivered).getTime();
+        
+        if (aDate !== bDate) {
+          return aDate - bDate; // תאריך ישן יותר ראשון
         }
         
         // אם אותו מספר ימים, רחובות גדולים קודם
@@ -295,29 +247,6 @@ export function useDistribution() {
   // רחובות ממוינים לפי דחיפות (רשימה שטוחה)
   const sortedStreetsByUrgency = sortStreetsByUrgency(streetsNeedingDelivery);
   
-  // לוג התוצאה הסופית
-  console.log("📋 רחובות ממוינים (5 ראשונים):");
-  sortedStreetsByUrgency.slice(0, 5).forEach((street, index) => {
-    const days = street.lastDelivered ? totalDaysBetween(new Date(street.lastDelivered), today) : 999;
-    const urgency = getStreetUrgencyLevel(street);
-    console.log(`${index + 1}. ${street.name} - ${days === 999 ? 'לא חולק מעולם' : `${days} ימים`} (${urgency})`);
-  });
-  
-  // חיפוש ספציפי אחר היבנר
-  const hibnerStreet = sortedStreetsByUrgency.find(s => s.name.includes("היבנר") && s.name.includes("55"));
-  if (hibnerStreet) {
-    const days = hibnerStreet.lastDelivered ? totalDaysBetween(new Date(hibnerStreet.lastDelivered), today) : 999;
-    const position = sortedStreetsByUrgency.findIndex(s => s.id === hibnerStreet.id) + 1;
-    console.log(`🎯 היבנר 55-7 נמצא במקום ${position} עם ${days === 999 ? 'לא חולק מעולם' : `${days} ימים`}`);
-    console.log(`📊 נתוני היבנר:`, {
-      name: hibnerStreet.name,
-      lastDelivered: hibnerStreet.lastDelivered,
-      urgencyLevel: getStreetUrgencyLevel(hibnerStreet),
-      isBig: hibnerStreet.isBig
-    });
-  } else {
-    console.log("❌ לא נמצא רחוב היבנר 55-7");
-  }
 
   // ספירת רחובות לפי דחיפות
   const urgencyCounts = {

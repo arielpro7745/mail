@@ -186,8 +186,8 @@ export default function App() {
                   </span>
                 )}
               </h2>
-              <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
-                💡 <strong>סדר עדיפות:</strong> לא חולק מעולם → קריטי (מהכי הרבה ימים) → דחוף (מהכי הרבה ימים) → אזהרה → רגיל
+              <div className="text-xs text-gray-600 bg-green-50 px-3 py-2 rounded mb-3">
+                📅 <strong>מיון לפי תאריך:</strong> לא חולק מעולם → תאריך ישן ביותר → תאריך חדש יותר (רחובות גדולים מקבלים עדיפות)
               </div>
               <div className="overflow-x-auto">
                 <StreetTable 
@@ -228,8 +228,8 @@ export default function App() {
                   </span>
                 )}
               </h2>
-              <div className="text-xs text-gray-600 bg-orange-50 px-3 py-2 rounded mb-3">
-                📊 <strong>מיון חכם:</strong> בכל קטגוריה, הרחובות עם הכי הרבה ימים מופיעים ראשונים (30→25→20→15 ימים)
+              <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
+                📅 <strong>מיון פשוט:</strong> רחובות שלא חולקו מעולם ראשונים, אחר כך לפי תאריך החלוקה מהישן לחדש
               </div>
               <div className="overflow-x-auto">
                 <StreetTable 
