@@ -266,7 +266,45 @@ export function useDistribution() {
   const urgencyGroups = groupStreetsByUrgency(streetsNeedingDelivery);
   
   // רחובות ממוינים לפי דחיפות (רשימה שטוחה)
-  const sortedStreetsByUrgency = sortStreetsByUrgency(streetsNeedingDelivery);
+  const sortedStreetsByUrgency = streetsNeedingDelivery.sort((a, b) => {
+    console.log("🔄 מיון רחובות בחלוקה רגילה:");
+    
+    // רחובות שלא חולקו מעולם - ראשונים
+    if (!a.lastDelivered && !b.lastDelivered) {
+      console.log(`🔄 שניהם לא חולקו: ${a.name} vs ${b.name} -> מיון לפי שם`);
+      return a.name.localeCompare(b.name);
+    }
+    if (!a.lastDelivered) {
+      console.log(`🔄 ${a.name} לא חולק מעולם, ${b.name} חולק -> ${a.name} ראשון`);
+      return -1; // a ראשון
+    }
+    if (!b.lastDelivered) {
+      console.log(`🔄 ${b.name} לא חולק מעולם, ${a.name} חולק -> ${b.name} ראשון`);
+      return 1;  // b ראשון
+    }
+    
+    // מיון לפי מספר ימים - הכי הרבה ימים ראשון
+    const aDays = totalDaysBetween(new Date(a.lastDelivered), today);
+    const bDays = totalDaysBetween(new Date(b.lastDelivered), today);
+    
+    console.log(`🔄 ${a.name} (${aDays} ימים) vs ${b.name} (${bDays} ימים)`);
+    
+    if (aDays !== bDays) {
+      const result = bDays - aDays; // יותר ימים ראשון
+      console.log(`📅 ימים שונים: ${result > 0 ? a.name : b.name} ראשון (${result > 0 ? aDays : bDays} ימים)`);
+      return bDays - aDays; // יותר ימים ראשון
+    }
+    
+    // אם אותו מספר ימים, רחובות גדולים קודם
+    if (a.isBig !== b.isBig) {
+      console.log(`🏢 אותו מספר ימים, רחוב גדול: ${a.isBig ? a.name : b.name} ראשון`);
+      return a.isBig ? -1 : 1;
+    }
+    
+    // לבסוף מיין לפי שם הרחוב
+    console.log(`📝 אותו מספר ימים ואותו סוג, מיון לפי שם: ${a.name.localeCompare(b.name) < 0 ? a.name : b.name} ראשון`);
+    return a.name.localeCompare(b.name);
+  });
   
   console.log("🎯 תוצאת המיון הסופית (10 ראשונים):");
   sortedStreetsByUrgency.slice(0, 10).forEach((street, index) => {
@@ -300,7 +338,7 @@ export function useDistribution() {
   let displayCompletedToday: Street[];
   let isAllCompleted: boolean;
 
-  // השתמש ברחובות הממוינים
+  // השתמש ברחובות הממוינים לפי מספר ימים
   pendingToday = sortedStreetsByUrgency;
   displayCompletedToday = completedToday;
   isAllCompleted = streetsNeedingDelivery.length === 0;
@@ -308,6 +346,7 @@ export function useDistribution() {
   // Apply route optimization if enabled
   if (settings.optimizeRoutes && pendingToday.length > 0) {
     pendingToday = optimizeRoute(pendingToday, todayArea);
+    console.log("🛣️ אופטימיזציה הופעלה - סדר המיון עשוי להשתנות");
   }
 
   const recommended = pickForToday(pendingToday);
