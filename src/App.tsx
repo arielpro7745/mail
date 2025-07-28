@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import TabBar from "./components/TabBar";
 import { useDistribution } from "./hooks/useDistribution";
@@ -16,6 +16,7 @@ import TaskManager from "./components/TaskManager";
 import Reports from "./components/Reports";
 import PhoneDirectory from "./components/PhoneDirectory";
 import DataExport from "./components/DataExport";
+import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 
@@ -23,6 +24,7 @@ export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
+  const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
 
   const {
     todayArea,
@@ -48,6 +50,28 @@ export default function App() {
 
   // Initialize notifications
   useNotifications();
+
+  // Check for Firebase permission errors
+  useEffect(() => {
+    const checkFirebaseErrors = () => {
+      // Listen for console errors related to Firebase permissions
+      const originalError = console.error;
+      console.error = (...args) => {
+        const message = args.join(' ');
+        if (message.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
+          setShowFirebaseGuide(true);
+        }
+        originalError.apply(console, args);
+      };
+
+      return () => {
+        console.error = originalError;
+      };
+    };
+
+    const cleanup = checkFirebaseErrors();
+    return cleanup;
+  }, []);
 
   const overdue = pendingToday.filter((s) => {
     if (!s.lastDelivered) return true;
@@ -77,6 +101,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {showFirebaseGuide && <FirebaseSetupGuide />}
       <Header />
       <main className="max-w-7xl mx-auto p-4">
         <TabBar current={tab} setTab={setTab} />

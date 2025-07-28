@@ -28,6 +28,14 @@ export default function StreetRow({
   const doneToday =
     s.lastDelivered && isSameDay(new Date(s.lastDelivered), today);
 
+  // Debug logging
+  console.log(`Street ${s.name}:`, {
+    lastDelivered: s.lastDelivered,
+    totalDays,
+    doneToday,
+    urgencyLevel: getStreetUrgencyLevel ? getStreetUrgencyLevel(s) : 'unknown'
+  });
+
   // שימוש בפונקציות החדשות אם הן זמינות
   const urgencyLevel = getStreetUrgencyLevel ? getStreetUrgencyLevel(s) : getUrgencyLevel(s.lastDelivered);
   const urgencyColor = getUrgencyColor ? getUrgencyColor(urgencyLevel) : "";
@@ -129,11 +137,18 @@ export default function StreetRow({
             urgencyLevel === 'warning' ? "text-yellow-600 font-bold" : 
             "text-gray-700"
           }`}>
-            {totalDays !== undefined ? `${totalDays} ימים` : "לא חולק"}
+            {s.lastDelivered ? (
+              totalDays !== undefined ? `${totalDays} ימים` : "חושב..."
+            ) : (
+              "לא חולק מעולם"
+            )}
           </span>
           {s.lastDelivered && (
             <div className="text-xs text-gray-500 mt-1">
               {new Date(s.lastDelivered).toLocaleDateString('he-IL')}
+              <div className="text-xs text-gray-400">
+                {new Date(s.lastDelivered).toLocaleTimeString('he-IL')}
+              </div>
             </div>
           )}
           {urgencyLabel && (

@@ -29,6 +29,17 @@ export function useDistribution() {
         );
         await Promise.all(batch);
         console.log("Initialized streets data in Firestore");
+      } else {
+        console.log(`Found ${snapshot.size} existing streets in Firestore`);
+        // Log existing data for debugging
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          console.log(`Street ${doc.id}:`, {
+            name: data.name,
+            lastDelivered: data.lastDelivered,
+            area: data.area
+          });
+        });
       }
     } catch (error) {
       console.error("Error initializing data:", error);
@@ -81,8 +92,18 @@ export function useDistribution() {
     const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
       const streets: Street[] = [];
       snapshot.forEach((doc) => {
-        streets.push({ id: doc.id, ...doc.data() } as Street);
+        const streetData = doc.data();
+        streets.push({ 
+          id: doc.id, 
+          ...streetData,
+          // Ensure all required fields exist
+          lastDelivered: streetData.lastDelivered || "",
+          deliveryTimes: streetData.deliveryTimes || [],
+          averageTime: streetData.averageTime || undefined,
+          cycleStartDate: streetData.cycleStartDate || undefined
+        } as Street);
       });
+      console.log(`Loaded ${streets.length} streets from Firebase:`, streets.map(s => ({ id: s.id, lastDelivered: s.lastDelivered })));
       setData(streets);
     }, (error) => {
       console.error("Error in streets snapshot listener:", error);
@@ -276,7 +297,8 @@ export function useDistribution() {
       if (!street) return;
 
       const updates: Partial<Street> = {
-        lastDelivered: new Date().toISOString()
+        lastDelivered: new Date().toISOString(),
+        cycleStartDate: street.cycleStartDate || new Date().toISOString()
       };
 
       if (deliveryTime) {
@@ -288,8 +310,17 @@ export function useDistribution() {
       }
 
       await updateDoc(doc(db, COLLECTION_NAME, id), updates);
+      console.log(`Street ${id} marked as delivered at ${updates.lastDelivered}`);
     } catch (error) {
       console.error("Error marking delivered:", error);
+      // If Firebase fails, update local state as fallback
+      setData(prevData => 
+        prevData.map(s => 
+          s.id === id 
+            ? { ...s, lastDelivered: new Date().toISOString() }
+            : s
+        )
+      );
     }
   };
 
@@ -298,8 +329,17 @@ export function useDistribution() {
       await updateDoc(doc(db, COLLECTION_NAME, id), {
         lastDelivered: ""
       });
+      console.log(`Street ${id} delivery undone`);
     } catch (error) {
       console.error("Error undoing delivery:", error);
+      // If Firebase fails, update local state as fallback
+      setData(prevData => 
+        prevData.map(s => 
+          s.id === id 
+            ? { ...s, lastDelivered: "" }
+            : s
+        )
+      );
     }
   };
 
