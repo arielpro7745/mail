@@ -186,6 +186,9 @@ export default function App() {
                   </span>
                 )}
               </h2>
+              <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
+                💡 <strong>סדר עדיפות:</strong> לא חולק מעולם → קריטי (מהכי הרבה ימים) → דחוף (מהכי הרבה ימים) → אזהרה → רגיל
+              </div>
               <div className="overflow-x-auto">
                 <StreetTable 
                   list={recommended} 
@@ -225,6 +228,9 @@ export default function App() {
                   </span>
                 )}
               </h2>
+              <div className="text-xs text-gray-600 bg-orange-50 px-3 py-2 rounded mb-3">
+                📊 <strong>מיון חכם:</strong> בכל קטגוריה, הרחובות עם הכי הרבה ימים מופיעים ראשונים (30→25→20→15 ימים)
+              </div>
               <div className="overflow-x-auto">
                 <StreetTable 
                   list={displayStreets} 

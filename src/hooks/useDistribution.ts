@@ -153,7 +153,7 @@ export function useDistribution() {
       
       // 4. בתוך אותה קטגוריה - מיין לפי מספר ימים (יותר ימים = עדיפות גבוהה)
       if (aDays !== bDays) {
-        return bDays - aDays; // מהגבוה לנמוך - יותר ימים קודם (20, 19, 18, 17...)
+        return bDays - aDays; // מהגבוה לנמוך - יותר ימים קודם
       }
       
       // 5. אם אותו מספר ימים, רחובות גדולים קודם
@@ -218,9 +218,9 @@ export function useDistribution() {
         const aDays = a.lastDelivered ? totalDaysBetween(new Date(a.lastDelivered), today) : 999;
         const bDays = b.lastDelivered ? totalDaysBetween(new Date(b.lastDelivered), today) : 999;
         
-        // מיון מהמספר ימים הגבוה ביותר לנמוך ביותר (20, 19, 18, 17...)
+        // מיון מהמספר ימים הגבוה ביותר לנמוך ביותר - הכי דחוף ראשון
         if (aDays !== bDays) {
-          return bDays - aDays; // יותר ימים קודם
+          return bDays - aDays; // יותר ימים קודם (30, 25, 20, 15...)
         }
         
         // אם אותו מספר ימים, רחובות גדולים קודם
