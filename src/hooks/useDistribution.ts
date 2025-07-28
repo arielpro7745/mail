@@ -145,28 +145,26 @@ export function useDistribution() {
         return 1;  // b ראשון
       }
       
-      // מיון לפי תאריך - הישן ביותר ראשון
-      const aDate = new Date(a.lastDelivered).getTime();
-      const bDate = new Date(b.lastDelivered).getTime();
+      // מיון לפי מספר ימים - הכי הרבה ימים ראשון
       const aDays = totalDaysBetween(new Date(a.lastDelivered), today);
       const bDays = totalDaysBetween(new Date(b.lastDelivered), today);
       
       console.log(`🔄 ${a.name} (${aDays} ימים) vs ${b.name} (${bDays} ימים)`);
       
-      if (aDate !== bDate) {
-        const result = aDate - bDate; // תאריך ישן יותר ראשון
-        console.log(`📅 תאריכים שונים: ${result < 0 ? a.name : b.name} ראשון`);
-        return aDate - bDate; // תאריך ישן יותר ראשון
+      if (aDays !== bDays) {
+        const result = bDays - aDays; // יותר ימים ראשון
+        console.log(`📅 ימים שונים: ${result > 0 ? a.name : b.name} ראשון (${result > 0 ? aDays : bDays} ימים)`);
+        return bDays - aDays; // יותר ימים ראשון
       }
       
       // אם אותו תאריך, רחובות גדולים קודם
       if (a.isBig !== b.isBig) {
-        console.log(`🏢 אותו תאריך, רחוב גדול: ${a.isBig ? a.name : b.name} ראשון`);
+        console.log(`🏢 אותו מספר ימים, רחוב גדול: ${a.isBig ? a.name : b.name} ראשון`);
         return a.isBig ? -1 : 1;
       }
       
       // לבסוף מיין לפי שם הרחוב
-      console.log(`📝 אותו תאריך ואותו סוג, מיון לפי שם: ${a.name.localeCompare(b.name) < 0 ? a.name : b.name} ראשון`);
+      console.log(`📝 אותו מספר ימים ואותו סוג, מיון לפי שם: ${a.name.localeCompare(b.name) < 0 ? a.name : b.name} ראשון`);
       return a.name.localeCompare(b.name);
     });
   };
@@ -230,11 +228,11 @@ export function useDistribution() {
         if (!b.lastDelivered) return 1;
         
         // מיון לפי תאריך - הישן ביותר ראשון
-        const aDate = new Date(a.lastDelivered).getTime();
-        const bDate = new Date(b.lastDelivered).getTime();
+        const aDays = totalDaysBetween(new Date(a.lastDelivered), today);
+        const bDays = totalDaysBetween(new Date(b.lastDelivered), today);
         
-        if (aDate !== bDate) {
-          return aDate - bDate; // תאריך ישן יותר ראשון
+        if (aDays !== bDays) {
+          return bDays - aDays; // יותר ימים ראשון
         }
         
         // אם אותו מספר ימים, רחובות גדולים קודם
