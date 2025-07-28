@@ -32,6 +32,10 @@ export function useDistribution() {
       }
     } catch (error) {
       console.error("Error initializing data:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Firebase permission denied. Using local data. Please check your Firestore Security Rules.");
+        setData(initialStreets);
+      }
     }
   };
 
@@ -48,6 +52,10 @@ export function useDistribution() {
       }
     } catch (error) {
       console.error("Error loading current area:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Firebase permission denied. Using default area. Please check your Firestore Security Rules.");
+        setTodayArea(14);
+      }
     }
   };
 
@@ -76,6 +84,12 @@ export function useDistribution() {
         streets.push({ id: doc.id, ...doc.data() } as Street);
       });
       setData(streets);
+    }, (error) => {
+      console.error("Error in streets snapshot listener:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Firebase permission denied for real-time updates. Using local data.");
+        setData(initialStreets);
+      }
     });
 
     return () => unsubscribe();

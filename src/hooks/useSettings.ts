@@ -28,6 +28,11 @@ export function useSettings() {
         }
       } catch (error) {
         console.error("Error loading settings:", error);
+        // Handle permission errors gracefully
+        if (error.code === 'permission-denied') {
+          console.warn("Firebase permission denied. Using default settings. Please check your Firestore Security Rules.");
+          setSettings(defaultSettings);
+        }
       } finally {
         setLoading(false);
       }
@@ -39,6 +44,12 @@ export function useSettings() {
     const unsubscribe = onSnapshot(doc(db, "settings", SETTINGS_DOC), (doc) => {
       if (doc.exists()) {
         setSettings({ ...defaultSettings, ...doc.data() });
+      }
+    }, (error) => {
+      console.error("Error in settings snapshot listener:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Firebase permission denied for real-time updates. Using default settings.");
+        setSettings(defaultSettings);
       }
     });
 

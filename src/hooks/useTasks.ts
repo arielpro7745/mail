@@ -18,6 +18,13 @@ export function useTasks() {
       });
       setTasks(tasksData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setLoading(false);
+    }, (error) => {
+      console.error("Error in tasks snapshot listener:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Firebase permission denied for real-time updates. Using empty tasks list.");
+        setTasks([]);
+      }
+      setLoading(false);
     });
 
     return () => unsubscribe();

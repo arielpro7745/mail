@@ -24,6 +24,10 @@ export function useBuildings() {
       }
     } catch (error) {
       console.error("Error initializing buildings data:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Firebase permission denied. Using local data. Please check your Firestore Security Rules.");
+        setData(initialBuildings);
+      }
     }
   };
 
@@ -42,6 +46,12 @@ export function useBuildings() {
         buildings.push({ id: doc.id, ...doc.data() } as Building);
       });
       setData(buildings);
+    }, (error) => {
+      console.error("Error in buildings snapshot listener:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Firebase permission denied for real-time updates. Using local data.");
+        setData(initialBuildings);
+      }
     });
 
     return () => unsubscribe();
