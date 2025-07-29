@@ -651,15 +651,13 @@ export default function BuildingManager(){
                           return (
                             <div key={b.id} className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
                               {/* כותרת הכניסה */}
-                                      r.contactPreference === 'whatsapp_photo' ? 'bg-orange-100 text-orange-700' :
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
                                     <span className="text-white font-bold text-sm">
-                                       r.contactPreference === 'whatsapp_photo' ? '📸 צילום בווצאפ' :
                                       {b.entrance || 'א'}
                                     </span>
-                                    {(r.contactPreference === 'whatsapp' || r.contactPreference === 'both') && (
+                                  </div>
                                   <div>
                                     <h4 className="font-bold text-base text-gray-800">
                                       כניסה {b.entrance || 'ראשית'}
@@ -670,18 +668,38 @@ export default function BuildingManager(){
                                         קוד: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">{b.code}</span>
                                       </p>
                                     )}
-                                    {r.contactPreference === 'whatsapp_photo' && (
-                                      <a
-                                        href={createWhatsAppPhotoLink(r.phone, r.fullName)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors shadow-sm"
-                                        title="בקש צילום בווצאפ"
-                                      >
-                                        <MessageCircle size={14} />
-                                      </a>
-                                    )}
                                   </div>
+                                </div>
+                                
+                                {/* כפתורי פעולות */}
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setAddingRes(b)}
+                                    className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm"
+                                    title="הוסף דייר"
+                                  >
+                                    <UserPlus size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingB(b)}
+                                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
+                                    title="ערוך כניסה"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm("בטוח למחוק כניסה זו וכל הדיירים שלה?")) {
+                                        deleteBuilding(b.id);
+                                      }
+                                    }}
+                                    className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-sm"
+                                    title="מחק כניסה"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
 
                               {/* סטטיסטיקות */}
                               <div className="grid grid-cols-2 gap-3 mb-4">
@@ -744,10 +762,12 @@ export default function BuildingManager(){
                                                     <span className={`text-xs px-2 py-1 rounded-full ${
                                                       r.contactPreference === 'call' ? 'bg-blue-100 text-blue-700' :
                                                       r.contactPreference === 'whatsapp' ? 'bg-green-100 text-green-700' :
+                                                      r.contactPreference === 'whatsapp_photo' ? 'bg-orange-100 text-orange-700' :
                                                       'bg-purple-100 text-purple-700'
                                                     }`}>
                                                       {r.contactPreference === 'call' ? '📞 צריך להתקשר' :
                                                        r.contactPreference === 'whatsapp' ? '💬 צריך WhatsApp' :
+                                                       r.contactPreference === 'whatsapp_photo' ? '📸 צילום בווצאפ' :
                                                        '📞💬 טלפון או WhatsApp'}
                                                     </span>
                                                   </div>
@@ -810,6 +830,17 @@ export default function BuildingManager(){
                                                         rel="noopener noreferrer"
                                                         className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm"
                                                         title="שלח WhatsApp"
+                                                      >
+                                                        <MessageCircle size={14} />
+                                                      </a>
+                                                    )}
+                                                    {r.contactPreference === 'whatsapp_photo' && (
+                                                      <a
+                                                        href={createWhatsAppPhotoLink(r.phone, r.fullName)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors shadow-sm"
+                                                        title="בקש צילום בווצאפ"
                                                       >
                                                         <MessageCircle size={14} />
                                                       </a>
