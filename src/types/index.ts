@@ -29,6 +29,8 @@ export interface Resident {
   contacts?: Contact[]; // רשימת אנשי קשר עם שמות
   allowMailbox?: boolean;
   allowDoor?: boolean;
+  contactPreference?: 'call' | 'whatsapp' | 'both' | 'none'; // העדפת קשר
+  notes?: string; // הערות נוספות
   isPrimary?: boolean; // דייר ראשי בדירה
   relationship?: string; // קשר משפחתי (בן/בת, הורה, וכו')
   entranceId?: string | null; // קישור לכניסה ספציפית

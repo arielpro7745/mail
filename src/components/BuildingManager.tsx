@@ -5,6 +5,7 @@ import { streets } from "../data/streets";
 import { Building, Resident, Contact } from "../types";
 import LoadingSpinner from "./LoadingSpinner";
 import { Home, Users, Plus, Edit, Trash2, Building2, UserPlus, Phone, Crown, MapPin, User, X, DoorOpen, Mail, Key, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 
 /* רכיב אינפוט ממותג */
 function Field({label, ...rest}:{label:string;name:string;type?:string;defaultValue?:string;placeholder?:string;required?:boolean}) {
@@ -182,6 +183,18 @@ export default function BuildingManager(){
     setExpandedBuildings(newExpanded);
   };
 
+  // פונקציה ליצירת קישור WhatsApp
+  const createWhatsAppLink = (phone: string, name: string) => {
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    const message = encodeURIComponent(`שלום ${name}, זה דוור מדואר ישראל`);
+    return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
+  };
+
+  // פונקציה ליצירת קישור התקשרות
+  const createCallLink = (phone: string) => {
+    return `tel:${phone}`;
+  };
+
   /*‑‑‑ בניין חדש ‑‑‑*/
   function submitBuilding(e:React.FormEvent<HTMLFormElement>){
     e.preventDefault();
@@ -220,6 +233,8 @@ export default function BuildingManager(){
         contacts: contacts.filter(c => c.name.trim() && c.phone.trim()),
         allowMailbox:f.allowMailbox.checked,
         allowDoor:f.allowDoor.checked,
+        contactPreference: f.contactPreference.value as 'call' | 'whatsapp' | 'both' | 'none',
+        notes: f.notes.value.trim() || null,
         isPrimary: existingResidentsInApartment.length === 0 || f.isPrimary?.checked || false,
         relationship: f.relationship.value.trim() || null,
       };
@@ -286,6 +301,31 @@ export default function BuildingManager(){
                      defaultValue={res?.familyPhones?.join(", ")} placeholder="052-1111111, 03-1234567"/>
               
               <Field label="קשר משפחתי" name="relationship" defaultValue={res?.relationship} placeholder="בעל הבית, בן, בת, וכו'"/>
+              
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">העדפת קשר</label>
+                <select 
+                  name="contactPreference" 
+                  defaultValue={res?.contactPreference || 'call'}
+                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <option value="call">מאשר - צריך להתקשר</option>
+                  <option value="whatsapp">מאשר - צריך WhatsApp</option>
+                  <option value="both">מאשר - טלפון או WhatsApp</option>
+                  <option value="none">לא מאשר</option>
+                </select>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">הערות נוספות</label>
+                <textarea
+                  name="notes"
+                  defaultValue={res?.notes}
+                  rows={3}
+                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="הערות על הדייר, זמני קבלה, הנחיות מיוחדות..."
+                />
+              </div>
             </div>
             
             <div className="mt-6">
@@ -706,6 +746,30 @@ export default function BuildingManager(){
                                                   </div>
                                                 )}
                                                 
+                                                {/* העדפת קשר */}
+                                                {r.contactPreference && r.contactPreference !== 'none' && (
+                                                  <div className="mb-2">
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                                      r.contactPreference === 'call' ? 'bg-blue-100 text-blue-700' :
+                                                      r.contactPreference === 'whatsapp' ? 'bg-green-100 text-green-700' :
+                                                      'bg-purple-100 text-purple-700'
+                                                    }`}>
+                                                      {r.contactPreference === 'call' ? '📞 צריך להתקשר' :
+                                                       r.contactPreference === 'whatsapp' ? '💬 צריך WhatsApp' :
+                                                       '📞💬 טלפון או WhatsApp'}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* הערות */}
+                                                {r.notes && (
+                                                  <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                                    <p className="text-xs text-yellow-800">
+                                                      <strong>הערות:</strong> {r.notes}
+                                                    </p>
+                                                  </div>
+                                                )}
+                                                
                                                 {/* הרשאות בולטות */}
                                                 <div className="flex gap-2 mt-2">
                                                   {r.allowMailbox ? (
@@ -734,7 +798,35 @@ export default function BuildingManager(){
                                                 </div>
                                               </div>
                                               
-                                              <div className="flex gap-1 flex-shrink-0 ml-3">
+                                              <div className="flex flex-col gap-2 flex-shrink-0 ml-3">
+                                                {/* כפתורי קשר מהיר */}
+                                                {r.phone && r.contactPreference && r.contactPreference !== 'none' && (
+                                                  <div className="flex gap-1">
+                                                    {(r.contactPreference === 'call' || r.contactPreference === 'both') && (
+                                                      <a
+                                                        href={createCallLink(r.phone)}
+                                                        className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm"
+                                                        title="התקשר"
+                                                      >
+                                                        <Phone size={14} />
+                                                      </a>
+                                                    )}
+                                                    {(r.contactPreference === 'whatsapp' || r.contactPreference === 'both') && (
+                                                      <a
+                                                        href={createWhatsAppLink(r.phone, r.fullName)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm"
+                                                        title="שלח WhatsApp"
+                                                      >
+                                                        <MessageCircle size={14} />
+                                                      </a>
+                                                    )}
+                                                  </div>
+                                                )}
+                                                
+                                                {/* כפתורי עריכה ומחיקה */}
+                                                <div className="flex gap-1">
                                                 <button 
                                                   className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" 
                                                   onClick={()=>setEditingRes({b,r})}
@@ -753,6 +845,7 @@ export default function BuildingManager(){
                                                 >
                                                   <Trash2 size={14} />
                                                 </button>
+                                                </div>
                                               </div>
                                             </div>
                                           </div>

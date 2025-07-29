@@ -3,13 +3,20 @@ import { useReports } from "../hooks/useReports";
 import LoadingSpinner from "./LoadingSpinner";
 import { 
   Phone, Search, Download, User, Home, 
-  Mail, DoorOpen, Crown, MapPin, X
+  Mail, DoorOpen, Crown, MapPin, X, MessageCircle
 } from "lucide-react";
 
 export default function PhoneDirectory() {
   const { reportData } = useReports();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<'all' | 'mailbox' | 'door' | 'primary'>('all');
+
+  // פונקציה ליצירת קישור WhatsApp
+  const createWhatsAppLink = (phone: string, name: string) => {
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    const message = encodeURIComponent(`שלום ${name}, זה דוור מדואר ישראל`);
+    return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
+  };
 
   if (!reportData) return <LoadingSpinner />;
 
@@ -201,6 +208,15 @@ export default function PhoneDirectory() {
                       >
                         <Phone size={14} />
                       </a>
+                      <a
+                        href={createWhatsAppLink(entry.phone, entry.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                        title="שלח WhatsApp"
+                      >
+                        <MessageCircle size={14} />
+                      </a>
                     </div>
                   )}
 
@@ -218,6 +234,15 @@ export default function PhoneDirectory() {
                         title="התקשר"
                       >
                         <Phone size={14} />
+                      </a>
+                      <a
+                        href={createWhatsAppLink(phone, entry.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                        title="שלח WhatsApp"
+                      >
+                        <MessageCircle size={14} />
                       </a>
                     </div>
                   ))}
@@ -239,6 +264,15 @@ export default function PhoneDirectory() {
                         title="התקשר"
                       >
                         <Phone size={14} />
+                      </a>
+                      <a
+                        href={createWhatsAppLink(contact.phone, contact.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                        title="שלח WhatsApp"
+                      >
+                        <MessageCircle size={14} />
                       </a>
                     </div>
                   ))}
