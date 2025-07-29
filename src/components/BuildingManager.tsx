@@ -682,35 +682,6 @@ export default function BuildingManager(){
                                       </a>
                                     )}
                                   </div>
-                                </div>
-                                <div className="flex gap-1">
-                                  <button 
-                                    className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 shadow-md" 
-                                    onClick={()=>setAddingRes(b)}
-                                    title="הוסף דייר"
-                                  >
-                                    <UserPlus size={14} />
-                                  </button>
-                                  <button 
-                                    className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg transition-all duration-200 shadow-md" 
-                                    onClick={()=>setEditingB(b)}
-                                    title="עריכת בניין"
-                                  >
-                                    <Edit size={14} />
-                                  </button>
-                                  <button
-                                    className="p-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 shadow-md"
-                                    onClick={() => {
-                                      if (window.confirm("בטוח למחוק כניסה זו?")) {
-                                        deleteBuilding(b.id);
-                                      }
-                                    }}
-                                    title="מחיקת כניסה"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
-                              </div>
 
                               {/* סטטיסטיקות */}
                               <div className="grid grid-cols-2 gap-3 mb-4">
