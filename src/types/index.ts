@@ -29,7 +29,7 @@ export interface Resident {
   contacts?: Contact[]; // רשימת אנשי קשר עם שמות
   allowMailbox?: boolean;
   allowDoor?: boolean;
-  contactPreference?: 'call' | 'whatsapp' | 'both' | 'none'; // העדפת קשר
+  contactPreference?: 'call' | 'whatsapp' | 'whatsapp_photo' | 'both' | 'none'; // העדפת קשר
   notes?: string; // הערות נוספות
   isPrimary?: boolean; // דייר ראשי בדירה
   relationship?: string; // קשר משפחתי (בן/בת, הורה, וכו')

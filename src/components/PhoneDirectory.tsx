@@ -18,6 +18,13 @@ export default function PhoneDirectory() {
     return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
   };
 
+  // פונקציה ליצירת קישור WhatsApp עם בקשה לצילום
+  const createWhatsAppPhotoLink = (phone: string, name: string) => {
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    const message = encodeURIComponent(`שלום ${name}, זה דוור מדואר ישראל. אנא צלם/י תמונה של הדואר שלך ושלח/י לי בווצאפ. תודה!`);
+    return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
+  };
+
   if (!reportData) return <LoadingSpinner />;
 
   const { phoneDirectory } = reportData;

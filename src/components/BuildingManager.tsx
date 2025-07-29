@@ -190,6 +190,13 @@ export default function BuildingManager(){
     return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
   };
 
+  // פונקציה ליצירת קישור WhatsApp עם בקשה לצילום
+  const createWhatsAppPhotoLink = (phone: string, name: string) => {
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    const message = encodeURIComponent(`שלום ${name}, זה דוור מדואר ישראל. אנא צלם/י תמונה של הדואר שלך ושלח/י לי בווצאפ. תודה!`);
+    return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
+  };
+
   // פונקציה ליצירת קישור התקשרות
   const createCallLink = (phone: string) => {
     return `tel:${phone}`;
@@ -311,6 +318,7 @@ export default function BuildingManager(){
                 >
                   <option value="call">מאשר - צריך להתקשר</option>
                   <option value="whatsapp">מאשר - צריך WhatsApp</option>
+                  <option value="whatsapp_photo">מאשר - צילום בווצאפ</option>
                   <option value="both">מאשר - טלפון או WhatsApp</option>
                   <option value="none">לא מאשר</option>
                 </select>
@@ -643,13 +651,15 @@ export default function BuildingManager(){
                           return (
                             <div key={b.id} className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
                               {/* כותרת הכניסה */}
+                                      r.contactPreference === 'whatsapp_photo' ? 'bg-orange-100 text-orange-700' :
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
                                     <span className="text-white font-bold text-sm">
+                                       r.contactPreference === 'whatsapp_photo' ? '📸 צילום בווצאפ' :
                                       {b.entrance || 'א'}
                                     </span>
-                                  </div>
+                                    {(r.contactPreference === 'whatsapp' || r.contactPreference === 'both') && (
                                   <div>
                                     <h4 className="font-bold text-base text-gray-800">
                                       כניסה {b.entrance || 'ראשית'}
@@ -659,6 +669,17 @@ export default function BuildingManager(){
                                         <Key size={12} className="text-yellow-500" />
                                         קוד: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">{b.code}</span>
                                       </p>
+                                    )}
+                                    {r.contactPreference === 'whatsapp_photo' && (
+                                      <a
+                                        href={createWhatsAppPhotoLink(r.phone, r.fullName)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors shadow-sm"
+                                        title="בקש צילום בווצאפ"
+                                      >
+                                        <MessageCircle size={14} />
+                                      </a>
                                     )}
                                   </div>
                                 </div>
