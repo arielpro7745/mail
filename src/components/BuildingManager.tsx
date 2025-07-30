@@ -645,19 +645,17 @@ export default function BuildingManager(){
                   {isExpanded && (
                     <div className="p-4">
                       <div className="space-y-4">
-                                {r.contactPreference && (
+                        {group.buildings.map(b => {
                           const apartmentGroups = groupResidentsByApartment(b.residents);
                           const apartmentCount = Object.keys(apartmentGroups).length;
                           
                           return (
                             <div key={b.id} className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
-                                      r.contactPreference === 'none' ? 'bg-red-100 text-red-700' :
                               {/* כותרת הכניסה */}
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
                                     <span className="text-white font-bold text-sm">
-                                       r.contactPreference === 'none' ? '❌ לא מאשר' :
                                       {b.entrance || 'א'}
                                     </span>
                                   </div>
