@@ -647,6 +647,7 @@ export default function BuildingManager(){
                       )}
                     </div>
                   </div>
+                  </div>
 
                   {isExpanded && (
                     <div className="p-4">
