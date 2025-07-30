@@ -345,17 +345,17 @@ export default function BuildingManager(){
               <h5 className="font-medium text-gray-700 mb-3">הרשאות</h5>
               <div className="space-y-3">
                 <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox || false} className="rounded border-gray-300 text-green-600 focus:ring-green-500 w-4 h-4"/>
+                  <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox === true} className="rounded border-gray-300 text-green-600 focus:ring-green-500 w-4 h-4"/>
                   <Mail size={16} className="text-green-500" />
                   <span className="text-sm font-medium text-gray-700">מאשר תיבה</span>
                 </label>
                 <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor || false} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"/>
+                  <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor === true} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"/>
                   <DoorOpen size={16} className="text-blue-500" />
                   <span className="text-sm font-medium text-gray-700">מאשר דלת</span>
                 </label>
                 <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input type="checkbox" name="isPrimary" defaultChecked={res?.isPrimary || false} className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 w-4 h-4"/>
+                  <input type="checkbox" name="isPrimary" defaultChecked={res?.isPrimary === true} className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 w-4 h-4"/>
                   <Crown size={16} className="text-yellow-500" />
                   <span className="text-sm font-medium text-gray-700">דייר ראשי</span>
                 </label>
