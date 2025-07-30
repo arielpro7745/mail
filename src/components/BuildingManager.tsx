@@ -609,27 +609,32 @@ export default function BuildingManager(){
                 <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
                   <span className="text-2xl font-bold">{areaGroup.area}</span>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold">אזור {areaGroup.area}</h2>
-                  <p className="text-indigo-100">{areaGroup.sortedBuildings.length} בניינים</p>
-                </div>
-              </div>
-            </div>
-
-            {/* בניינים באזור */}
-            {areaGroup.sortedBuildings.map(group => {
-              const groupKey = `${group.streetName}-${group.number}`;
-              const isExpanded = shouldAutoExpand || expandedBuildings.has(groupKey);
-              
-              return (
-                <div key={groupKey} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <MapPin size={20} className="text-blue-600" />
-                        <div>
-                          <h3 className="font-bold text-lg text-gray-800">{group.streetName} {group.number}</h3>
-                          <p className="text-sm text-gray-600">{group.buildings.length} כניסות</p>
+                        {/* הרשאות - רק מה שהוגדר במפורש */}
+                        <div className="flex gap-2 mb-3">
+                          {resident.allowMailbox === true && (
+                            <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-lg text-sm">
+                              <Mail size={14} />
+                              <span>מאשר תיבה</span>
+                            </div>
+                          )}
+                          {resident.allowMailbox === false && (
+                            <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-lg text-sm">
+                              <Mail size={14} />
+                              <span>לא מאשר תיבה</span>
+                            </div>
+                          )}
+                          {resident.allowDoor === true && (
+                            <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-1 rounded-lg text-sm">
+                              <DoorOpen size={14} />
+                              <span>מאשר דלת</span>
+                            </div>
+                          )}
+                          {resident.allowDoor === false && (
+                            <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-lg text-sm">
+                              <DoorOpen size={14} />
+                              <span>לא מאשר דלת</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       {!shouldAutoExpand && (
