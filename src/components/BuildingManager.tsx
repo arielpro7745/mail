@@ -785,67 +785,112 @@ export default function BuildingManager(){
                                                 
                                                 {/* הרשאות בולטות */}
                                                 <div className="flex gap-2 mt-2">
-                                                  {r.allowMailbox ? (
+                                                  {r.allowMailbox === true ? (
                                                     <div className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1.5 rounded-lg border border-green-300">
                                                       <Mail size={14} />
                                                       <span className="font-medium text-sm">מאשר תיבה</span>
                                                     </div>
-                                                  ) : (
+                                                  ) : r.allowMailbox === false ? (
                                                     <div className="flex items-center gap-1 bg-red-100 text-red-800 px-3 py-1.5 rounded-lg border border-red-300">
                                                       <X size={14} />
                                                       <span className="font-medium text-sm">לא מאשר תיבה</span>
                                                     </div>
+                                                  ) : (
+                                                    <div className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg border border-gray-300">
+                                                      <span className="font-medium text-sm">לא הוגדר</span>
+                                                    </div>
                                                   )}
                                                   
-                                                  {r.allowDoor ? (
+                                                  {r.allowDoor === true ? (
                                                     <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg border border-blue-300">
                                                       <DoorOpen size={14} />
                                                       <span className="font-medium text-sm">מאשר דלת</span>
                                                     </div>
-                                                  ) : (
+                                                  ) : r.allowDoor === false ? (
                                                     <div className="flex items-center gap-1 bg-gray-100 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-300">
                                                       <X size={14} />
                                                       <span className="font-medium text-sm">לא מאשר דלת</span>
+                                                    </div>
+                                                  ) : (
+                                                    <div className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg border border-gray-300">
+                                                      <span className="font-medium text-sm">לא הוגדר</span>
                                                     </div>
                                                   )}
                                                 </div>
                                               </div>
                                               
                                               <div className="flex flex-col gap-2 flex-shrink-0 ml-3">
-                                                {/* כפתורי קשר מהיר */}
-                                                {r.phone && r.contactPreference && r.contactPreference !== 'none' && (
-                                                  <div className="flex gap-1">
-                                                    {(r.contactPreference === 'call' || r.contactPreference === 'both') && (
-                                                      <a
-                                                        href={createCallLink(r.phone)}
-                                                        className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm"
-                                                        title="התקשר"
-                                                      >
-                                                        <Phone size={14} />
-                                                      </a>
-                                                    )}
-                                                    {(r.contactPreference === 'whatsapp' || r.contactPreference === 'both') && (
-                                                      <a
-                                                        href={createWhatsAppLink(r.phone, r.fullName)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm"
-                                                        title="שלח WhatsApp"
-                                                      >
-                                                        <MessageCircle size={14} />
-                                                      </a>
-                                                    )}
-                                                    {r.contactPreference === 'whatsapp_photo' && (
-                                                      <a
-                                                        href={createWhatsAppPhotoLink(r.phone, r.fullName)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors shadow-sm"
-                                                        title="בקש צילום בווצאפ"
-                                                      >
-                                                        <MessageCircle size={14} />
-                                                      </a>
-                                                    )}
+                                                {/* כפתורי קשר מהיר - תמיד זמינים אם יש טלפון */}
+                                                {r.phone && (
+                                                  <div className="flex flex-wrap gap-1">
+                                                    <a
+                                                      href={createCallLink(r.phone)}
+                                                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
+                                                      title="התקשר"
+                                                    >
+                                                      <Phone size={14} />
+                                                    </a>
+                                                    <a
+                                                      href={createWhatsAppLink(r.phone, r.fullName)}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm"
+                                                      title="שלח WhatsApp"
+                                                    >
+                                                      <MessageCircle size={14} />
+                                                    </a>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* כפתורי קשר לטלפונים נוספים */}
+                                                {r.familyPhones && r.familyPhones.length > 0 && (
+                                                  <div className="space-y-1">
+                                                    {r.familyPhones.map((phone, phoneIndex) => (
+                                                      <div key={phoneIndex} className="flex gap-1">
+                                                        <a
+                                                          href={createCallLink(phone)}
+                                                          className="p-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded text-xs transition-colors shadow-sm"
+                                                          title={`התקשר ל-${phone}`}
+                                                        >
+                                                          <Phone size={12} />
+                                                        </a>
+                                                        <a
+                                                          href={createWhatsAppLink(phone, r.fullName)}
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition-colors shadow-sm"
+                                                          title={`WhatsApp ל-${phone}`}
+                                                        >
+                                                          <MessageCircle size={12} />
+                                                        </a>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                )}
+
+                                                {/* כפתורי קשר לאנשי קשר */}
+                                                {r.contacts && r.contacts.length > 0 && (
+                                                  <div className="space-y-1">
+                                                    {r.contacts.map((contact, contactIndex) => (
+                                                      <div key={contactIndex} className="flex gap-1">
+                                                        <a
+                                                          href={createCallLink(contact.phone)}
+                                                          className="p-1.5 bg-purple-400 hover:bg-purple-500 text-white rounded text-xs transition-colors shadow-sm"
+                                                          title={`התקשר ל-${contact.name}`}
+                                                        >
+                                                          <Phone size={12} />
+                                                        </a>
+                                                        <a
+                                                          href={createWhatsAppLink(contact.phone, contact.name)}
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition-colors shadow-sm"
+                                                          title={`WhatsApp ל-${contact.name}`}
+                                                        >
+                                                          <MessageCircle size={12} />
+                                                        </a>
+                                                      </div>
+                                                    ))}
                                                   </div>
                                                 )}
                                                 
