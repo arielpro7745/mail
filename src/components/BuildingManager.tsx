@@ -238,11 +238,11 @@ export default function BuildingManager(){
         phone:f.phone.value.trim()||null,
         familyPhones:f.familyPhones.value.split(",").map((s:string)=>s.trim()).filter(Boolean),
         contacts: contacts.filter(c => c.name.trim() && c.phone.trim()),
-        allowMailbox:f.allowMailbox.checked || undefined,
-        allowDoor:f.allowDoor.checked || undefined,
-        contactPreference: f.contactPreference.value || undefined,
+        allowMailbox: f.allowMailbox.checked,
+        allowDoor: f.allowDoor.checked,
+        contactPreference: f.contactPreference.value || null,
         notes: f.notes.value.trim() || null,
-        isPrimary: existingResidentsInApartment.length === 0 || f.isPrimary?.checked || undefined,
+        isPrimary: existingResidentsInApartment.length === 0 || f.isPrimary?.checked || false,
         relationship: f.relationship.value.trim() || null,
       };
       
