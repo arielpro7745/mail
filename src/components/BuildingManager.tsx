@@ -238,11 +238,11 @@ export default function BuildingManager(){
         phone:f.phone.value.trim()||null,
         familyPhones:f.familyPhones.value.split(",").map((s:string)=>s.trim()).filter(Boolean),
         contacts: contacts.filter(c => c.name.trim() && c.phone.trim()),
-        allowMailbox:f.allowMailbox.checked,
-        allowDoor:f.allowDoor.checked,
-        contactPreference: f.contactPreference.value as 'call' | 'whatsapp' | 'both' | 'none',
+        allowMailbox:f.allowMailbox.checked || undefined,
+        allowDoor:f.allowDoor.checked || undefined,
+        contactPreference: f.contactPreference.value || undefined,
         notes: f.notes.value.trim() || null,
-        isPrimary: existingResidentsInApartment.length === 0 || f.isPrimary?.checked || false,
+        isPrimary: existingResidentsInApartment.length === 0 || f.isPrimary?.checked || undefined,
         relationship: f.relationship.value.trim() || null,
       };
       
@@ -313,9 +313,10 @@ export default function BuildingManager(){
                 <label className="text-sm font-medium text-gray-700">העדפת קשר</label>
                 <select 
                   name="contactPreference" 
-                  defaultValue={res?.contactPreference || 'call'}
+                  defaultValue={res?.contactPreference || ''}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
+                  <option value="">לא הוגדר</option>
                   <option value="call">מאשר - צריך להתקשר</option>
                   <option value="whatsapp">מאשר - צריך WhatsApp</option>
                   <option value="whatsapp_photo">מאשר - צילום בווצאפ</option>
@@ -344,17 +345,17 @@ export default function BuildingManager(){
               <h5 className="font-medium text-gray-700 mb-3">הרשאות</h5>
               <div className="space-y-3">
                 <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox} className="rounded border-gray-300 text-green-600 focus:ring-green-500 w-4 h-4"/>
+                  <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox || false} className="rounded border-gray-300 text-green-600 focus:ring-green-500 w-4 h-4"/>
                   <Mail size={16} className="text-green-500" />
                   <span className="text-sm font-medium text-gray-700">מאשר תיבה</span>
                 </label>
                 <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"/>
+                  <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor || false} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"/>
                   <DoorOpen size={16} className="text-blue-500" />
                   <span className="text-sm font-medium text-gray-700">מאשר דלת</span>
                 </label>
                 <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
-                  <input type="checkbox" name="isPrimary" defaultChecked={res?.isPrimary} className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 w-4 h-4"/>
+                  <input type="checkbox" name="isPrimary" defaultChecked={res?.isPrimary || false} className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 w-4 h-4"/>
                   <Crown size={16} className="text-yellow-500" />
                   <span className="text-sm font-medium text-gray-700">דייר ראשי</span>
                 </label>
@@ -644,17 +645,19 @@ export default function BuildingManager(){
                   {isExpanded && (
                     <div className="p-4">
                       <div className="space-y-4">
-                        {group.buildings.map(b => {
+                                {r.contactPreference && (
                           const apartmentGroups = groupResidentsByApartment(b.residents);
                           const apartmentCount = Object.keys(apartmentGroups).length;
                           
                           return (
                             <div key={b.id} className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
+                                      r.contactPreference === 'none' ? 'bg-red-100 text-red-700' :
                               {/* כותרת הכניסה */}
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
                                     <span className="text-white font-bold text-sm">
+                                       r.contactPreference === 'none' ? '❌ לא מאשר' :
                                       {b.entrance || 'א'}
                                     </span>
                                   </div>
