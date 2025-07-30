@@ -632,65 +632,57 @@ export default function BuildingManager(){
                         </div>
                       </div>
                       {!shouldAutoExpand && (
-                        <button
-                          onClick={() => toggleBuilding(groupKey)}
-                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-                        >
-                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {isExpanded && (
-                    <div className="p-4">
-                      <div className="space-y-4">
-                        {group.buildings.map(b => {
-                          const apartmentGroups = groupResidentsByApartment(b.residents);
-                          const apartmentCount = Object.keys(apartmentGroups).length;
+                      {/* הרשאות - רק אם הוגדרו */}
+                      {(r.allowMailbox === true || r.allowMailbox === false || r.allowDoor === true || r.allowDoor === false || r.isPrimary === true) && (
+                        <div className="flex gap-2 mt-2">
+                          {(r.allowMailbox === true || r.allowMailbox === false) && (
+                            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${
+                              r.allowMailbox === true 
+                                ? 'text-green-700 bg-green-100 border border-green-200' 
+                                : 'text-red-700 bg-red-100 border border-red-200'
+                            }`}>
+                              {r.allowMailbox === true ? (
+                                <>
+                                  <CheckCircle size={12} />
+                                  מאשר תיבה
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle size={12} />
+                                  לא מאשר תיבה
+                                </>
+                              )}
+                            </div>
+                          )}
                           
-                          return (
-                            <div key={b.id} className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
-                              {/* כותרת הכניסה */}
-                              <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <span className="text-white font-bold text-sm">
-                                      {b.entrance || 'א'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <h4 className="font-bold text-base text-gray-800">
-                                      כניסה {b.entrance || 'ראשית'}
-                                    </h4>
-                                    {b.code && (
-                                      <p className="text-xs text-gray-600 flex items-center gap-1">
-                                        <Key size={12} className="text-yellow-500" />
-                                        קוד: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">{b.code}</span>
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                {/* כפתורי פעולות */}
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => setAddingRes(b)}
-                                    className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm"
-                                    title="הוסף דייר"
-                                  >
-                                    <UserPlus size={14} />
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingB(b)}
-                                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
-                                    title="ערוך כניסה"
-                                  >
-                                    <Edit size={14} />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      if (window.confirm("בטוח למחוק כניסה זו וכל הדיירים שלה?")) {
+                          {(r.allowDoor === true || r.allowDoor === false) && (
+                            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${
+                              r.allowDoor === true 
+                                ? 'text-blue-700 bg-blue-100 border border-blue-200' 
+                                : 'text-red-700 bg-red-100 border border-red-200'
+                            }`}>
+                              {r.allowDoor === true ? (
+                                <>
+                                  <DoorOpen size={12} />
+                                  מאשר דלת
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle size={12} />
+                                  לא מאשר דלת
+                                </>
+                              )}
+                            </div>
+                          )}
+                          
+                          {r.isPrimary === true && (
+                            <div className="flex items-center gap-1 text-yellow-700 bg-yellow-100 px-2 py-1 rounded-lg text-xs font-medium border border-yellow-200">
+                              <Crown size={12} />
+                              דייר ראשי
+                            </div>
+                          )}
+                        </div>
+                      )}
                                         deleteBuilding(b.id);
                                       }
                                     }}
