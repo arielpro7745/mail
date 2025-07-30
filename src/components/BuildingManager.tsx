@@ -1,61 +1,180 @@
 import { useState } from "react";
-import { useBuildings } from "../hooks/useBuildings";
-import { Building, Resident, Contact } from "../types";
-import { streets } from "../data/streets";
 import { nanoid } from "nanoid";
+import { useBuildings } from "../hooks/useBuildings";
+import { streets } from "../data/streets";
+import { Building, Resident, Contact } from "../types";
 import LoadingSpinner from "./LoadingSpinner";
-import BuildingEntranceManager from "./BuildingEntranceManager";
-import { 
-  Plus, Edit, Trash2, Home, User, Phone, 
-  Search, MapPin, Building2, Users, 
-  Mail, DoorOpen, X, MessageCircle
-} from "lucide-react";
+import { Home, Users, Plus, Edit, Trash2, Building2, UserPlus, Phone, Crown, MapPin, User, X, DoorOpen, Mail, Key, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { MessageCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 
-export default function BuildingManager() {
-  const { buildings, addBuilding, updateBuilding, deleteBuilding, addResident, updateResident, deleteResident, loading } = useBuildings();
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
-  const [editingResident, setEditingResident] = useState<{building: Building, resident: Resident} | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
+/* רכיב אינפוט ממותג */
+function Field({label, ...rest}:{label:string;name:string;type?:string;defaultValue?:string;placeholder?:string;required?:boolean}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <input className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" {...rest}/>
+    </div>
+  );
+}
 
-  if (loading) return <LoadingSpinner />;
+/* רכיב ניהול אנשי קשר */
+function ContactsManager({ contacts, onChange }: { contacts: Contact[], onChange: (contacts: Contact[]) => void }) {
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
-  // פונקציה ליצירת קישור WhatsApp
-  const createWhatsAppLink = (phone: string, name: string) => {
-    const cleanPhone = phone.replace(/[^\d]/g, '');
-    const message = encodeURIComponent(`שלום ${name}, זה דוור מדואר ישראל`);
-    return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
+  const addContact = () => {
+    const newContact: Contact = {
+      id: nanoid(6),
+      name: "",
+      phone: "",
+      relationship: ""
+    };
+    setEditingContact(newContact);
   };
 
-  // סינון בניינים לפי חיפוש
-  const filteredBuildings = buildings.filter(building => {
-    const streetName = streets.find(s => s.id === building.streetId)?.name || building.streetId;
-    const searchLower = searchTerm.toLowerCase();
-    
-    return (
-      streetName.toLowerCase().includes(searchLower) ||
-      building.number.toString().includes(searchTerm) ||
-      building.residents.some(r => 
-        r.fullName.toLowerCase().includes(searchLower) ||
-        r.apartment.toLowerCase().includes(searchLower) ||
-        r.phone?.includes(searchTerm) ||
-        r.familyPhones?.some(p => p.includes(searchTerm))
-      )
-    );
-  });
-
-  // קיבוץ בניינים לפי רחוב
-  const groupedBuildings = filteredBuildings.reduce((groups, building) => {
-    const streetName = streets.find(s => s.id === building.streetId)?.name || building.streetId;
-    if (!groups[streetName]) {
-      groups[streetName] = [];
+  const saveContact = (contact: Contact) => {
+    if (contact.name.trim() && contact.phone.trim()) {
+      const existingIndex = contacts.findIndex(c => c.id === contact.id);
+      if (existingIndex >= 0) {
+        const updated = [...contacts];
+        updated[existingIndex] = contact;
+        onChange(updated);
+      } else {
+        onChange([...contacts, contact]);
+      }
     }
-    groups[streetName].push(building);
-    return groups;
-  }, {} as Record<string, Building[]>);
+    setEditingContact(null);
+  };
 
-  const toggleBuildingExpansion = (buildingId: string) => {
+  const deleteContact = (id: string) => {
+    onChange(contacts.filter(c => c.id !== id));
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700">אנשי קשר</label>
+        <button
+          type="button"
+          onClick={addContact}
+          className="text-xs px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1"
+        >
+          <Plus size={12} />
+          הוסף
+        </button>
+      </div>
+
+      {contacts.map(contact => (
+        <div key={contact.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+          <User size={16} className="text-gray-500 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm truncate">{contact.name}</div>
+            <div className="text-xs text-gray-600 flex items-center gap-2">
+              <Phone size={10} />
+              <span className="truncate">{contact.phone}</span>
+              {contact.relationship && (
+                <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs whitespace-nowrap">
+                  {contact.relationship}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setEditingContact(contact)}
+              className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+            >
+              <Edit size={12} />
+            </button>
+            <button
+              type="button"
+              onClick={() => deleteContact(contact.id)}
+              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {editingContact && (
+        <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-sm">
+          <h5 className="font-medium text-gray-800 mb-3">עריכת איש קשר</h5>
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="שם מלא"
+              value={editingContact.name}
+              onChange={(e) => setEditingContact({...editingContact, name: e.target.value})}
+              className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <input
+              type="tel"
+              placeholder="טלפון"
+              value={editingContact.phone}
+              onChange={(e) => setEditingContact({...editingContact, phone: e.target.value})}
+              className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <input
+              type="text"
+              placeholder="קשר משפחתי"
+              value={editingContact.relationship || ""}
+              onChange={(e) => setEditingContact({...editingContact, relationship: e.target.value})}
+              className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button
+              type="button"
+              onClick={() => saveContact(editingContact)}
+              className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
+            >
+              שמור
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingContact(null)}
+              className="flex-1 px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors"
+            >
+              בטל
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function BuildingManager(){
+  const {buildings,addBuilding,updateBuilding,deleteBuilding,
+         addResident,updateResident,deleteResident,loading}=useBuildings();
+
+  /*‑‑‑ מצבי טפסים ‑‑‑*/
+  const [editingB,setEditingB]=useState<Building|null>(null);
+  const [addingRes,setAddingRes]=useState<Building|null>(null);
+  const [editingRes,setEditingRes]=useState<{b:Building;r:Resident}|null>(null);
+  const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // פונקציה לקבלת שם הרחוב
+  const getStreetName = (streetId: string) => {
+    const street = streets.find(s => s.id === streetId);
+    return street ? street.name : streetId;
+  };
+
+  // פונקציה ליצירת כתובת מלאה
+  const getFullAddress = (building: Building) => {
+    const streetName = getStreetName(building.streetId);
+    return `${streetName} ${building.number}${building.entrance ? ` כניסה ${building.entrance}` : ''}`;
+  };
+
+  // פונקציה להרחבת/כיווץ בניין
+  const toggleBuilding = (buildingId: string) => {
     const newExpanded = new Set(expandedBuildings);
     if (newExpanded.has(buildingId)) {
       newExpanded.delete(buildingId);
@@ -65,445 +184,193 @@ export default function BuildingManager() {
     setExpandedBuildings(newExpanded);
   };
 
-  // טופס הוספת/עריכת בניין
-  const BuildingForm = ({ building, onClose }: { building?: Building; onClose: () => void }) => {
-    const isEdit = Boolean(building);
+  // פונקציה ליצירת קישור WhatsApp
+  const createWhatsAppLink = (phone: string, name: string) => {
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    const message = encodeURIComponent(`שלום ${name}, זה דוור מדואר ישראל`);
+    return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
+  };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // פונקציה ליצירת קישור WhatsApp עם בקשה לצילום
+  const createWhatsAppPhotoLink = (phone: string, name: string) => {
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    const message = encodeURIComponent(`שלום ${name}, זה דוור מדואר ישראל. אנא צלם/י תמונה של הדואר שלך ושלח/י לי בווצאפ. תודה!`);
+    return `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${message}`;
+  };
+
+  // פונקציה ליצירת קישור התקשרות
+  const createCallLink = (phone: string) => {
+    return `tel:${phone}`;
+  };
+
+  /*‑‑‑ בניין חדש ‑‑‑*/
+  function submitBuilding(e:React.FormEvent<HTMLFormElement>){
+    e.preventDefault();
+    const f=e.currentTarget as any;
+    const streetId=f.streetId.value;
+    const number=+f.number.value;
+    const entrance=f.entrance.value.trim();
+    const code=f.code.value.trim();
+
+    addBuilding({id:`${streetId}-${number}${entrance}`,streetId,number,
+      entrance:entrance||null,code:code||null,residents:[], entrances: []});
+    f.reset();
+  }
+
+  /*‑‑‑ טופס דייר (חדש/עריכה) ‑‑‑*/
+  function ResidentForm({b,res}:{b:Building;res?:Resident}){
+    const isEdit=Boolean(res);
+    const [contacts, setContacts] = useState<Contact[]>(res?.contacts || []);
+    
+    // קבלת דירות קיימות בבניין
+    const existingApartments = [...new Set(b.residents.map(r => r.apartment))].sort();
+    
+    function submit(e:React.FormEvent<HTMLFormElement>){
       e.preventDefault();
-      const formData = new FormData(e.currentTarget);
+      const f=e.currentTarget as any;
       
-      const buildingData = {
-        streetId: formData.get('streetId') as string,
-        number: Number(formData.get('number')),
-        entrance: (formData.get('entrance') as string) || null,
-        code: (formData.get('code') as string) || null,
-        residents: building?.residents || [],
+      const apartment = f.apartment.value.trim();
+      const existingResidentsInApartment = b.residents.filter(r => r.apartment === apartment && r.id !== res?.id);
+      
+      const r:Resident={
+        id:res?.id||nanoid(6),
+        fullName:f.fullName.value.trim(),
+        apartment,
+        phone:f.phone.value.trim()||null,
+        familyPhones:f.familyPhones.value.split(",").map((s:string)=>s.trim()).filter(Boolean),
+        contacts: contacts.filter(c => c.name.trim() && c.phone.trim()),
+        allowMailbox: f.allowMailbox.checked,
+        allowDoor: f.allowDoor.checked,
+        contactPreference: f.contactPreference.value || null,
+        notes: f.notes.value.trim() || null,
+        isPrimary: existingResidentsInApartment.length === 0 || f.isPrimary?.checked || false,
+        relationship: f.relationship.value.trim() || null,
       };
-
-      if (isEdit && building) {
-        updateBuilding(building.id, buildingData);
-      } else {
-        const newBuilding: Building = {
-          id: nanoid(8),
-          ...buildingData,
-        };
-        addBuilding(newBuilding);
+      
+      // אם זה דייר ראשי חדש, צריך לעדכן את הדיירים הקיימים בדירה
+      if (r.isPrimary && existingResidentsInApartment.length > 0) {
+        existingResidentsInApartment.forEach(existingResident => {
+          updateResident(b.id, existingResident.id, { isPrimary: false });
+        });
       }
       
-      onClose();
-    };
-
-    return (
+      if(isEdit) updateResident(b.id,res!.id,r); else addResident(b.id,r);
+      setAddingRes(null); setEditingRes(null); setContacts([]);
+    }
+    
+    return(
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
           <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800">
-                {isEdit ? 'עריכת בניין' : 'בניין חדש'}
-              </h3>
-              <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg">
-                <X size={20} />
-              </button>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">רחוב</label>
-              <select
-                name="streetId"
-                defaultValue={building?.streetId}
-                className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">בחר רחוב</option>
-                <optgroup label="אזור 45">
-                  {streets.filter(s => s.area === 45).map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="אזור 14">
-                  {streets.filter(s => s.area === 14).map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">מספר בניין</label>
-              <input
-                name="number"
-                type="number"
-                defaultValue={building?.number}
-                className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">כניסה</label>
-              <input
-                name="entrance"
-                defaultValue={building?.entrance}
-                className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="א', ב', וכו'"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">קוד כניסה</label>
-              <input
-                name="code"
-                defaultValue={building?.code}
-                className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="1234"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-lg"
-              >
-                {isEdit ? 'עדכן' : 'הוסף'} בניין
-              </button>
+              <div>
+                <h4 className="font-bold text-xl text-gray-800">
+                  {isEdit ? "עריכת דייר" : "דייר חדש"}
+                </h4>
+                <p className="text-sm text-gray-600 font-medium mt-1">
+                  {getFullAddress(b)}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={onClose}
-                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-xl transition-colors font-medium"
+                onClick={() => {setAddingRes(null); setEditingRes(null); setContacts([]);}}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
               >
-                בטל
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
-  // טופס הוספת/עריכת דייר
-  const ResidentForm = ({ building, resident, onClose }: { building: Building; resident?: Resident; onClose: () => void }) => {
-    const isEdit = Boolean(resident);
-    const [contacts, setContacts] = useState<Contact[]>(resident?.contacts || []);
-
-    const addContact = () => {
-      const newContact: Contact = {
-        id: nanoid(6),
-        name: "",
-        phone: "",
-        relationship: ""
-      };
-      setContacts([...contacts, newContact]);
-    };
-
-    const updateContact = (index: number, field: keyof Contact, value: string) => {
-      const updated = [...contacts];
-      updated[index] = { ...updated[index], [field]: value };
-      setContacts(updated);
-    };
-
-    const removeContact = (index: number) => {
-      setContacts(contacts.filter((_, i) => i !== index));
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-      
-      // איסוף טלפונים נוספים
-      const familyPhones: string[] = [];
-      const phoneInputs = e.currentTarget.querySelectorAll('input[name^="familyPhone"]');
-      phoneInputs.forEach((input: any) => {
-        if (input.value.trim()) {
-          familyPhones.push(input.value.trim());
-        }
-      });
-
-      const residentData = {
-        fullName: formData.get('fullName') as string,
-        apartment: formData.get('apartment') as string,
-        phone: (formData.get('phone') as string) || undefined,
-        familyPhones: familyPhones.length > 0 ? familyPhones : undefined,
-        contacts: contacts.filter(c => c.name.trim() && c.phone.trim()),
-        allowMailbox: formData.get('allowMailbox') === 'true' ? true : formData.get('allowMailbox') === 'false' ? false : undefined,
-        allowDoor: formData.get('allowDoor') === 'true' ? true : formData.get('allowDoor') === 'false' ? false : undefined,
-        contactPreference: (formData.get('contactPreference') as any) || undefined,
-        notes: (formData.get('notes') as string) || undefined,
-        isPrimary: formData.get('isPrimary') === 'on',
-        relationship: (formData.get('relationship') as string) || undefined,
-      };
-
-      if (isEdit && resident) {
-        updateResident(building.id, resident.id, residentData);
-      } else {
-        const newResident: Resident = {
-          id: nanoid(8),
-          ...residentData,
-        };
-        addResident(building.id, newResident);
-      }
-      
-      onClose();
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-2xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800">
-                {isEdit ? 'עריכת דייר' : 'דייר חדש'}
-              </h3>
-              <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg">
                 <X size={20} />
               </button>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">שם מלא</label>
-                <input
-                  name="fullName"
-                  defaultValue={resident?.fullName}
-                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">דירה</label>
-                <input
-                  name="apartment"
-                  defaultValue={resident?.apartment}
-                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">טלפון ראשי</label>
-                <input
-                  name="phone"
-                  type="tel"
-                  defaultValue={resident?.phone}
-                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">קשר משפחתי</label>
-                <input
-                  name="relationship"
-                  defaultValue={resident?.relationship}
-                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="בן/בת, הורה, וכו'"
-                />
-              </div>
-            </div>
-
-            {/* טלפונים נוספים */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">טלפונים נוספים</label>
-              <div className="space-y-2">
-                {(resident?.familyPhones || ['']).map((phone, index) => (
-                  <input
-                    key={index}
-                    name={`familyPhone${index}`}
-                    type="tel"
-                    defaultValue={phone}
-                    className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder={`טלפון נוסף ${index + 1}`}
+          <form onSubmit={submit} className="p-6">
+            <div className="space-y-4">
+              <Field label="שם מלא" name="fullName" defaultValue={res?.fullName} placeholder="ישראל ישראלי" required/>
+              
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">דירה</label>
+                <div className="flex gap-2">
+                  <input 
+                    name="apartment" 
+                    defaultValue={res?.apartment}
+                    className="flex-1 border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="מספר דירה"
+                    list="apartments"
+                    required
                   />
-                ))}
-                <input
-                  name={`familyPhone${(resident?.familyPhones || []).length}`}
-                  type="tel"
-                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="טלפון נוסף"
-                />
-              </div>
-            </div>
-
-            {/* אנשי קשר */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium text-gray-700">אנשי קשר</label>
-                <button
-                  type="button"
-                  onClick={addContact}
-                  className="flex items-center gap-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
-                >
-                  <Plus size={14} />
-                  הוסף איש קשר
-                </button>
+                  <datalist id="apartments">
+                    {existingApartments.map(apt => (
+                      <option key={apt} value={apt} />
+                    ))}
+                  </datalist>
+                </div>
               </div>
               
+              <Field label="טלפון ראשי" name="phone" type="tel" defaultValue={res?.phone} placeholder="050-1234567"/>
+              <Field label="טלפונים נוספים (פסיקים)" name="familyPhones"
+                     defaultValue={res?.familyPhones?.join(", ")} placeholder="052-1111111, 03-1234567"/>
+              
+              <Field label="קשר משפחתי" name="relationship" defaultValue={res?.relationship} placeholder="בעל הבית, בן, בת, וכו'"/>
+              
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">העדפת קשר</label>
+                <select 
+                  name="contactPreference" 
+                  defaultValue={res?.contactPreference || ''}
+                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <option value="">לא הוגדר</option>
+                  <option value="call">מאשר - צריך להתקשר</option>
+                  <option value="whatsapp">מאשר - צריך WhatsApp</option>
+                  <option value="whatsapp_photo">מאשר - צילום בווצאפ</option>
+                  <option value="both">מאשר - טלפון או WhatsApp</option>
+                  <option value="none">לא מאשר</option>
+                </select>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">הערות נוספות</label>
+                <textarea
+                  name="notes"
+                  defaultValue={res?.notes}
+                  rows={3}
+                  className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="הערות על הדייר, זמני קבלה, הנחיות מיוחדות..."
+                />
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <ContactsManager contacts={contacts} onChange={setContacts} />
+            </div>
+            
+            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+              <h5 className="font-medium text-gray-700 mb-3">הרשאות</h5>
               <div className="space-y-3">
-                {contacts.map((contact, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 p-3 bg-gray-50 rounded-lg border">
-                    <input
-                      type="text"
-                      placeholder="שם"
-                      value={contact.name}
-                      onChange={(e) => updateContact(index, 'name', e.target.value)}
-                      className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <input
-                      type="tel"
-                      placeholder="טלפון"
-                      value={contact.phone}
-                      onChange={(e) => updateContact(index, 'phone', e.target.value)}
-                      className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <input
-                      type="text"
-                      placeholder="קשר"
-                      value={contact.relationship || ''}
-                      onChange={(e) => updateContact(index, 'relationship', e.target.value)}
-                      className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeContact(index)}
-                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input type="checkbox" name="allowMailbox" defaultChecked={res?.allowMailbox === true} className="rounded border-gray-300 text-green-600 focus:ring-green-500 w-4 h-4"/>
+                  <Mail size={16} className="text-green-500" />
+                  <span className="text-sm font-medium text-gray-700">מאשר תיבה</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input type="checkbox" name="allowDoor" defaultChecked={res?.allowDoor === true} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"/>
+                  <DoorOpen size={16} className="text-blue-500" />
+                  <span className="text-sm font-medium text-gray-700">מאשר דלת</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input type="checkbox" name="isPrimary" defaultChecked={res?.isPrimary === true} className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500 w-4 h-4"/>
+                  <Crown size={16} className="text-yellow-500" />
+                  <span className="text-sm font-medium text-gray-700">דייר ראשי</span>
+                </label>
               </div>
             </div>
-
-            {/* הרשאות */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">הרשאת תיבה</label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="allowMailbox"
-                      value="true"
-                      defaultChecked={resident?.allowMailbox === true}
-                      className="text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm">מאשר תיבה</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="allowMailbox"
-                      value="false"
-                      defaultChecked={resident?.allowMailbox === false}
-                      className="text-red-600 focus:ring-red-500"
-                    />
-                    <span className="text-sm">לא מאשר תיבה</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="allowMailbox"
-                      value=""
-                      defaultChecked={resident?.allowMailbox === undefined}
-                      className="text-gray-600 focus:ring-gray-500"
-                    />
-                    <span className="text-sm">לא הוגדר</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">הרשאת דלת</label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="allowDoor"
-                      value="true"
-                      defaultChecked={resident?.allowDoor === true}
-                      className="text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm">מאשר דלת</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="allowDoor"
-                      value="false"
-                      defaultChecked={resident?.allowDoor === false}
-                      className="text-red-600 focus:ring-red-500"
-                    />
-                    <span className="text-sm">לא מאשר דלת</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="allowDoor"
-                      value=""
-                      defaultChecked={resident?.allowDoor === undefined}
-                      className="text-gray-600 focus:ring-gray-500"
-                    />
-                    <span className="text-sm">לא הוגדר</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* העדפת קשר */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">העדפת קשר</label>
-              <select
-                name="contactPreference"
-                defaultValue={resident?.contactPreference}
-                className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">בחר העדפה</option>
-                <option value="call">שיחה טלפונית</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="whatsapp_photo">WhatsApp עם צילום</option>
-                <option value="both">שניהם</option>
-                <option value="none">ללא קשר</option>
-              </select>
-            </div>
-
-            {/* דייר ראשי */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                name="isPrimary"
-                defaultChecked={resident?.isPrimary}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label className="text-sm font-medium text-gray-700">דייר ראשי</label>
-            </div>
-
-            {/* הערות */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">הערות</label>
-              <textarea
-                name="notes"
-                defaultValue={resident?.notes}
-                rows={3}
-                className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="הערות נוספות..."
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-lg"
-              >
-                {isEdit ? 'עדכן' : 'הוסף'} דייר
+            
+            <div className="flex gap-3 mt-6">
+              <button className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg" type="submit">
+                {isEdit?"עדכן דייר":"הוסף דייר"}
               </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-xl transition-colors font-medium"
+              <button 
+                type="button" 
+                onClick={() => {setAddingRes(null); setEditingRes(null); setContacts([]);}}
+                className="flex-1 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors font-medium"
               >
                 בטל
               </button>
@@ -512,400 +379,714 @@ export default function BuildingManager() {
         </div>
       </div>
     );
+  }
+
+  // קיבוץ דיירים לפי דירות
+  const groupResidentsByApartment = (residents: Resident[]) => {
+    const grouped = residents.reduce((acc, resident) => {
+      const key = resident.apartment;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(resident);
+      return acc;
+    }, {} as Record<string, Resident[]>);
+    
+    // מיון הדיירים בכל דירה - דייר ראשי קודם
+    Object.keys(grouped).forEach(apartment => {
+      grouped[apartment].sort((a, b) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return 0;
+      });
+    });
+    
+    return grouped;
   };
 
-  return (
+  // פונקציית חיפוש מדויקת יותר
+  const filterBuildings = (buildings: Building[], searchTerm: string) => {
+    if (!searchTerm.trim()) return buildings;
+    
+    const term = searchTerm.toLowerCase().trim();
+    
+    return buildings.filter(building => {
+      const streetName = getStreetName(building.streetId).toLowerCase();
+      const buildingNumber = building.number.toString();
+      const entrance = building.entrance?.toLowerCase() || "";
+      const code = building.code?.toLowerCase() || "";
+      
+      // חיפוש מדויק יותר בכתובת
+      const streetWords = streetName.split(' ');
+      const searchWords = term.split(' ');
+      
+      // בדיקה אם החיפוש מכיל מספר בית
+      const searchNumber = term.match(/\d+/)?.[0];
+      
+      // אם יש מספר בחיפוש, בדוק התאמה מדויקת למספר הבית
+      if (searchNumber) {
+        const exactNumberMatch = buildingNumber === searchNumber;
+        const streetMatch = searchWords.some(word => 
+          streetWords.some(streetWord => streetWord.includes(word))
+        );
+        
+        // רק אם יש התאמה מדויקת למספר הבית ולרחוב
+        if (exactNumberMatch && streetMatch) {
+          return true;
+        }
+        
+        // אם רק מספר הבית תואם בלי שם רחוב
+        if (searchWords.length === 1 && exactNumberMatch) {
+          return true;
+        }
+      } else {
+        // חיפוש רגיל ללא מספרים
+        if (streetName.includes(term) || 
+            entrance.includes(term) ||
+            code.includes(term)) {
+          return true;
+        }
+      }
+      
+      // חיפוש בדיירים
+      return building.residents.some(resident => {
+        const residentName = resident.fullName.toLowerCase();
+        const apartment = resident.apartment.toLowerCase();
+        const phone = resident.phone?.toLowerCase() || "";
+        const relationship = resident.relationship?.toLowerCase() || "";
+        
+        // חיפוש בפרטי הדייר
+        if (residentName.includes(term) ||
+            apartment.includes(term) ||
+            phone.includes(term) ||
+            relationship.includes(term)) {
+          return true;
+        }
+        
+        // חיפוש בטלפונים נוספים
+        if (resident.familyPhones?.some(phone => phone.toLowerCase().includes(term))) {
+          return true;
+        }
+        
+        // חיפוש באנשי קשר
+        if (resident.contacts?.some(contact => 
+          contact.name.toLowerCase().includes(term) ||
+          contact.phone.toLowerCase().includes(term) ||
+          contact.relationship?.toLowerCase().includes(term)
+        )) {
+          return true;
+        }
+        
+        return false;
+      });
+    });
+  };
+
+  // סינון הבניינים לפי החיפוש
+  const filteredBuildings = filterBuildings(buildings, searchTerm);
+
+  // קיבוץ בניינים לפי אזור, רחוב ומספר
+  const groupedBuildingsByArea = filteredBuildings.reduce((acc, building) => {
+    const streetName = getStreetName(building.streetId);
+    const street = streets.find(s => s.id === building.streetId);
+    const area = street?.area || 14;
+    const areaKey = `area-${area}`;
+    const buildingKey = `${streetName}-${building.number}`;
+    
+    if (!acc[areaKey]) {
+      acc[areaKey] = {
+        area,
+        buildings: {}
+      };
+    }
+    
+    if (!acc[areaKey].buildings[buildingKey]) {
+      acc[areaKey].buildings[buildingKey] = {
+        streetName,
+        number: building.number,
+        buildings: []
+      };
+    }
+    
+    acc[areaKey].buildings[buildingKey].buildings.push(building);
+    return acc;
+  }, {} as Record<string, { area: number; buildings: Record<string, { streetName: string; number: number; buildings: Building[] }> }>);
+
+  // מיון הבניינים לפי אזורים
+  const sortedAreaGroups = Object.values(groupedBuildingsByArea)
+    .sort((a, b) => a.area - b.area)
+    .map(areaGroup => ({
+      ...areaGroup,
+      sortedBuildings: Object.values(areaGroup.buildings).sort((a, b) => {
+        if (a.streetName !== b.streetName) {
+          return a.streetName.localeCompare(b.streetName);
+        }
+        return a.number - b.number;
+      })
+    }));
+
+  // פתיחה אוטומטית של תוצאות חיפוש
+  const shouldAutoExpand = searchTerm.trim().length > 0;
+
+  return(
     <section className="mt-4 pb-20">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-md">
-            <Building2 size={28} className="text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">ניהול בניינים ודיירים</h2>
-            <p className="text-gray-600 font-medium text-sm md:text-base">
-              {buildings.length} בניינים, {buildings.reduce((sum, b) => sum + b.residents.length, 0)} דיירים
-            </p>
-          </div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-md">
+          <Building2 size={28} className="text-white" />
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 shadow-lg"
-        >
-          <Plus size={18} />
-          <span className="hidden sm:inline">בניין חדש</span>
-        </button>
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800">בניינים ודיירים</h2>
+          <p className="text-gray-600 font-medium text-sm md:text-base">ניהול מידע על בניינים ודיירים</p>
+        </div>
       </div>
 
-      {/* חיפוש */}
+      {/* שורת חיפוש */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
         <div className="relative">
           <Search size={20} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="חפש בניין, דייר, טלפון..."
+            placeholder="חפש בניין, דייר, טלפון, דירה..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X size={16} />
             </button>
           )}
         </div>
+        {searchTerm && (
+          <div className="mt-2 text-sm text-gray-600">
+            נמצאו {filteredBuildings.length} תוצאות עבור "{searchTerm}"
+          </div>
+        )}
       </div>
 
-      {/* רשימת בניינים מקובצת לפי רחוב */}
-      <div className="space-y-6">
-        {Object.entries(groupedBuildings).map(([streetName, streetBuildings]) => {
-          const isExpanded = expandedBuildings.has(streetName);
-          
-          return (
-            <div key={streetName} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-              <div 
-                className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-gray-200 cursor-pointer hover:from-indigo-100 hover:to-blue-100 transition-all duration-200"
-                onClick={() => {
-                  const newExpanded = new Set(expandedBuildings);
-                  if (newExpanded.has(streetName)) {
-                    newExpanded.delete(streetName);
-                  } else {
-                    newExpanded.add(streetName);
-                  }
-                  setExpandedBuildings(newExpanded);
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <MapPin size={20} className="text-indigo-600" />
-                    <div>
-                      <h3 className="font-bold text-lg text-gray-800">{streetName}</h3>
-                      <p className="text-sm text-gray-600">
-                        {streetBuildings.length} בניינים, {streetBuildings.reduce((sum, b) => sum + b.residents.length, 0)} דיירים
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">
-                      {isExpanded ? 'סגור' : 'פתח'}
-                    </span>
-                    <div className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                      ▼
-                    </div>
-                  </div>
+      {/* טופס בניין חדש */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 md:p-6 mb-6 shadow-lg">
+        <h3 className="font-bold text-lg md:text-xl text-gray-800 mb-4 flex items-center gap-2">
+          <Plus size={20} className="text-blue-500" />
+          הוספת בניין חדש
+        </h3>
+        <form onSubmit={submitBuilding} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">רחוב / מקטע</label>
+              <select name="streetId" className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                <optgroup label="אזור 45">
+                  {streets.filter(s=>s.area===45).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                </optgroup>
+                <optgroup label="אזור 14">
+                  {streets.filter(s=>s.area===14).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                </optgroup>
+              </select>
+            </div>
+            <Field label="מס׳ בית" name="number" type="number" required/>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="כניסה"  name="entrance" placeholder="א, ב, ג..."/>
+            <Field label="קוד‑דלת" name="code" placeholder="1234"/>
+          </div>
+          <button className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg" type="submit">
+            <Plus size={18} />
+            הוסף בניין
+          </button>
+        </form>
+      </div>
+
+      {/* הצגת בניינים */}
+      <div className="space-y-4">
+        {sortedAreaGroups.map(areaGroup => (
+          <div key={`area-${areaGroup.area}`} className="space-y-4">
+            {/* כותרת אזור */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-xl shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                  <span className="text-2xl font-bold">{areaGroup.area}</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">אזור {areaGroup.area}</h3>
+                  <p className="text-indigo-100 text-sm">
+                    {areaGroup.sortedBuildings.length} בניינים
+                  </p>
                 </div>
               </div>
+            </div>
 
-              {isExpanded && (
-                <div className="p-4">
-                  <div className="space-y-4">
-                    {streetBuildings.map(building => {
-                      const isBuildingExpanded = expandedBuildings.has(building.id);
+            {/* בניינים באזור */}
+            {areaGroup.sortedBuildings.map(group => {
+              const groupKey = `${group.streetName}-${group.number}`;
+              const isExpanded = shouldAutoExpand || expandedBuildings.has(groupKey);
+              const totalResidents = group.buildings.reduce((sum, b) => sum + b.residents.length, 0);
+              
+              return (
+                <div key={groupKey} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                  <div className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <MapPin size={20} className="text-blue-600" />
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-800">
+                            {group.streetName} {group.number}
+                          </h4>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                            <span className="flex items-center gap-1">
+                              <Building2 size={14} />
+                              {group.buildings.length} כניסות
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users size={14} />
+                              {totalResidents} דיירים
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                       
-                      return (
-                        <div key={building.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200">
-                          <div 
-                            className="p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
-                            onClick={() => toggleBuildingExpansion(building.id)}
+                      <div className="flex items-center gap-2">
+                        {/* הרשאות - רק מה שהוגדר במפורש */}
+                        <div className="flex gap-2 mb-3">
+                          {group.buildings.some(b => b.residents.some(resident => resident.allowMailbox === true)) && (
+                            <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-lg text-sm">
+                              <Mail size={14} />
+                              <span>מאשר תיבה</span>
+                            </div>
+                          )}
+                          {group.buildings.some(b => b.residents.some(resident => resident.allowMailbox === false)) && (
+                            <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-lg text-sm">
+                              <Mail size={14} />
+                              <span>לא מאשר תיבה</span>
+                            </div>
+                          )}
+                          {group.buildings.some(b => b.residents.some(resident => resident.allowDoor === true)) && (
+                            <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-1 rounded-lg text-sm">
+                              <DoorOpen size={14} />
+                              <span>מאשר דלת</span>
+                            </div>
+                          )}
+                          {group.buildings.some(b => b.residents.some(resident => resident.allowDoor === false)) && (
+                            <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-lg text-sm">
+                              <DoorOpen size={14} />
+                              <span>לא מאשר דלת</span>
+                            </div>
+                          )}
+                        </div>
+                        {!shouldAutoExpand && (
+                          <button
+                            onClick={() => toggleBuilding(groupKey)}
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center shadow-sm">
-                                  <Home size={20} className="text-blue-600" />
-                                </div>
-                                <div>
-                                  <h4 className="font-bold text-gray-800">
-                                    {streetName} {building.number}
-                                    {building.entrance && <span className="text-blue-600"> כניסה {building.entrance}</span>}
-                                  </h4>
-                                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                      <Users size={14} />
-                                      <span>{building.residents.length} דיירים</span>
-                                    </div>
-                                    {building.code && (
-                                      <div className="flex items-center gap-1">
-                                        <span>🔑</span>
-                                        <span>קוד: {building.code}</span>
+                            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="p-4">
+                      <div className="space-y-4">
+                        {group.buildings.map(b => {
+                          const apartmentGroups = groupResidentsByApartment(b.residents);
+                          const apartmentCount = Object.keys(apartmentGroups).length;
+                          
+                          return (
+                            <div key={b.id} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <Building2 size={18} className="text-blue-600" />
+                                  <div>
+                                    <h4 className="font-bold text-gray-800">
+                                      {getFullAddress(b)}
+                                    </h4>
+                                    {b.code && (
+                                      <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                                        <Key size={12} />
+                                        <span>קוד: {b.code}</span>
                                       </div>
                                     )}
                                   </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingBuilding(building);
-                                  }}
-                                  className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                                  title="עריכת בניין"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (window.confirm('בטוח למחוק בניין זה?')) {
-                                      deleteBuilding(building.id);
-                                    }
-                                  }}
-                                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                  title="מחיקת בניין"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                                <div className={`transform transition-transform duration-200 ${isBuildingExpanded ? 'rotate-180' : ''}`}>
-                                  ▼
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {isBuildingExpanded && (
-                            <>
-                              <div className="p-4 border-t border-gray-200">
-                                <div className="flex items-center justify-between mb-4">
-                                  <h5 className="font-semibold text-gray-800 flex items-center gap-2">
-                                    <User size={18} className="text-green-600" />
-                                    דיירים ({building.residents.length})
-                                  </h5>
+                                <div className="flex gap-2">
                                   <button
-                                    onClick={() => setEditingResident({building, resident: undefined})}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg text-sm transition-all duration-200 shadow-md"
+                                    onClick={() => setAddingRes(b)}
+                                    className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm"
+                                    title="הוסף דייר"
                                   >
-                                    <Plus size={14} />
-                                    הוסף דייר
+                                    <UserPlus size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingB(b)}
+                                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
+                                    title="ערוך כניסה"
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm("בטוח למחוק כניסה זו? כל הדיירים יימחקו!")) {
+                                        deleteBuilding(b.id);
+                                      }
+                                    }}
+                                    className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-sm"
+                                    title="מחק כניסה"
+                                  >
+                                    <Trash2 size={14} />
                                   </button>
                                 </div>
-
-                                {building.residents.length > 0 ? (
-                                  <div className="space-y-3">
-                                    {building.residents.map(resident => (
-                                      <div key={resident.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-200">
-                                        <div className="flex items-start justify-between">
-                                          <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                              <div className="w-10 h-10 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full flex items-center justify-center shadow-sm">
-                                                <User size={16} className="text-green-600" />
-                                              </div>
-                                              <div>
-                                                <h6 className="font-bold text-gray-800 flex items-center gap-2">
-                                                  {resident.fullName}
-                                                  {resident.isPrimary && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">ראשי</span>}
-                                                </h6>
-                                                <p className="text-sm text-gray-600">דירה {resident.apartment}</p>
-                                                {resident.relationship && (
-                                                  <p className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full inline-block mt-1">
-                                                    {resident.relationship}
-                                                  </p>
-                                                )}
-                                              </div>
-                                            </div>
-
-                                            {/* הרשאות */}
-                                            <div className="flex gap-2 mb-3">
-                                              {resident.allowMailbox === true && (
-                                                <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs">
-                                                  <Mail size={12} />
-                                                  <span>מאשר תיבה</span>
-                                                </div>
-                                              )}
-                                              {resident.allowMailbox === false && (
-                                                <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-lg text-xs">
-                                                  <Mail size={12} />
-                                                  <span>לא מאשר תיבה</span>
-                                                </div>
-                                              )}
-                                              {resident.allowDoor === true && (
-                                                <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-1 rounded-lg text-xs">
-                                                  <DoorOpen size={12} />
-                                                  <span>מאשר דלת</span>
-                                                </div>
-                                              )}
-                                              {resident.allowDoor === false && (
-                                                <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-lg text-xs">
-                                                  <DoorOpen size={12} />
-                                                  <span>לא מאשר דלת</span>
-                                                </div>
-                                              )}
-                                            </div>
-
-                                            {/* טלפונים */}
-                                            <div className="space-y-2">
-                                              {resident.phone && (
-                                                <div className="flex items-center gap-3 p-2 bg-green-50 rounded-lg border border-green-200">
-                                                  <Phone size={14} className="text-green-600" />
-                                                  <span className="font-medium text-gray-800">{resident.phone}</span>
-                                                  <span className="text-xs text-gray-500">ראשי</span>
-                                                  <div className="mr-auto flex gap-1">
-                                                    <a
-                                                      href={`tel:${resident.phone}`}
-                                                      className="p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-                                                      title="התקשר"
-                                                    >
-                                                      <Phone size={12} />
-                                                    </a>
-                                                    <a
-                                                      href={createWhatsAppLink(resident.phone, resident.fullName)}
-                                                      target="_blank"
-                                                      rel="noopener noreferrer"
-                                                      className="p-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                                                      title="שלח WhatsApp"
-                                                    >
-                                                      <MessageCircle size={12} />
-                                                    </a>
-                                                  </div>
-                                                </div>
-                                              )}
-
-                                              {resident.familyPhones?.map((phone, phoneIndex) => (
-                                                <div key={phoneIndex} className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                                                  <Phone size={14} className="text-blue-600" />
-                                                  <span className="font-medium text-gray-800">{phone}</span>
-                                                  <span className="text-xs text-gray-500">נוסף</span>
-                                                  <div className="mr-auto flex gap-1">
-                                                    <a
-                                                      href={`tel:${phone}`}
-                                                      className="p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-                                                      title="התקשר"
-                                                    >
-                                                      <Phone size={12} />
-                                                    </a>
-                                                    <a
-                                                      href={createWhatsAppLink(phone, resident.fullName)}
-                                                      target="_blank"
-                                                      rel="noopener noreferrer"
-                                                      className="p-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                                                      title="שלח WhatsApp"
-                                                    >
-                                                      <MessageCircle size={12} />
-                                                    </a>
-                                                  </div>
-                                                </div>
-                                              ))}
-
-                                              {resident.contacts?.map((contact, contactIndex) => (
-                                                <div key={contactIndex} className="flex items-center gap-3 p-2 bg-purple-50 rounded-lg border border-purple-200">
-                                                  <User size={14} className="text-purple-600" />
-                                                  <div className="flex-1">
-                                                    <span className="font-medium text-gray-800">{contact.name}</span>
-                                                    <span className="text-sm text-gray-600 mr-2">{contact.phone}</span>
-                                                    {contact.relationship && (
-                                                      <span className="text-xs text-purple-600">({contact.relationship})</span>
-                                                    )}
-                                                  </div>
-                                                  <div className="flex gap-1">
-                                                    <a
-                                                      href={`tel:${contact.phone}`}
-                                                      className="p-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
-                                                      title="התקשר"
-                                                    >
-                                                      <Phone size={12} />
-                                                    </a>
-                                                    <a
-                                                      href={createWhatsAppLink(contact.phone, contact.name)}
-                                                      target="_blank"
-                                                      rel="noopener noreferrer"
-                                                      className="p-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                                                      title="שלח WhatsApp"
-                                                    >
-                                                      <MessageCircle size={12} />
-                                                    </a>
-                                                  </div>
-                                                </div>
-                                              ))}
-                                            </div>
-
-                                            {resident.notes && (
-                                              <div className="mt-3 p-3 bg-gray-100 rounded-lg border-r-4 border-blue-400">
-                                                <p className="text-sm text-gray-700">{resident.notes}</p>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          <div className="flex gap-2 mr-4">
-                                            <button
-                                              onClick={() => setEditingResident({building, resident})}
-                                              className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                                              title="עריכת דייר"
-                                            >
-                                              <Edit size={16} />
-                                            </button>
-                                            <button
-                                              onClick={() => {
-                                                if (window.confirm('בטוח למחוק דייר זה?')) {
-                                                  deleteResident(building.id, resident.id);
-                                                }
-                                              }}
-                                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                              title="מחיקת דייר"
-                                            >
-                                              <Trash2 size={16} />
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-8 text-gray-500">
-                                    <User size={48} className="mx-auto mb-4 opacity-50" />
-                                    <h6 className="text-lg font-medium mb-2">אין דיירים</h6>
-                                    <p className="text-sm">התחל בהוספת דייר ראשון</p>
-                                  </div>
-                                )}
                               </div>
 
-                              {/* ניהול כניסות ותיבות */}
-                              <BuildingEntranceManager 
-                                building={building} 
-                                onUpdateBuilding={updateBuilding} 
-                              />
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                              {/* סטטיסטיקות */}
+                              <div className="grid grid-cols-2 gap-3 mb-4">
+                                <div className="text-center p-2 bg-white rounded-lg border">
+                                  <div className="text-base font-bold text-blue-600">{b.residents.length}</div>
+                                  <div className="text-xs text-gray-600">דיירים</div>
+                                </div>
+                                <div className="text-center p-2 bg-white rounded-lg border">
+                                  <div className="text-base font-bold text-green-600">{apartmentCount}</div>
+                                  <div className="text-xs text-gray-600">דירות</div>
+                                </div>
+                              </div>
+
+                              {/* דירות ודיירים */}
+                              {apartmentCount > 0 && (
+                                <div className="space-y-3">
+                                  {Object.entries(apartmentGroups)
+                                    .sort(([a], [b]) => a.localeCompare(b))
+                                    .map(([apartment, residents]) => (
+                                    <div key={apartment} className="bg-white p-4 rounded-lg border shadow-sm">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="font-bold text-gray-800 flex items-center gap-2">
+                                          <Home size={16} className="text-gray-500" />
+                                          דירה {apartment}
+                                        </div>
+                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                          {residents.length} דיירים
+                                        </span>
+                                      </div>
+                                      <div className="space-y-3">
+                                        {residents.map(r => (
+                                          <div key={r.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                            <div className="flex items-start justify-between">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                  {r.isPrimary && <Crown size={14} className="text-yellow-500 flex-shrink-0" />}
+                                                  <div className={`font-medium text-base ${r.isPrimary ? "text-gray-900" : "text-gray-700"}`}>
+                                                    {r.fullName}
+                                                  </div>
+                                                </div>
+                                                
+                                                {r.phone && (
+                                                  <div className="text-sm text-gray-600 flex items-center gap-2 mb-2">
+                                                    <Phone size={12} />
+                                                    <span>{r.phone}</span>
+                                                  </div>
+                                                )}
+                                                
+                                                {r.relationship && (
+                                                  <div className="mb-2">
+                                                    <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded-full">
+                                                      {r.relationship}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* העדפת קשר */}
+                                                {r.contactPreference && r.contactPreference !== 'none' && (
+                                                  <div className="mb-2">
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                                      r.contactPreference === 'call' ? 'bg-blue-100 text-blue-700' :
+                                                      r.contactPreference === 'whatsapp' ? 'bg-green-100 text-green-700' :
+                                                      r.contactPreference === 'whatsapp_photo' ? 'bg-orange-100 text-orange-700' :
+                                                      'bg-purple-100 text-purple-700'
+                                                    }`}>
+                                                      {r.contactPreference === 'call' ? '📞 צריך להתקשר' :
+                                                       r.contactPreference === 'whatsapp' ? '💬 צריך WhatsApp' :
+                                                       r.contactPreference === 'whatsapp_photo' ? '📸 צילום בווצאפ' :
+                                                       '📞💬 טלפון או WhatsApp'}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* הערות */}
+                                                {r.notes && (
+                                                  <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                                    <p className="text-xs text-yellow-800">
+                                                      <strong>הערות:</strong> {r.notes}
+                                                    </p>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* הרשאות - רק אם הוגדרו */}
+                                                {(r.allowMailbox === true || r.allowMailbox === false || r.allowDoor === true || r.allowDoor === false || r.isPrimary === true) && (
+                                                  <div className="flex gap-2 mt-2">
+                                                    {(r.allowMailbox === true || r.allowMailbox === false) && (
+                                                      <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${
+                                                        r.allowMailbox === true 
+                                                          ? 'text-green-700 bg-green-100 border border-green-200' 
+                                                          : 'text-red-700 bg-red-100 border border-red-200'
+                                                      }`}>
+                                                        {r.allowMailbox === true ? (
+                                                          <>
+                                                            <CheckCircle size={12} />
+                                                            מאשר תיבה
+                                                          </>
+                                                        ) : (
+                                                          <>
+                                                            <XCircle size={12} />
+                                                            לא מאשר תיבה
+                                                          </>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                    
+                                                    {(r.allowDoor === true || r.allowDoor === false) && (
+                                                      <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${
+                                                        r.allowDoor === true 
+                                                          ? 'text-blue-700 bg-blue-100 border border-blue-200' 
+                                                          : 'text-red-700 bg-red-100 border border-red-200'
+                                                      }`}>
+                                                        {r.allowDoor === true ? (
+                                                          <>
+                                                            <DoorOpen size={12} />
+                                                            מאשר דלת
+                                                          </>
+                                                        ) : (
+                                                          <>
+                                                            <XCircle size={12} />
+                                                            לא מאשר דלת
+                                                          </>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                    
+                                                    {r.isPrimary === true && (
+                                                      <div className="flex items-center gap-1 text-yellow-700 bg-yellow-100 px-2 py-1 rounded-lg text-xs font-medium border border-yellow-200">
+                                                        <Crown size={12} />
+                                                        דייר ראשי
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                )}
+
+                                                {/* הרשאות בולטות */}
+                                                <div className="flex gap-2 mt-2">
+                                                  {r.allowMailbox === true ? (
+                                                    <div className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1.5 rounded-lg border border-green-300">
+                                                      <Mail size={14} />
+                                                      <span className="font-medium text-sm">מאשר תיבה</span>
+                                                    </div>
+                                                  ) : r.allowMailbox === false ? (
+                                                    <div className="flex items-center gap-1 bg-red-100 text-red-800 px-3 py-1.5 rounded-lg border border-red-300">
+                                                      <X size={14} />
+                                                      <span className="font-medium text-sm">לא מאשר תיבה</span>
+                                                    </div>
+                                                  ) : (
+                                                    <div className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg border border-gray-300">
+                                                      <span className="font-medium text-sm">לא הוגדר</span>
+                                                    </div>
+                                                  )}
+                                                  
+                                                  {r.allowDoor === true ? (
+                                                    <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg border border-blue-300">
+                                                      <DoorOpen size={14} />
+                                                      <span className="font-medium text-sm">מאשר דלת</span>
+                                                    </div>
+                                                  ) : r.allowDoor === false ? (
+                                                    <div className="flex items-center gap-1 bg-gray-100 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-300">
+                                                      <X size={14} />
+                                                      <span className="font-medium text-sm">לא מאשר דלת</span>
+                                                    </div>
+                                                  ) : (
+                                                    <div className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg border border-gray-300">
+                                                      <span className="font-medium text-sm">לא הוגדר</span>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              
+                                              <div className="flex flex-col gap-2 flex-shrink-0 ml-3">
+                                                {/* כפתורי קשר מהיר - תמיד זמינים אם יש טלפון */}
+                                                {r.phone && (
+                                                  <div className="flex flex-wrap gap-1">
+                                                    <a
+                                                      href={createCallLink(r.phone)}
+                                                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
+                                                      title="התקשר"
+                                                    >
+                                                      <Phone size={14} />
+                                                    </a>
+                                                    <a
+                                                      href={createWhatsAppLink(r.phone, r.fullName)}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm"
+                                                      title="שלח WhatsApp"
+                                                    >
+                                                      <MessageCircle size={14} />
+                                                    </a>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* כפתורי קשר לטלפונים נוספים */}
+                                                {r.familyPhones && r.familyPhones.length > 0 && (
+                                                  <div className="space-y-1">
+                                                    {r.familyPhones.map((phone, phoneIndex) => (
+                                                      <div key={phoneIndex} className="flex gap-1">
+                                                        <a
+                                                          href={createCallLink(phone)}
+                                                          className="p-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded text-xs transition-colors shadow-sm"
+                                                          title={`התקשר ל-${phone}`}
+                                                        >
+                                                          <Phone size={12} />
+                                                        </a>
+                                                        <a
+                                                          href={createWhatsAppLink(phone, r.fullName)}
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition-colors shadow-sm"
+                                                          title={`WhatsApp ל-${phone}`}
+                                                        >
+                                                          <MessageCircle size={12} />
+                                                        </a>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                )}
+
+                                                {/* כפתורי קשר לאנשי קשר */}
+                                                {r.contacts && r.contacts.length > 0 && (
+                                                  <div className="space-y-1">
+                                                    {r.contacts.map((contact, contactIndex) => (
+                                                      <div key={contactIndex} className="flex gap-1">
+                                                        <a
+                                                          href={createCallLink(contact.phone)}
+                                                          className="p-1.5 bg-purple-400 hover:bg-purple-500 text-white rounded text-xs transition-colors shadow-sm"
+                                                          title={`התקשר ל-${contact.name}`}
+                                                        >
+                                                          <Phone size={12} />
+                                                        </a>
+                                                        <a
+                                                          href={createWhatsAppLink(contact.phone, contact.name)}
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition-colors shadow-sm"
+                                                          title={`WhatsApp ל-${contact.name}`}
+                                                        >
+                                                          <MessageCircle size={12} />
+                                                        </a>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                                
+                                                {/* כפתורי עריכה ומחיקה */}
+                                                <div className="flex gap-1">
+                                                <button 
+                                                  className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" 
+                                                  onClick={()=>setEditingRes({b,r})}
+                                                  title="עריכת דייר"
+                                                >
+                                                  <Edit size={14} />
+                                                </button>
+                                                <button
+                                                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                                  onClick={() => {
+                                                    if (window.confirm("בטוח למחוק דייר זה?")) {
+                                                      deleteResident(b.id, r.id);
+                                                    }
+                                                  }}
+                                                  title="מחיקת דייר"
+                                                >
+                                                  <Trash2 size={14} />
+                                                </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {apartmentCount === 0 && (
+                                <div className="text-center py-4 text-gray-500">
+                                  <Users size={24} className="mx-auto mb-2 opacity-50" />
+                                  <p className="text-sm">אין דיירים רשומים</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
 
-      {/* הודעה כשאין בניינים */}
-      {filteredBuildings.length === 0 && (
+      {/* הודעה כשאין תוצאות חיפוש */}
+      {searchTerm && sortedAreaGroups.length === 0 && (
         <div className="text-center py-12 text-gray-500">
-          <Building2 size={48} className="mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-medium mb-2">
-            {searchTerm ? 'לא נמצאו תוצאות' : 'אין בניינים'}
-          </h3>
-          <p className="text-sm">
-            {searchTerm ? 'נסה לחפש במילים אחרות' : 'התחל בהוספת בניין ראשון'}
-          </p>
+          <Search size={48} className="mx-auto mb-4 opacity-50" />
+          <h3 className="text-lg font-medium mb-2">לא נמצאו תוצאות</h3>
+          <p className="text-sm">נסה לחפש במילים אחרות או בדוק את האיות</p>
         </div>
       )}
 
-      {/* טפסים */}
-      {showAddForm && (
-        <BuildingForm onClose={() => setShowAddForm(false)} />
+      {/* הודעה כשאין בניינים כלל */}
+      {!searchTerm && buildings.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          <Building2 size={48} className="mx-auto mb-4 opacity-50" />
+          <h3 className="text-lg font-medium mb-2">אין בניינים רשומים</h3>
+          <p className="text-sm">התחל בהוספת בניין חדש</p>
+        </div>
       )}
 
-      {editingBuilding && (
-        <BuildingForm building={editingBuilding} onClose={() => setEditingBuilding(null)} />
+      {/* עריכת בניין */}
+      {editingB && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
+              <h4 className="text-xl font-bold text-gray-800">עריכת כניסה</h4>
+              <p className="text-sm text-gray-600 mt-1">{getFullAddress(editingB)}</p>
+            </div>
+            <form onSubmit={e=>{e.preventDefault();
+                const f=e.currentTarget as any;
+                updateBuilding(editingB.id,{entrance:f.entrance.value.trim()||null,code:f.code.value.trim()||null});
+                setEditingB(null);
+              }}
+              className="p-6">
+              <div className="space-y-4">
+                <Field label="כניסה" name="entrance" defaultValue={editingB.entrance} placeholder="א, ב, ג..."/>
+                <Field label="קוד‑דלת" name="code" defaultValue={editingB.code} placeholder="1234"/>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-lg" type="submit">שמור</button>
+                <button className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-xl transition-colors font-medium" type="button" onClick={()=>setEditingB(null)}>בטל</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
-      {editingResident && (
-        <ResidentForm 
-          building={editingResident.building} 
-          resident={editingResident.resident} 
-          onClose={() => setEditingResident(null)} 
-        />
+      {/* דייר חדש */}
+      {addingRes && (
+        <ResidentForm b={addingRes}/>
+      )}
+
+      {/* עריכת דייר */}
+      {editingRes && (
+        <ResidentForm b={editingRes.b} res={editingRes.r}/>
       )}
     </section>
   );
