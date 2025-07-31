@@ -681,16 +681,16 @@ export default function BuildingManager(){
                         {!shouldAutoExpand && (
                           <button
                             onClick={() => toggleBuilding(groupKey)}
-                        {streetArea && (
+                          className="flex items-center gap-2 text-right hover:bg-gray-50 transition-colors p-2 rounded-lg w-full"
+                        >
+                          <span className="font-semibold text-gray-800">{groupKey}</span>
+                          {streetArea && (
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             streetArea === 14 ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
                           }`}>
                             אזור {streetArea}
                           </span>
-                        )}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-                          >
-                            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          )}
                           </button>
                         )}
                         {streetArea && (
