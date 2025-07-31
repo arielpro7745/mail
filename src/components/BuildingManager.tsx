@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { nanoid } from "nanoid";
 import { useBuildings } from "../hooks/useBuildings";
+import { useDistribution } from "../hooks/useDistribution";
 import { streets } from "../data/streets";
 import { Building, Resident, Contact } from "../types";
 import LoadingSpinner from "./LoadingSpinner";
@@ -149,6 +150,7 @@ function ContactsManager({ contacts, onChange }: { contacts: Contact[], onChange
 export default function BuildingManager(){
   const {buildings,addBuilding,updateBuilding,deleteBuilding,
          addResident,updateResident,deleteResident,loading}=useBuildings();
+  const { allStreets } = useDistribution();
 
   /*‑‑‑ מצבי טפסים ‑‑‑*/
   const [editingB,setEditingB]=useState<Building|null>(null);
@@ -618,7 +620,6 @@ export default function BuildingManager(){
                   </p>
                 </div>
               </div>
-          const streetArea = street ? street.area : null;
             </div>
 
             {/* בניינים באזור */}
@@ -626,6 +627,9 @@ export default function BuildingManager(){
               const groupKey = `${group.streetName}-${group.number}`;
               const isExpanded = shouldAutoExpand || expandedBuildings.has(groupKey);
               const totalResidents = group.buildings.reduce((sum, b) => sum + b.residents.length, 0);
+              const firstBuilding = group.buildings[0];
+              const street = allStreets.find(s => s.id === firstBuilding.streetId);
+              const streetArea = street ? street.area : null;
               
               return (
                 <div key={groupKey} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
@@ -681,16 +685,16 @@ export default function BuildingManager(){
                         {!shouldAutoExpand && (
                           <button
                             onClick={() => toggleBuilding(groupKey)}
-                          className="flex items-center gap-2 text-right hover:bg-gray-50 transition-colors p-2 rounded-lg w-full"
-                        >
-                          <span className="font-semibold text-gray-800">{groupKey}</span>
-                          {streetArea && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            streetArea === 14 ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
-                          }`}>
-                            אזור {streetArea}
-                          </span>
-                          )}
+                            className="flex items-center gap-2 text-right hover:bg-gray-50 transition-colors p-2 rounded-lg w-full"
+                          >
+                            <span className="font-semibold text-gray-800">{groupKey}</span>
+                            {streetArea && (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                streetArea === 14 ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
+                              }`}>
+                                אזור {streetArea}
+                              </span>
+                            )}
                           </button>
                         )}
                         {streetArea && (
