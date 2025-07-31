@@ -618,6 +618,7 @@ export default function BuildingManager(){
                   </p>
                 </div>
               </div>
+          const streetArea = street ? street.area : null;
             </div>
 
             {/* בניינים באזור */}
@@ -680,10 +681,24 @@ export default function BuildingManager(){
                         {!shouldAutoExpand && (
                           <button
                             onClick={() => toggleBuilding(groupKey)}
+                        {streetArea && (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            streetArea === 14 ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
+                          }`}>
+                            אזור {streetArea}
+                          </span>
+                        )}
                             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
                           >
                             {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                           </button>
+                        )}
+                        {streetArea && (
+                          <>
+                            <span className="text-gray-400">•</span>
+                            <MapPin size={14} />
+                            אזור {streetArea}
+                          </>
                         )}
                       </div>
                     </div>
