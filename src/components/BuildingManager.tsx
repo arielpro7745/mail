@@ -156,6 +156,8 @@ export default function BuildingManager(){
   const [editingRes,setEditingRes]=useState<{b:Building;r:Resident}|null>(null);
   const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
+  const [areaFilter, setAreaFilter] = useState<'all' | '14' | '45'>('all');
+  const [buildingFilter, setBuildingFilter] = useState<'all' | 'with-residents' | 'empty'>('all');
 
   if (loading) {
     return <LoadingSpinner />;
