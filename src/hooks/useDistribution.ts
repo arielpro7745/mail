@@ -31,15 +31,23 @@ export function useDistribution() {
         console.log("Initialized streets data in Firestore");
       } else {
         console.log(`Found ${snapshot.size} existing streets in Firestore`);
-        // Log existing data for debugging
+        
+        // Check if we need to add missing streets from area 12
+        const existingStreetIds = new Set();
         snapshot.forEach(doc => {
-          const data = doc.data();
-          console.log(`Street ${doc.id}:`, {
-            name: data.name,
-            lastDelivered: data.lastDelivered,
-            area: data.area
-          });
+          existingStreetIds.add(doc.id);
         });
+        
+        // Find missing streets and add them
+        const missingStreets = initialStreets.filter(street => !existingStreetIds.has(street.id));
+        if (missingStreets.length > 0) {
+          console.log(`Adding ${missingStreets.length} missing streets:`, missingStreets.map(s => s.name));
+          const batch = missingStreets.map(street => 
+            setDoc(doc(db, COLLECTION_NAME, street.id), street)
+          );
+          await Promise.all(batch);
+          console.log("Added missing streets to Firestore");
+        }
       }
     } catch (error) {
       console.error("Error initializing data:", error);
