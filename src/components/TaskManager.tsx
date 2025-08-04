@@ -235,6 +235,7 @@ export default function TaskManager() {
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">כל האזורים</option>
+                  <option value="12">אזור 12</option>
                   <option value="14">אזור 14</option>
                   <option value="45">אזור 45</option>
                 </select>
@@ -248,6 +249,11 @@ export default function TaskManager() {
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">בחר רחוב</option>
+                  <optgroup label="אזור 12">
+                    {streets.filter(s => s.area === 12).map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </optgroup>
                   <optgroup label="אזור 45">
                     {streets.filter(s => s.area === 45).map(s => (
                       <option key={s.id} value={s.id}>{s.name}</option>

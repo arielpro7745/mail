@@ -28,4 +28,20 @@ export const streets: Street[] = [
   { id:"kkl-even",     name:"קק\"ל 28‑34 (זוגי)", area:14, isBig:false, lastDelivered:"" },
   { id:"kkl-odd",      name:"קק\"ל 21‑25 (אי‑זוגי)", area:14, isBig:false, lastDelivered:"" },
   { id:"rot-141‑109",  name:"רוטשילד 141‑109", area:14, isBig:false, lastDelivered:"" }
+
+  // ––– 12 –––
+  { id:"david-zvi-pinkas-1-21", name:"דוד צבי פנקס 1‑21 (אי‑זוגי)", area:12, isBig:false, lastDelivered:"" },
+  { id:"ninety-three-42-2", name:"התשעים ושלוש 42‑2 (זוגי)", area:12, isBig:false, lastDelivered:"" },
+  { id:"ninety-three-1-11", name:"התשעים ושלוש 1‑11 (אי‑זוגי)", area:12, isBig:false, lastDelivered:"" },
+  { id:"hakerem", name:"הכרם", area:12, isBig:false, lastDelivered:"" },
+  { id:"ninety-three-13-21", name:"התשעים ושלוש 13‑21 (אי‑זוגי)", area:12, isBig:false, lastDelivered:"" },
+  { id:"david-zvi-pinkas-24-2", name:"דוד צבי פנקס 24‑2 (זוגי)", area:12, isBig:false, lastDelivered:"" },
+  { id:"harav-kook", name:"הרב קוק", area:12, isBig:false, lastDelivered:"" },
+  { id:"zichron-moshe", name:"זכרון משה", area:12, isBig:false, lastDelivered:"" },
+  { id:"anna-frank", name:"אנה פרנק", area:12, isBig:false, lastDelivered:"" },
+  { id:"chaim-cohen", name:"חיים כהן", area:12, isBig:false, lastDelivered:"" },
+  { id:"chafetz-mordechai", name:"חפץ מרדכי", area:12, isBig:false, lastDelivered:"" },
+  { id:"mendelson", name:"מנדלסון", area:12, isBig:false, lastDelivered:"" },
+  { id:"haachim-raab", name:"האחים ראב", area:12, isBig:false, lastDelivered:"" },
+  { id:"sweden", name:"שבדיה", area:12, isBig:false, lastDelivered:"" }
 ];

@@ -1,8 +1,8 @@
 import { Street } from "../types";
-import { walkOrder45, walkOrder14 } from "../data/walkOrder";
+import { walkOrder45, walkOrder14, walkOrder12 } from "../data/walkOrder";
 
-export function optimizeRoute(streets: Street[], area: 14 | 45): Street[] {
-  const walkOrder = area === 45 ? walkOrder45 : walkOrder14;
+export function optimizeRoute(streets: Street[], area: 12 | 14 | 45): Street[] {
+  const walkOrder = area === 45 ? walkOrder45 : area === 14 ? walkOrder14 : walkOrder12;
   
   if (!walkOrder.length) {
     // Fallback: sort by urgency and size

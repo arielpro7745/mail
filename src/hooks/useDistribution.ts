@@ -14,7 +14,7 @@ const AREA_DOC = "currentArea";
 
 export function useDistribution() {
   const [data, setData] = useState<Street[]>([]);
-  const [todayArea, setTodayArea] = useState<Area>(14);
+  const [todayArea, setTodayArea] = useState<Area>(12);
   const [loading, setLoading] = useState(true);
   const { settings } = useSettings();
 
@@ -59,13 +59,13 @@ export function useDistribution() {
         setTodayArea(areaData.data().area as Area);
       } else {
         // Initialize area setting
-        await setDoc(doc(db, "settings", AREA_DOC), { area: 14 });
+        await setDoc(doc(db, "settings", AREA_DOC), { area: 12 });
       }
     } catch (error) {
       console.error("Error loading current area:", error);
       if (error.code === 'permission-denied') {
         console.warn("Firebase permission denied. Using default area. Please check your Firestore Security Rules.");
-        setTodayArea(14);
+        setTodayArea(12);
       }
     }
   };
@@ -404,7 +404,7 @@ export function useDistribution() {
   };
 
   const endDay = async () => {
-    const newArea: Area = todayArea === 14 ? 45 : 14;
+    const newArea: Area = todayArea === 12 ? 14 : todayArea === 14 ? 45 : 12;
     
     setTodayArea(newArea);
     await saveCurrentArea(newArea);

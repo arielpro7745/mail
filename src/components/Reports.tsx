@@ -15,6 +15,7 @@ export default function Reports() {
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'recent' | 'old'>('all');
   const [areaFilter, setAreaFilter] = useState<'all' | '14' | '45'>('all');
+  const [areaFilter, setAreaFilter] = useState<'all' | '12' | '14' | '45'>('all');
 
   if (loading) return <LoadingSpinner />;
 
@@ -118,13 +119,15 @@ export default function Reports() {
 
   // סטטיסטיקות לפי אזור
   const getAreaStats = () => {
+    const area12Streets = allStreets.filter(s => s.area === 12 && s.lastDelivered);
     const area14Streets = allStreets.filter(s => s.area === 14 && s.lastDelivered);
     const area45Streets = allStreets.filter(s => s.area === 45 && s.lastDelivered);
     
     return {
+      area12: area12Streets.length,
       area14: area14Streets.length,
       area45: area45Streets.length,
-      total: area14Streets.length + area45Streets.length
+      total: area12Streets.length + area14Streets.length + area45Streets.length
     };
   };
 
@@ -229,6 +232,16 @@ export default function Reports() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-lg p-3 border">
               <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">אזור 12</span>
+                <span className={`font-bold text-lg text-purple-600`}>{areaStats.area12}</span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {areaStats.total > 0 ? Math.round((areaStats.area12 / areaStats.total) * 100) : 0}% מסך הכל
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg p-3 border">
+              <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">אזור 14</span>
                 <span className="font-bold text-lg text-blue-600">{areaStats.area14}</span>
               </div>
@@ -294,6 +307,7 @@ export default function Reports() {
               <div className="flex gap-2">
                 {[
                   { key: 'all', label: 'כל האזורים', count: areaStats.total },
+                  { key: '12', label: 'אזור 12', count: areaStats.area12 },
                   { key: '14', label: 'אזור 14', count: areaStats.area14 },
                   { key: '45', label: 'אזור 45', count: areaStats.area45 }
                 ].map(({ key, label, count }) => (
@@ -546,7 +560,8 @@ export default function Reports() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className={`px-2 py-1 rounded text-xs ${
-                        street.isBig ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                        street.area === 12 ? 'bg-purple-100 text-purple-800' :
+                        street.area === 14 ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
                       }`}>
                         {street.isBig ? 'רחוב גדול' : 'רחוב קטן'}
                       </span>

@@ -1,4 +1,4 @@
-export type Area = 14 | 45;
+export type Area = 12 | 14 | 45;
 
 /* ---------- חלוקה רגילה ---------- */
 export interface Street {
