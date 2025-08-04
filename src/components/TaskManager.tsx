@@ -260,11 +260,6 @@ export default function TaskManager() {
                     ))}
                   </optgroup>
                   <optgroup label="אזור 45">
-                    {streets.filter(s => s.area === 12).map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="אזור 45">
                     {streets.filter(s => s.area === 45).map(s => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}

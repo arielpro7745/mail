@@ -808,11 +808,14 @@ export default function BuildingManager(){
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700">רחוב / מקטע</label>
               <select name="streetId" className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                <optgroup label="אזור 45">
-                  {streets.filter(s=>s.area===45).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                <optgroup label="אזור 12">
+                  {streets.filter(s=>s.area===12).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
                 </optgroup>
                 <optgroup label="אזור 14">
                   {streets.filter(s=>s.area===14).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                </optgroup>
+                <optgroup label="אזור 45">
+                  {streets.filter(s=>s.area===45).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
                 </optgroup>
               </select>
             </div>
