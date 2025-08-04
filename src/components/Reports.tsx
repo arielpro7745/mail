@@ -14,7 +14,6 @@ export default function Reports() {
   const { loading, allStreets } = useDistribution();
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'recent' | 'old'>('all');
-  const [areaFilter, setAreaFilter] = useState<'all' | '14' | '45'>('all');
   const [areaFilter, setAreaFilter] = useState<'all' | '12' | '14' | '45'>('all');
 
   if (loading) return <LoadingSpinner />;

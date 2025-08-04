@@ -27,7 +27,7 @@ export const streets: Street[] = [
   { id:"rot-179‑143",  name:"רוטשילד 179‑143", area:14, isBig:false, lastDelivered:"" },
   { id:"kkl-even",     name:"קק\"ל 28‑34 (זוגי)", area:14, isBig:false, lastDelivered:"" },
   { id:"kkl-odd",      name:"קק\"ל 21‑25 (אי‑זוגי)", area:14, isBig:false, lastDelivered:"" },
-  { id:"rot-141‑109",  name:"רוטשילד 141‑109", area:14, isBig:false, lastDelivered:"" }
+  { id:"rot-141‑109",  name:"רוטשילד 141‑109", area:14, isBig:false, lastDelivered:"" },
 
   // ––– 12 –––
   { id:"david-zvi-pinkas-1-21", name:"דוד צבי פנקס 1‑21 (אי‑זוגי)", area:12, isBig:false, lastDelivered:"" },
