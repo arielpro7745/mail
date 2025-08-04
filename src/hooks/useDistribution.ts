@@ -103,7 +103,7 @@ export function useDistribution() {
           cycleStartDate: streetData.cycleStartDate || undefined
         } as Street);
       });
-      console.log(`Loaded ${streets.length} streets from Firebase:`, streets.map(s => ({ id: s.id, lastDelivered: s.lastDelivered })));
+      console.log(`Loaded ${streets.length} streets from Firebase:`, streets.map(s => ({ id: s.id, name: s.name, area: s.area, lastDelivered: s.lastDelivered })));
       setData(streets);
     }, (error) => {
       console.error("Error in streets snapshot listener:", error);

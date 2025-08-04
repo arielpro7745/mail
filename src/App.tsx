@@ -186,8 +186,9 @@ export default function App() {
                   </span>
                 )}
               </h2>
-              <div className="text-xs text-gray-600 bg-green-50 px-3 py-2 rounded mb-3">
+              <div className="text-xs text-gray-600 bg-green-50 px-3 py-2 rounded mb-3 flex items-center justify-between">
                 📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
+                <span className="text-blue-600 font-medium">אזור נוכחי: {todayArea}</span>
               </div>
               <div className="overflow-x-auto">
                 <StreetTable 
