@@ -1,7 +1,7 @@
 import { Street } from "../types";
 
 export const streets: Street[] = [
-  // ––– 45 –––
+  // ––– 45 –––
   { id:"yatk-32‑42", name:"אח׳ יטקובסקי 32‑42 (זוגי)", area:45, isBig:false, lastDelivered:"" },
   { id:"yatk-37‑25", name:"אח׳ יטקובסקי 37‑25 (אי‑זוגי)", area:45, isBig:false, lastDelivered:"" },
   { id:"dagel-even", name:"דגל ראובן 18‑54 (זוגי)", area:45, isBig:false, lastDelivered:"" },
@@ -18,7 +18,7 @@ export const streets: Street[] = [
   { id:"senerov",    name:"סנרוב", area:45, isBig:false, lastDelivered:"" },
   { id:"stern",      name:"שטרן", area:45, isBig:false, lastDelivered:"" },
 
-  // ––– 14 –––
+  // ––– 14 –––
   { id:"d-hayomi",     name:"הדף היומי", area:14, isBig:false, lastDelivered:"" },
   { id:"rot-110‑132",  name:"רוטשילד 110‑132", area:14, isBig:false, lastDelivered:"" },
   { id:"rot-134‑150",  name:"רוטשילד 134‑150", area:14, isBig:false, lastDelivered:"" },
@@ -31,11 +31,11 @@ export const streets: Street[] = [
 
   // ––– 12 –––
   { id:"david-zvi-pinkas-1-21", name:"דוד צבי פנקס 1‑21 (אי‑זוגי)", area:12, isBig:false, lastDelivered:"" },
+  { id:"david-zvi-pinkas-24-2", name:"דוד צבי פנקס 24‑2 (זוגי)", area:12, isBig:false, lastDelivered:"" },
   { id:"ninety-three-42-2", name:"התשעים ושלוש 42‑2 (זוגי)", area:12, isBig:false, lastDelivered:"" },
   { id:"ninety-three-1-11", name:"התשעים ושלוש 1‑11 (אי‑זוגי)", area:12, isBig:false, lastDelivered:"" },
-  { id:"hakerem", name:"הכרם", area:12, isBig:false, lastDelivered:"" },
   { id:"ninety-three-13-21", name:"התשעים ושלוש 13‑21 (אי‑זוגי)", area:12, isBig:false, lastDelivered:"" },
-  { id:"david-zvi-pinkas-24-2", name:"דוד צבי פנקס 24‑2 (זוגי)", area:12, isBig:false, lastDelivered:"" },
+  { id:"hakerem", name:"הכרם", area:12, isBig:false, lastDelivered:"" },
   { id:"harav-kook", name:"הרב קוק", area:12, isBig:false, lastDelivered:"" },
   { id:"zichron-moshe", name:"זכרון משה", area:12, isBig:false, lastDelivered:"" },
   { id:"anna-frank", name:"אנה פרנק", area:12, isBig:false, lastDelivered:"" },
