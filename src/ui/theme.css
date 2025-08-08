@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* משתנים עדינים שאפשר לשנות מאוחר יותר */
+:root {
+  --u-radius: 1rem;
+}
+
+/* רכיבי UI כלליים (עם prefix u- כדי לא להתנגש אצלך) */
+@layer components {
+  .u-card { @apply bg-white rounded-2xl border shadow-sm; }
+  .u-card-pad { @apply p-4 md:p-6; }
+
+  .u-btn { @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 active:scale-95 transition; }
+  .u-btn-ghost { @apply inline-flex items-center gap-2 px-2 py-2 rounded-lg; }
+  .u-btn-primary { @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg text-white bg-sky-600 hover:bg-sky-700; }
+
+  .u-input { @apply border rounded-lg px-3 py-2 bg-white text-sm; }
+  .u-badge { @apply px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700; }
+
+  .u-progress { @apply h-2 w-full bg-slate-100 rounded-full overflow-hidden; }
+  .u-progress > span { @apply block h-full bg-gradient-to-l from-sky-400 to-sky-500; }
+
+  .u-table { @apply w-full text-sm; }
+  .u-th { @apply text-right p-2 bg-slate-50 text-slate-600; }
+  .u-td { @apply p-2 border-t; }
+
+  .u-container { @apply container max-w-6xl mx-auto; }
+}
+
+/* מעטפת */
+.u-shell { @apply min-h-screen grid; grid-template-columns: 260px 1fr; }
+.u-sidebar { @apply bg-white border-e p-3 sticky top-0 h-screen; }
+.u-topbar { @apply bg-white/90 backdrop-blur border-b sticky top-0; }
