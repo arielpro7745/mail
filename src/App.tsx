@@ -19,23 +19,28 @@ import DataExport from "./components/DataExport";
 import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
-import { HashRouter, Routes, Route } from 'react-router-dom'
-import StreetsPage from '@/pages/street'
-import BuildingPage from '@/pages/building'
 
+import { HashRouter, Routes, Route } from "react-router-dom";
+import StreetsPage from "@/pages/street";
+import BuildingPage from "@/pages/building";
+
+/* ====== Router wrapper ====== */
 export default function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/" element={<StreetsPage />} />
+        {/* דף הבית ממשיך להיות האפליקציה הישנה כמו שהיא */}
+        <Route path="/" element={<LegacyHome />} />
+        {/* עמודים חדשים */}
         <Route path="/streets" element={<StreetsPage />} />
         <Route path="/building/:id" element={<BuildingPage />} />
       </Routes>
     </HashRouter>
-  )
+  );
 }
 
-export default function App() {
+/* ====== התוכן המקורי – רק בשם אחר, לא export default ====== */
+function LegacyHome() {
   const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
@@ -69,33 +74,30 @@ export default function App() {
   // Check for Firebase permission errors
   useEffect(() => {
     const checkFirebaseErrors = () => {
-      // Listen for console errors related to Firebase permissions
       const originalError = console.error;
       console.error = (...args) => {
-        const message = args.join(' ');
-        if (message.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
+        const message = args.join(" ");
+        if (message.includes("permission-denied") || message.includes("Missing or insufficient permissions")) {
           setShowFirebaseGuide(true);
         }
         originalError.apply(console, args);
       };
-
       return () => {
         console.error = originalError;
       };
     };
-
     const cleanup = checkFirebaseErrors();
     return cleanup;
   }, []);
 
-  const overdue = pendingToday.filter((s) => {
-    if (!s.lastDelivered) return true;
-    return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
-  }).length;
+  const overdue = pendingToday
+    .filter((s) => {
+      if (!s.lastDelivered) return true;
+      return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
+    })
+    .length;
 
-  const handleStartTimer = (street: Street) => {
-    setCurrentStreet(street);
-  };
+  const handleStartTimer = (street: Street) => setCurrentStreet(street);
 
   const handleCompleteDelivery = (timeInMinutes: number) => {
     if (currentStreet) {
@@ -104,13 +106,9 @@ export default function App() {
     }
   };
 
-  const handleOptimizeRoute = (streets: Street[]) => {
-    setOptimizedStreets(streets);
-  };
+  const handleOptimizeRoute = (streets: Street[]) => setOptimizedStreets(streets);
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  if (loading) return <LoadingSpinner />;
 
   const displayStreets = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
 
@@ -129,11 +127,9 @@ export default function App() {
             <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-gray-800">מעקב חלוקה יומי</h3>
-                <span className="text-sm text-gray-600">
-                  אזור {todayArea}
-                </span>
+                <span className="text-sm text-gray-600">אזור {todayArea}</span>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-center justify-between">
@@ -141,14 +137,12 @@ export default function App() {
                     <span className="text-xl font-bold text-blue-600">{allCompletedToday.length}</span>
                   </div>
                 </div>
-                
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-orange-700 font-medium">ממתינים</span>
                     <span className="text-xl font-bold text-orange-600">{streetsNeedingDelivery}</span>
                   </div>
                 </div>
-                
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-red-700 font-medium">דחופים (14+ ימים)</span>
@@ -156,7 +150,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
                 💡 רחובות מסודרים לפי דחיפות: לא חולק מעולם → קריטי (14+ ימים) → דחוף (10-13 ימים) → אזהרה (7-9 ימים) → רגיל
               </div>
@@ -164,19 +158,12 @@ export default function App() {
 
             {currentStreet && (
               <div className="mb-6">
-                <DeliveryTimer
-                  streetName={currentStreet.name}
-                  onComplete={handleCompleteDelivery}
-                />
+                <DeliveryTimer streetName={currentStreet.name} onComplete={handleCompleteDelivery} />
               </div>
             )}
 
             {!isAllCompleted && (
-              <RouteOptimizer
-                streets={pendingToday}
-                area={todayArea}
-                onOptimize={handleOptimizeRoute}
-              />
+              <RouteOptimizer streets={pendingToday} area={todayArea} onOptimize={handleOptimizeRoute} />
             )}
 
             <section className="mb-8">
@@ -206,8 +193,8 @@ export default function App() {
                 <span className="text-blue-600 font-medium">אזור נוכחי: {todayArea}</span>
               </div>
               <div className="overflow-x-auto">
-                <StreetTable 
-                  list={recommended} 
+                <StreetTable
+                  list={recommended}
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
                   getStreetUrgencyLevel={getStreetUrgencyLevel}
@@ -248,8 +235,8 @@ export default function App() {
                 📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
               </div>
               <div className="overflow-x-auto">
-                <StreetTable 
-                  list={displayStreets} 
+                <StreetTable
+                  list={displayStreets}
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
                   getStreetUrgencyLevel={getStreetUrgencyLevel}
@@ -259,12 +246,8 @@ export default function App() {
               </div>
             </section>
 
-            <CompletedToday 
-              list={completedToday} 
-              onUndo={undoDelivered}
-              totalCompleted={allCompletedToday.length}
-            />
-            
+            <CompletedToday list={completedToday} onUndo={undoDelivered} totalCompleted={allCompletedToday.length} />
+
             <Notifications count={overdue} />
             <WalkingOrder area={todayArea} />
           </>
