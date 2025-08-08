@@ -2,5 +2,155 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
-html { scroll-behavior: smooth; }
+/* כפתורים */
+.btn     { @apply px-4 py-2 rounded bg-indigo-500 text-white hover:bg-indigo-600 transition; }
+.btn-sm  { @apply px-2 py-1 rounded bg-indigo-500 text-white hover:bg-indigo-600 transition; }
+
+/* טבלאות */
+table      { @apply w-full text-sm sm:text-base; }
+th, td     { @apply border p-2 whitespace-nowrap; }
+thead      { @apply bg-gray-100 dark:bg-gray-700 dark:text-gray-100; }
+
+/* שורה שסומנה היום */
+tr.done-today td { @apply line-through text-gray-400; }
+
+/* סימון ויזואלי לרחובות שבוצעו */
+.completed-street {
+  @apply bg-green-100 border-green-300;
+}
+
+.completed-street td {
+  @apply text-green-700;
+}
+
+.overdue-street {
+  @apply bg-red-100 border-red-300;
+}
+
+.urgent-street {
+  @apply bg-yellow-100 border-yellow-300;
+}
+
+/* אנימציות */
+@keyframes pulse-green {
+  0%, 100% { @apply bg-green-100; }
+  50% { @apply bg-green-200; }
+}
+
+.pulse-green {
+  animation: pulse-green 2s infinite;
+}
+
+/* מצב כהה */
+.dark body { @apply bg-gray-800 text-gray-100; }
+.dark .completed-street { @apply bg-green-900 border-green-700; }
+.dark .completed-street td { @apply text-green-300; }
+.dark .overdue-street { @apply bg-red-900 border-red-700; }
+.dark .urgent-street { @apply bg-yellow-900 border-yellow-700; }
+
+/* ממשק מותאם לטלפון */
+@media (max-width: 768px) {
+  .mobile-optimized {
+    @apply text-sm;
+  }
+  
+  .mobile-card {
+    @apply p-3 rounded-lg shadow-sm border;
+  }
+  
+  .mobile-button {
+    @apply px-3 py-2 text-sm rounded-lg;
+  }
+  
+  .mobile-input {
+    @apply p-3 text-base rounded-lg;
+  }
+  
+  /* טבלאות ברספונסיב */
+  .responsive-table {
+    @apply block overflow-x-auto whitespace-nowrap;
+  }
+  
+  .responsive-table table {
+    @apply min-w-full;
+  }
+  
+  /* כרטיסים במקום טבלאות במובייל */
+  .mobile-card-list {
+    @apply space-y-3;
+  }
+  
+  .mobile-street-card {
+    @apply bg-white p-4 rounded-lg shadow-sm border;
+  }
+  
+  .mobile-street-header {
+    @apply flex justify-between items-start mb-2;
+  }
+  
+  .mobile-street-info {
+    @apply text-sm text-gray-600 space-y-1;
+  }
+  
+  .mobile-street-actions {
+    @apply flex gap-2 mt-3;
+  }
+}
+
+/* שיפורים לנגישות */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* גדלי טקסט מותאמים */
+.text-responsive {
+  @apply text-sm md:text-base;
+}
+
+.heading-responsive {
+  @apply text-lg md:text-xl lg:text-2xl;
+}
+
+/* רווחים מותאמים */
+.spacing-responsive {
+  @apply p-3 md:p-4 lg:p-6;
+}
+
+.gap-responsive {
+  @apply gap-2 md:gap-3 lg:gap-4;
+}
+
+/* כפתורים מותאמים למובייל */
+.btn-mobile {
+  @apply min-h-[44px] min-w-[44px] touch-manipulation;
+}
+
+/* אזורי מגע גדולים יותר */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px];
+}
+
+/* מניעת זום במובייל */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+select,
+textarea {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
