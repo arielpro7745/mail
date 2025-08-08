@@ -20,25 +20,7 @@ import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 
-import { HashRouter, Routes, Route } from "react-router-dom";
-import StreetsPage from "./pages/street";
-import BuildingPage from "./pages/building";
-
-/* ====== Router wrapper ====== */
 export default function App() {
-  return (
-    <HashRouter>
-      <Routes>
-        <Route path="/" element={<LegacyHome />} />
-        <Route path="/streets" element={<StreetsPage />} />
-        <Route path="/building/:id" element={<BuildingPage />} />
-      </Routes>
-    </HashRouter>
-  );
-}
-
-/* ====== התוכן המקורי – כקומפוננטה פנימית (לא export default) ====== */
-function LegacyHome() {
   const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
@@ -66,18 +48,29 @@ function LegacyHome() {
     getUrgencyLabel,
   } = useDistribution();
 
+  // Initialize notifications
   useNotifications();
 
+  // Check for Firebase permission errors
   useEffect(() => {
-    const originalError = console.error;
-    console.error = (...args) => {
-      const message = args.join(" ");
-      if (message.includes("permission-denied") || message.includes("Missing or insufficient permissions")) {
-        setShowFirebaseGuide(true);
-      }
-      originalError.apply(console, args);
+    const checkFirebaseErrors = () => {
+      // Listen for console errors related to Firebase permissions
+      const originalError = console.error;
+      console.error = (...args) => {
+        const message = args.join(' ');
+        if (message.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
+          setShowFirebaseGuide(true);
+        }
+        originalError.apply(console, args);
+      };
+
+      return () => {
+        console.error = originalError;
+      };
     };
-    return () => { console.error = originalError; };
+
+    const cleanup = checkFirebaseErrors();
+    return cleanup;
   }, []);
 
   const overdue = pendingToday.filter((s) => {
@@ -85,7 +78,9 @@ function LegacyHome() {
     return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
   }).length;
 
-  const handleStartTimer = (street: Street) => setCurrentStreet(street);
+  const handleStartTimer = (street: Street) => {
+    setCurrentStreet(street);
+  };
 
   const handleCompleteDelivery = (timeInMinutes: number) => {
     if (currentStreet) {
@@ -94,9 +89,13 @@ function LegacyHome() {
     }
   };
 
-  const handleOptimizeRoute = (streets: Street[]) => setOptimizedStreets(streets);
+  const handleOptimizeRoute = (streets: Street[]) => {
+    setOptimizedStreets(streets);
+  };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   const displayStreets = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
 
@@ -111,11 +110,148 @@ function LegacyHome() {
           <>
             <AreaToggle area={todayArea} onEnd={endDay} />
 
-            {/* ... כל שאר התוכן הקיים שלך נשאר כמו שהוא ... */}
-            {/* (השארתי כאן את כל הקומפוננטות בדיוק כמו בקוד שלך) */}
+            {/* סטטיסטיקת התקדמות */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-gray-800">מעקב חלוקה יומי</h3>
+                <span className="text-sm text-gray-600">
+                  אזור {todayArea}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-blue-700 font-medium">חולקו היום</span>
+                    <span className="text-xl font-bold text-blue-600">{allCompletedToday.length}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-orange-700 font-medium">ממתינים</span>
+                    <span className="text-xl font-bold text-orange-600">{streetsNeedingDelivery}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-red-700 font-medium">דחופים (14+ ימים)</span>
+                    <span className="text-xl font-bold text-red-600">{overdueStreets}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
+                💡 רחובות מסודרים לפי דחיפות: לא חולק מעולם → קריטי (14+ ימים) → דחוף (10-13 ימים) → אזהרה (7-9 ימים) → רגיל
+              </div>
+            </div>
 
-            {/* דוגמאות קצרות כדי לחסוך מקום בתשובה: */}
-            {/* סטטיסטיקות, DeliveryTimer, RouteOptimizer, רשימות StreetTable, CompletedToday, Notifications, WalkingOrder */}
+            {currentStreet && (
+              <div className="mb-6">
+                <DeliveryTimer
+                  streetName={currentStreet.name}
+                  onComplete={handleCompleteDelivery}
+                />
+              </div>
+            )}
+
+            {!isAllCompleted && (
+              <RouteOptimizer
+                streets={pendingToday}
+                area={todayArea}
+                onOptimize={handleOptimizeRoute}
+              />
+            )}
+
+            <section className="mb-8">
+              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                מומלץ להיום
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                  {recommended.length}
+                </span>
+                {urgencyCounts.never > 0 && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    🆕 {urgencyCounts.never} לא חולק
+                  </span>
+                )}
+                {urgencyCounts.critical > 0 && (
+                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    🚨 {urgencyCounts.critical} קריטי
+                  </span>
+                )}
+                {urgencyCounts.urgent > 0 && (
+                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    ⚠️ {urgencyCounts.urgent} דחוף
+                  </span>
+                )}
+              </h2>
+              <div className="text-xs text-gray-600 bg-green-50 px-3 py-2 rounded mb-3 flex items-center justify-between">
+                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
+                <span className="text-blue-600 font-medium">אזור נוכחי: {todayArea}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <StreetTable 
+                  list={recommended} 
+                  onDone={markDelivered}
+                  onStartTimer={handleStartTimer}
+                  getStreetUrgencyLevel={getStreetUrgencyLevel}
+                  getUrgencyColor={getUrgencyColor}
+                  getUrgencyLabel={getUrgencyLabel}
+                />
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                כל הרחובות
+                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
+                  {displayStreets.length}
+                </span>
+                {urgencyCounts.never > 0 && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                    לא חולק: {urgencyCounts.never}
+                  </span>
+                )}
+                {urgencyCounts.critical > 0 && (
+                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                    קריטי: {urgencyCounts.critical}
+                  </span>
+                )}
+                {urgencyCounts.urgent > 0 && (
+                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                    דחוף: {urgencyCounts.urgent}
+                  </span>
+                )}
+                {urgencyCounts.warning > 0 && (
+                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                    אזהרה: {urgencyCounts.warning}
+                  </span>
+                )}
+              </h2>
+              <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
+                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
+              </div>
+              <div className="overflow-x-auto">
+                <StreetTable 
+                  list={displayStreets} 
+                  onDone={markDelivered}
+                  onStartTimer={handleStartTimer}
+                  getStreetUrgencyLevel={getStreetUrgencyLevel}
+                  getUrgencyColor={getUrgencyColor}
+                  getUrgencyLabel={getUrgencyLabel}
+                />
+              </div>
+            </section>
+
+            <CompletedToday 
+              list={completedToday} 
+              onUndo={undoDelivered}
+              totalCompleted={allCompletedToday.length}
+            />
+            
+            <Notifications count={overdue} />
+            <WalkingOrder area={todayArea} />
           </>
         )}
 
