@@ -1,36 +1,20 @@
 // src/domain.ts
 import { nanoid } from 'nanoid'
 
-export type AreaId = 'A' | 'B' // הרחב לפי הצורך
+export type AreaId = 'A' | 'B' // הרחב כרצונך
 
-export enum DeliveryStatus {
-  Pending = 'PENDING',        // לא נמסר עדיין
-  Delivered = 'DELIVERED',    // נמסר
-  NotHome = 'NOT_HOME',       // לא בבית
-  Refused = 'REFUSED',        // סירב לקבל
-  WrongAddress = 'WRONG_ADDRESS', // כתובת שגויה / לא מוכר
-  ReturnToSender = 'RTS'      // החזרה לשולח (דואר רשום שלא נאסף/הוראה)
-}
-
-export type RegisteredMeta = {
-  trackingId?: string           // מזהה רשום/ברקוד
-  due?: string                  // תאריך יעד לאיסוף/מסירה (ISO YYYY-MM-DD)
-  attemptsAllowed?: number      // ניסיונות מותרים (ברירת מחדל: 2)
-}
-
-export type Attempt = {
-  id: string
-  at: number
-  reason?: string               // למשל: "לא בבית", "סירב"
+export enum AptStatus {
+  Pending = 'PENDING',   // לא חולק עדיין
+  Delivered = 'DELIVERED',// חולק
+  Skip = 'SKIP',         // דילוג (לדוגמה: אין דואר/תיבה חסומה)
+  Vacant = 'VACANT'      // דירה ריקה/סגורה לטווח ארוך
 }
 
 export type Apartment = {
   id: string
-  label: string                 // "דירה 3", "קומה 2 דלת 5"
-  status: DeliveryStatus
-  attempts: Attempt[]
+  label: string         // "דירה 1", "קומה 2 דלת 5" וכו'
+  status: AptStatus
   note?: string
-  registered?: RegisteredMeta   // רק אם רלוונטי לדואר רשום
 }
 
 export type Building = {
@@ -38,79 +22,98 @@ export type Building = {
   name: string
   address: string
   area: AreaId
+  order?: number        // סדר ידני (אם תרצה)
+  coords?: { lat: number; lng: number } // אופציונלי למסלול
   apartments: Apartment[]
   updatedAt: number
-  coords?: { lat: number; lng: number } // אופציונלי לאופטימיזציית מסלול
-  priority?: number                      // 1–5 עדיפות (אופציונלי)
 }
 
-export type AppStateV2 = {
+export type AppState = {
   version: 2
   buildings: Building[]
 }
 
-/* ---------- עזרי סטטיסטיקה/תצוגה (לוגיקה בלבד; בלי UI) ---------- */
-
-export function buildingStats(b: Building) {
-  const totals = {
-    [DeliveryStatus.Pending]: 0,
-    [DeliveryStatus.Delivered]: 0,
-    [DeliveryStatus.NotHome]: 0,
-    [DeliveryStatus.Refused]: 0,
-    [DeliveryStatus.WrongAddress]: 0,
-    [DeliveryStatus.ReturnToSender]: 0
-  }
-  for (const a of b.apartments) totals[a.status]++
+/* ---------- סטטיסטיקה ---------- */
+export function progress(b: Building) {
   const total = b.apartments.length || 1
-  const done = totals[DeliveryStatus.Delivered]
+  const done = b.apartments.filter(a => a.status === AptStatus.Delivered).length
   const pct = Math.round((done / total) * 100)
-  return { totals, total, done, pct }
+  return { total, done, pct }
 }
 
-/* ---------- פעולות על דירות/בניין (אימוטביליות, מחזירות אובייקט חדש) ---------- */
-
-export function setApartmentStatus(
-  b: Building,
-  aptId: string,
-  status: DeliveryStatus,
-  note?: string
-): Building {
+/* ---------- פעולות דירות/בניין (בלתי־הרסניות) ---------- */
+export function setAptStatus(b: Building, aptId: string, status: AptStatus, note?: string): Building {
   const idx = b.apartments.findIndex(a => a.id === aptId)
   if (idx === -1) return b
   const next = { ...b, apartments: [...b.apartments], updatedAt: Date.now() }
-  const a = { ...next.apartments[idx] }
-  a.status = status
+  const a = { ...next.apartments[idx], status }
   if (note !== undefined) a.note = note
   next.apartments[idx] = a
   return next
 }
 
-export function addAttempt(b: Building, aptId: string, reason?: string): Building {
+export function toggleDelivered(b: Building, aptId: string): Building {
   const idx = b.apartments.findIndex(a => a.id === aptId)
   if (idx === -1) return b
+  const cur = b.apartments[idx].status
+  const nextStatus = cur === AptStatus.Delivered ? AptStatus.Pending : AptStatus.Delivered
+  return setAptStatus(b, aptId, nextStatus)
+}
+
+export function markAll(b: Building, status: AptStatus): Building {
+  return {
+    ...b,
+    apartments: b.apartments.map(a => ({ ...a, status })),
+    updatedAt: Date.now()
+  }
+}
+
+/* ---------- כלי טווחים (לסימון 1,3-7,12) ---------- */
+export function parseRange(expr: string): number[] {
+  // קלט כמו: "1,3-5,10" -> [1,3,4,5,10]
+  const out = new Set<number>()
+  for (const part of expr.split(',').map(s => s.trim()).filter(Boolean)) {
+    const m = part.match(/^(\d+)-(\d+)$/)
+    if (m) {
+      const a = Number(m[1]), b = Number(m[2])
+      const [lo, hi] = a <= b ? [a, b] : [b, a]
+      for (let i = lo; i <= hi; i++) out.add(i)
+    } else {
+      const n = Number(part)
+      if (!Number.isNaN(n)) out.add(n)
+    }
+  }
+  return Array.from(out).sort((a, b) => a - b)
+}
+
+/** מסמן טווח דירות לפי אינדקס 1..N (לא לפי id) */
+export function markRange(b: Building, rangeExpr: string, status: AptStatus): Building {
+  const idxs = new Set(parseRange(rangeExpr).map(n => n - 1)) // make 0-based
   const next = { ...b, apartments: [...b.apartments], updatedAt: Date.now() }
-  const a = { ...next.apartments[idx] }
-  a.attempts = [...a.attempts, { id: nanoid(), at: Date.now(), reason }]
-  next.apartments[idx] = a
+  next.apartments = next.apartments.map((a, i) => idxs.has(i) ? { ...a, status } : a)
   return next
 }
 
-export function markAll(b: Building, status: DeliveryStatus): Building {
-  const next = { ...b, apartments: b.apartments.map(a => ({ ...a, status })), updatedAt: Date.now() }
+/* ---------- תבנית שמות לדירות ---------- */
+export function renameAptsByPattern(b: Building, pattern = 'דירה {n}', startFrom = 1): Building {
+  const next = { ...b, apartments: [...b.apartments], updatedAt: Date.now() }
+  next.apartments = next.apartments.map((a, i) => ({
+    ...a,
+    label: pattern.replace('{n}', String(i + startFrom))
+  }))
   return next
 }
 
-/* ---------- SLA לדואר רשום ---------- */
-
-export function registeredSla(ap: Apartment) {
-  if (!ap.registered?.due) return null
-  const today = new Date()
-  const due = new Date(ap.registered.due + 'T00:00:00')
-  const msDay = 24 * 60 * 60 * 1000
-  const daysLeft = Math.ceil((due.getTime() - stripTime(today).getTime()) / msDay)
-  return { due: ap.registered.due, daysLeft, overdue: daysLeft < 0 }
-}
-
-function stripTime(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+/* ---------- יצירת בניין מהרשאה בסיסית ---------- */
+export function createBuilding(area: AreaId, name: string, address: string, apartmentsCount: number): Building {
+  return {
+    id: nanoid(),
+    name, address, area,
+    apartments: Array.from({ length: apartmentsCount }, (_, i) => ({
+      id: nanoid(),
+      label: `דירה ${i + 1}`,
+      status: AptStatus.Pending
+    })),
+    updatedAt: Date.now()
+  }
 }
