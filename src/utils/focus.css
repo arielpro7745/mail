@@ -1,0 +1,6 @@
+@tailwind utilities;
+@layer utilities {
+  .focus-ring:focus-visible {
+    @apply outline-none ring-2 ring-sky-500 ring-offset-2;
+  }
+}
