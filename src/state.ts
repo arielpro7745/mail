@@ -1,28 +1,22 @@
 // src/state.ts
 import { nanoid } from 'nanoid'
-import {
-  AppStateV2, Building, Apartment, DeliveryStatus, AreaId
-} from './domain'
+import { AppState, Building, Apartment, AptStatus, AreaId, createBuilding } from './domain'
 
-const KEY = 'dw:state' // מפתח יחיד; נחסוך גרסאות במפתח
+const KEY = 'dw:state' // מפתח אחיד
 
-/* אם יש לך State ישן (V1) עם delivered:boolean – נגדיר טיפוס מינימלי רק למיגרציה */
+/* מצב ישן (למיגרציה בלבד) */
 type V1Apartment = { id: string; label: string; delivered: boolean; note?: string }
-type V1Building = {
-  id: string; name: string; address: string; area: AreaId;
-  apartments: V1Apartment[]; updatedAt: number
-}
+type V1Building = { id: string; name: string; address: string; area: AreaId; apartments: V1Apartment[]; updatedAt: number }
 type AppStateV1 = { version: 1; buildings: V1Building[] }
+type AnyState = AppState | AppStateV1 | undefined | null
 
-type AnyState = AppStateV1 | AppStateV2 | undefined | null
-
-export function loadState(): AppStateV2 {
+export function loadState(): AppState {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return seed()
     const parsed = JSON.parse(raw) as AnyState
     if (!parsed) return seed()
-    if ((parsed as AppStateV2).version === 2) return parsed as AppStateV2
+    if ((parsed as AppState).version === 2) return parsed as AppState
     if ((parsed as AppStateV1).version === 1) return migrateV1toV2(parsed as AppStateV1)
     return seed()
   } catch {
@@ -30,52 +24,40 @@ export function loadState(): AppStateV2 {
   }
 }
 
-export function saveState(state: AppStateV2) {
+export function saveState(state: AppState) {
   localStorage.setItem(KEY, JSON.stringify(state))
 }
 
-/* זרעים ראשוניים (אם אין כלום) */
-export function seed(): AppStateV2 {
-  const mk = (area: AreaId, name: string, address: string, n: number): Building => ({
-    id: nanoid(),
-    name, address, area, updatedAt: Date.now(),
-    apartments: Array.from({ length: n }, (_, i) => ({
-      id: nanoid(),
-      label: `דירה ${i + 1}`,
-      status: DeliveryStatus.Pending,
-      attempts: []
-    }))
-  })
+export function seed(): AppState {
   return {
     version: 2,
     buildings: [
-      mk('A', 'בניין הרצל 12', 'הרצל 12, פ"ת', 10),
-      mk('A', 'בניין ביאליק 3', 'ביאליק 3, פ"ת', 8),
-      mk('B', 'בניין דגניה 5', 'דגניה 5, פ"ת', 6)
+      createBuilding('A', 'הרצל 12', 'הרצל 12, פ"ת', 10),
+      createBuilding('A', 'ביאליק 3', 'ביאליק 3, פ"ת', 8),
+      createBuilding('B', 'דגניה 5', 'דגניה 5, פ"ת', 6)
     ]
   }
 }
 
-/* מיגרציה מ־V1 (delivered:boolean) ל־V2 (status enum + attempts ריק) */
-export function migrateV1toV2(v1: AppStateV1): AppStateV2 {
-  function toV2Apartment(a: V1Apartment): Apartment {
+/* מיגרציה: delivered:boolean -> AptStatus */
+export function migrateV1toV2(v1: AppStateV1): AppState {
+  function toApt(a: V1Apartment): Apartment {
     return {
-      id: a.id,
-      label: a.label,
+      id: a.id || nanoid(),
+      label: a.label ?? '',
       note: a.note,
-      status: a.delivered ? DeliveryStatus.Delivered : DeliveryStatus.Pending,
-      attempts: []
+      status: a.delivered ? AptStatus.Delivered : AptStatus.Pending
     }
   }
   const buildings: Building[] = v1.buildings.map(b => ({
-    id: b.id,
+    id: b.id || nanoid(),
     name: b.name,
     address: b.address,
     area: b.area,
-    updatedAt: b.updatedAt || Date.now(),
-    apartments: b.apartments.map(toV2Apartment)
+    apartments: (b.apartments ?? []).map(toApt),
+    updatedAt: b.updatedAt || Date.now()
   }))
-  const v2: AppStateV2 = { version: 2, buildings }
+  const v2: AppState = { version: 2, buildings }
   saveState(v2)
   return v2
 }
