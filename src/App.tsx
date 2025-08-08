@@ -1,266 +1,198 @@
-import { useState, useEffect } from "react";
-import Header from "./components/Header";
-import TabBar from "./components/TabBar";
-import { useDistribution } from "./hooks/useDistribution";
-import { useNotifications } from "./hooks/useNotifications";
-import { AreaToggle } from "./components/AreaToggle";
-import StreetTable from "./components/StreetTable";
-import Notifications from "./components/Notifications";
-import BuildingManager from "./components/BuildingManager";
-import CompletedToday from "./components/CompletedToday";
-import WalkingOrder from "./components/WalkingOrder";
-import LoadingSpinner from "./components/LoadingSpinner";
-import DeliveryTimer from "./components/DeliveryTimer";
-import RouteOptimizer from "./components/RouteOptimizer";
-import TaskManager from "./components/TaskManager";
-import Reports from "./components/Reports";
-import PhoneDirectory from "./components/PhoneDirectory";
-import DataExport from "./components/DataExport";
-import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
-import { Street } from "./types";
-import { totalDaysBetween } from "./utils/dates";
+import { useEffect, useMemo, useState } from 'react'
+import type { AreaId, Building } from '@/types'
+import { loadState, saveState, progress, setDeliveredAll, updateBuilding } from '@/lib/storage'
+
+// אייקונים (אופציונלי – יש לך lucide-react ב-deps)
+import { CheckCircle, XCircle, RefreshCw, Search, Home } from 'lucide-react'
+
+type View = { mode: 'list' } | { mode: 'building'; id: string }
 
 export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
-  const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
-  const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
-  const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
+  const [state, setState] = useState(loadState)
+  const [area, setArea] = useState<AreaId>('A')
+  const [q, setQ] = useState('')
+  const [view, setView] = useState<View>({ mode: 'list' })
 
-  const {
-    todayArea,
-    pendingToday,
-    completedToday,
-    recommended,
-    markDelivered,
-    undoDelivered,
-    endDay,
-    loading,
-    allCompletedToday,
-    totalStreetsInArea,
-    isAllCompleted,
-    streetsNeedingDelivery,
-    overdueStreets,
-    resetCycle,
-    urgencyGroups,
-    urgencyCounts,
-    getStreetUrgencyLevel,
-    getUrgencyColor,
-    getUrgencyLabel,
-  } = useDistribution();
+  useEffect(() => { saveState(state) }, [state])
 
-  // Initialize notifications
-  useNotifications();
+  const buildings = useMemo(() => {
+    const byArea = state.buildings.filter(b => b.area === area)
+    const filtered = q.trim()
+      ? byArea.filter(b => (b.name + ' ' + b.address).includes(q.trim()))
+      : byArea
 
-  // Check for Firebase permission errors
-  useEffect(() => {
-    const checkFirebaseErrors = () => {
-      // Listen for console errors related to Firebase permissions
-      const originalError = console.error;
-      console.error = (...args) => {
-        const message = args.join(' ');
-        if (message.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
-          setShowFirebaseGuide(true);
-        }
-        originalError.apply(console, args);
-      };
+    // סדר מומלץ: קודם כאלה ש40–90% הושלמו, אחר כך 0–40, בסוף 90–100
+    return filtered
+      .map(b => ({ b, pr: progress(b) }))
+      .sort((a, b) => sortHeuristic(a.pr.pct) - sortHeuristic(b.pr.pct))
+      .map(x => x.b)
+  }, [state, area, q])
 
-      return () => {
-        console.error = originalError;
-      };
-    };
-
-    const cleanup = checkFirebaseErrors();
-    return cleanup;
-  }, []);
-
-  const overdue = pendingToday.filter((s) => {
-    if (!s.lastDelivered) return true;
-    return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
-  }).length;
-
-  const handleStartTimer = (street: Street) => {
-    setCurrentStreet(street);
-  };
-
-  const handleCompleteDelivery = (timeInMinutes: number) => {
-    if (currentStreet) {
-      markDelivered(currentStreet.id, timeInMinutes);
-      setCurrentStreet(null);
-    }
-  };
-
-  const handleOptimizeRoute = (streets: Street[]) => {
-    setOptimizedStreets(streets);
-  };
-
-  if (loading) {
-    return <LoadingSpinner />;
+  function sortHeuristic(pct: number) {
+    if (pct >= 90) return 3
+    if (pct >= 40) return 1
+    return 2
   }
 
-  const displayStreets = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
+  function openBuilding(id: string) { setView({ mode: 'building', id }) }
+  function back() { setView({ mode: 'list' }) }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {showFirebaseGuide && <FirebaseSetupGuide />}
-      <Header />
-      <main className="max-w-7xl mx-auto p-4">
-        <TabBar current={tab} setTab={setTab} />
-
-        {tab === "regular" && (
-          <>
-            <AreaToggle area={todayArea} onEnd={endDay} />
-
-            {/* סטטיסטיקת התקדמות */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-800">מעקב חלוקה יומי</h3>
-                <span className="text-sm text-gray-600">
-                  אזור {todayArea}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-700 font-medium">חולקו היום</span>
-                    <span className="text-xl font-bold text-blue-600">{allCompletedToday.length}</span>
-                  </div>
-                </div>
-                
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-orange-700 font-medium">ממתינים</span>
-                    <span className="text-xl font-bold text-orange-600">{streetsNeedingDelivery}</span>
-                  </div>
-                </div>
-                
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-red-700 font-medium">דחופים (14+ ימים)</span>
-                    <span className="text-xl font-bold text-red-600">{overdueStreets}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
-                💡 רחובות מסודרים לפי דחיפות: לא חולק מעולם → קריטי (14+ ימים) → דחוף (10-13 ימים) → אזהרה (7-9 ימים) → רגיל
-              </div>
-            </div>
-
-            {currentStreet && (
-              <div className="mb-6">
-                <DeliveryTimer
-                  streetName={currentStreet.name}
-                  onComplete={handleCompleteDelivery}
-                />
-              </div>
-            )}
-
-            {!isAllCompleted && (
-              <RouteOptimizer
-                streets={pendingToday}
-                area={todayArea}
-                onOptimize={handleOptimizeRoute}
-              />
-            )}
-
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                מומלץ להיום
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                  {recommended.length}
-                </span>
-                {urgencyCounts.never > 0 && (
-                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    🆕 {urgencyCounts.never} לא חולק
-                  </span>
-                )}
-                {urgencyCounts.critical > 0 && (
-                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    🚨 {urgencyCounts.critical} קריטי
-                  </span>
-                )}
-                {urgencyCounts.urgent > 0 && (
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    ⚠️ {urgencyCounts.urgent} דחוף
-                  </span>
-                )}
-              </h2>
-              <div className="text-xs text-gray-600 bg-green-50 px-3 py-2 rounded mb-3 flex items-center justify-between">
-                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
-                <span className="text-blue-600 font-medium">אזור נוכחי: {todayArea}</span>
-              </div>
-              <div className="overflow-x-auto">
-                <StreetTable 
-                  list={recommended} 
-                  onDone={markDelivered}
-                  onStartTimer={handleStartTimer}
-                  getStreetUrgencyLevel={getStreetUrgencyLevel}
-                  getUrgencyColor={getUrgencyColor}
-                  getUrgencyLabel={getUrgencyLabel}
-                />
-              </div>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                כל הרחובות
-                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
-                  {displayStreets.length}
-                </span>
-                {urgencyCounts.never > 0 && (
-                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                    לא חולק: {urgencyCounts.never}
-                  </span>
-                )}
-                {urgencyCounts.critical > 0 && (
-                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
-                    קריטי: {urgencyCounts.critical}
-                  </span>
-                )}
-                {urgencyCounts.urgent > 0 && (
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                    דחוף: {urgencyCounts.urgent}
-                  </span>
-                )}
-                {urgencyCounts.warning > 0 && (
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                    אזהרה: {urgencyCounts.warning}
-                  </span>
-                )}
-              </h2>
-              <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
-                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
-              </div>
-              <div className="overflow-x-auto">
-                <StreetTable 
-                  list={displayStreets} 
-                  onDone={markDelivered}
-                  onStartTimer={handleStartTimer}
-                  getStreetUrgencyLevel={getStreetUrgencyLevel}
-                  getUrgencyColor={getUrgencyColor}
-                  getUrgencyLabel={getUrgencyLabel}
-                />
-              </div>
-            </section>
-
-            <CompletedToday 
-              list={completedToday} 
-              onUndo={undoDelivered}
-              totalCompleted={allCompletedToday.length}
-            />
-            
-            <Notifications count={overdue} />
-            <WalkingOrder area={todayArea} />
-          </>
+    <div className="min-h-screen">
+      <Header area={area} onAreaChange={setArea} q={q} onQ={setQ} onBack={view.mode === 'building' ? back : undefined} />
+      <main className="container max-w-5xl py-4">
+        {view.mode === 'list' ? (
+          <BuildingList items={buildings} onOpen={openBuilding} onToggleAll={(b, d) => {
+            setState(s => updateBuilding(s, setDeliveredAll(b, d)))
+          }} />
+        ) : (
+          <BuildingDetails
+            building={state.buildings.find(b => b.id === view.id)!}
+            onExit={back}
+            onUpdate={b => setState(s => updateBuilding(s, b))}
+          />
         )}
-
-        {tab === "buildings" && <BuildingManager />}
-        {tab === "tasks" && <TaskManager />}
-        {tab === "reports" && <Reports />}
-        {tab === "phones" && <PhoneDirectory />}
-        {tab === "export" && <DataExport />}
       </main>
     </div>
-  );
+  )
 }
+
+function Header({
+  area, onAreaChange, q, onQ, onBack
+}: { area: AreaId; onAreaChange: (a: AreaId) => void; q: string; onQ: (s: string) => void; onBack?: () => void }) {
+  return (
+    <header className="bg-white/90 backdrop-blur sticky top-0 border-b">
+      <div className="container max-w-5xl py-3 flex items-center gap-3">
+        {onBack ? (
+          <button className="btn" onClick={onBack} title="חזרה"><Home size={18} /></button>
+        ) : null}
+        <h1 className="text-xl font-semibold">מעקב חלוקת דואר</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <select
+            value={area}
+            onChange={e => onAreaChange(e.target.value as AreaId)}
+            className="border rounded-lg px-3 py-2 bg-white"
+            aria-label="אזור"
+          >
+            <option value="A">אזור A</option>
+            <option value="B">אזור B</option>
+          </select>
+          <div className="relative">
+            <input
+              className="border rounded-lg ps-9 pe-3 py-2 bg-white min-w-[220px]"
+              placeholder="חיפוש בניין/כתובת…"
+              value={q}
+              onChange={e => onQ(e.target.value)}
+              aria-label="חיפוש"
+            />
+            <Search className="absolute right-2 top-1/2 -translate-y-1/2 opacity-70" size={18} />
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function BuildingList({
+  items, onOpen, onToggleAll
+}: { items: Building[]; onOpen: (id: string) => void; onToggleAll: (b: Building, delivered: boolean) => void }) {
+  if (!items.length) return <p className="text-center text-slate-500">אין בניינים באזור הזה עדיין.</p>
+
+  return (
+    <div className="grid gap-3">
+      {items.map(b => {
+        const pr = progress(b)
+        const bar = `bg-gradient-to-l from-sky-400 to-sky-500`
+        const done = pr.pct >= 100
+
+        return (
+          <article key={b.id} className="bg-white rounded-xl border overflow-hidden">
+            <div className="p-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <h2 className="font-medium truncate">{b.name}</h2>
+                <p className="text-sm text-slate-500 truncate">{b.address}</p>
+              </div>
+              <div className="text-sm tabular-nums">{pr.done}/{pr.total} · {pr.pct}%</div>
+              <button className="btn" onClick={() => onOpen(b.id)}>פתח</button>
+              {done ? (
+                <button className="btn btn-ghost text-emerald-600" onClick={() => onToggleAll(b, false)} title="אפס">
+                  <RefreshCw size={18} />
+                </button>
+              ) : (
+                <button className="btn btn-ghost text-emerald-600" onClick={() => onToggleAll(b, true)} title="סמן הכל כנמסר">
+                  <CheckCircle size={18} />
+                </button>
+              )}
+            </div>
+            <div className="h-2 bg-slate-100">
+              <div className={`h-full ${bar}`} style={{ width: `${pr.pct}%` }} />
+            </div>
+          </article>
+        )
+      })}
+    </div>
+  )
+}
+
+function BuildingDetails({
+  building, onExit, onUpdate
+}: { building: Building; onExit: () => void; onUpdate: (b: Building) => void }) {
+  const pr = progress(building)
+  return (
+    <section className="grid gap-3">
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-semibold">{building.name}</h2>
+        <span className="text-sm text-slate-500">{building.address}</span>
+        <span className="ml-auto text-sm tabular-nums">{pr.done}/{pr.total} · {pr.pct}%</span>
+        <button className="btn" onClick={onExit}>סגור</button>
+      </div>
+
+      <div className="bg-white rounded-xl border overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              <th className="text-right p-2">דירה</th>
+              <th className="text-right p-2">הערה</th>
+              <th className="text-right p-2 w-[1%]">סטטוס</th>
+            </tr>
+          </thead>
+          <tbody>
+            {building.apartments.map((a, i) => (
+              <tr key={a.id} className="border-t">
+                <td className="p-2">{a.label}</td>
+                <td className="p-2">
+                  <input
+                    value={a.note ?? ''}
+                    onChange={e => {
+                      const next = { ...building }
+                      next.apartments[i] = { ...a, note: e.target.value }
+                      onUpdate(next)
+                    }}
+                    className="border rounded-lg px-2 py-1 w-full"
+                    placeholder="לדוגמה: לא בבית / מסירה לשכן"
+                  />
+                </td>
+                <td className="p-2">
+                  <button
+                    className={`btn ${a.delivered ? 'btn-success' : 'btn-danger'}`}
+                    onClick={() => {
+                      const next = { ...building }
+                      next.apartments[i] = { ...a, delivered: !a.delivered }
+                      onUpdate(next)
+                    }}
+                    title={a.delivered ? 'בוטל – לא נמסר' : 'סומן – נמסר'}
+                  >
+                    {a.delivered ? <CheckCircle size={18} /> : <XCircle size={18} />}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+/* עזרי עיצוב קטנים */
+declare module 'react' { interface HTMLAttributes<T> { /* מאפשר className לדאטים מותאמים אם צריך */ } }
