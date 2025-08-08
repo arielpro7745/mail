@@ -19,6 +19,21 @@ import DataExport from "./components/DataExport";
 import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
+import { HashRouter, Routes, Route } from 'react-router-dom'
+import StreetsPage from '@/pages/street'
+import BuildingPage from '@/pages/building'
+
+export default function App() {
+  return (
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<StreetsPage />} />
+        <Route path="/streets" element={<StreetsPage />} />
+        <Route path="/building/:id" element={<BuildingPage />} />
+      </Routes>
+    </HashRouter>
+  )
+}
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
