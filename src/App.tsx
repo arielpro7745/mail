@@ -17,6 +17,7 @@ import Reports from "./components/Reports";
 import PhoneDirectory from "./components/PhoneDirectory";
 import DataExport from "./components/DataExport";
 import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
+import QuickActions from "./components/QuickActions";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 import { AlertTriangle } from "lucide-react";
@@ -80,32 +81,37 @@ export default function App() {
   }).length;
 
   // מציאת הרחוב שהכי הרבה זמן לא חולק (מכל האזורים)
-  const getOldestUndeliveredStreet = () => {
+  const getOldestUndeliveredStreets = (count = 3) => {
     const today = new Date();
-    let oldestStreet: Street | null = null;
-    let maxDays = 0;
+    const streetsByUrgency: Array<{street: Street, days: number}> = [];
     
     // בדיקה של כל הרחובות מכל האזורים
-    allCompletedToday.concat(pendingToday).forEach(street => {
+    const allStreets = [...new Set([...allCompletedToday, ...pendingToday])]; // הסרת כפילויות
+    
+    allStreets.forEach(street => {
       if (!street.lastDelivered) {
-        // רחוב שלא חולק מעולם - עדיפות עליונה
-        if (!oldestStreet || !oldestStreet.lastDelivered) {
-          oldestStreet = street;
-          maxDays = 999; // ערך גבוה לרחובות שלא חולקו מעולם
-        }
+        streetsByUrgency.push({street, days: 999});
       } else {
         const days = totalDaysBetween(new Date(street.lastDelivered), today);
-        if (days > maxDays || (days === maxDays && !oldestStreet?.lastDelivered)) {
-          oldestStreet = street;
-          maxDays = days;
-        }
+        streetsByUrgency.push({street, days});
       }
     });
     
-    return { street: oldestStreet, days: maxDays };
+    // מיון לפי דחיפות: לא חולק מעולם ראשון, אחר כך לפי מספר ימים
+    return streetsByUrgency
+      .sort((a, b) => {
+        if (a.days === 999 && b.days !== 999) return -1;
+        if (b.days === 999 && a.days !== 999) return 1;
+        if (a.days !== b.days) return b.days - a.days;
+        // אם אותו מספר ימים, רחובות גדולים קודם
+        if (a.street.isBig !== b.street.isBig) return a.street.isBig ? -1 : 1;
+        return a.street.name.localeCompare(b.street.name);
+      })
+      .slice(0, count)
+      .filter(item => item.days >= 7); // רק רחובות שעברו לפחות שבוע
   };
   
-  const { street: oldestStreet, days: oldestDays } = getOldestUndeliveredStreet();
+  const criticalStreets = getOldestUndeliveredStreets(3);
   const handleStartTimer = (street: Street) => {
     setCurrentStreet(street);
   };
@@ -138,76 +144,92 @@ export default function App() {
           <>
             <AreaToggle area={todayArea} onEnd={endDay} />
 
-            {/* התראה על הרחוב הוותיק ביותר */}
-            {oldestStreet && oldestDays >= 7 && (
-              <div className={`border rounded-xl p-4 mb-6 shadow-sm ${
-                oldestDays === 999 ? 'bg-purple-50 border-purple-300' :
-                oldestDays >= 21 ? 'bg-red-50 border-red-300' :
-                oldestDays >= 14 ? 'bg-orange-50 border-orange-300' :
-                'bg-yellow-50 border-yellow-300'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <AlertTriangle size={24} className={
-                    oldestDays === 999 ? 'text-purple-600 animate-pulse' :
-                    oldestDays >= 21 ? 'text-red-600 animate-pulse' :
-                    oldestDays >= 14 ? 'text-orange-600' :
-                    'text-yellow-600'
-                  } />
-                  <div className="flex-1">
-                    <h3 className={`font-bold text-lg ${
-                      oldestDays === 999 ? 'text-purple-800' :
-                      oldestDays >= 21 ? 'text-red-800' :
-                      oldestDays >= 14 ? 'text-orange-800' :
-                      'text-yellow-800'
-                    }`}>
-                      {oldestDays === 999 ? '🆕 רחוב שלא חולק מעולם!' : 
-                       oldestDays >= 21 ? '🚨 רחוב קריטי!' :
-                       oldestDays >= 14 ? '⚠️ רחוב דחוף!' :
-                       '📅 רחוב זקוק לתשומת לב'}
-                    </h3>
-                    <p className={`text-sm font-medium ${
-                      oldestDays === 999 ? 'text-purple-700' :
-                      oldestDays >= 21 ? 'text-red-700' :
-                      oldestDays >= 14 ? 'text-orange-700' :
-                      'text-yellow-700'
-                    }`}>
-                      <span className="font-bold">{oldestStreet.name}</span> (אזור {oldestStreet.area}) - 
-                      {oldestDays === 999 ? ' לא חולק מעולם' : ` ${oldestDays} ימים ללא חלוקה`}
-                    </p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        oldestStreet.area === 12 ? 'bg-purple-100 text-purple-700' :
-                        oldestStreet.area === 14 ? 'bg-blue-100 text-blue-700' :
-                        'bg-indigo-100 text-indigo-700'
-                      }`}>
-                        אזור {oldestStreet.area}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        oldestStreet.isBig ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {oldestStreet.isBig ? 'רחוב גדול' : 'רחוב קטן'}
-                      </span>
-                      {oldestStreet.lastDelivered && (
-                        <span className="text-xs text-gray-600">
-                          חולק לאחרונה: {new Date(oldestStreet.lastDelivered).toLocaleDateString('he-IL')}
-                        </span>
-                      )}
+            {/* התראה על הרחובות הוותיקים ביותר */}
+            {criticalStreets.length > 0 && (
+              <div className="space-y-3 mb-6">
+                {criticalStreets.map(({street, days}, index) => {
+                  const isFirst = index === 0;
+                  const bgColor = days === 999 ? 'bg-purple-50 border-purple-300' :
+                                 days >= 21 ? 'bg-red-50 border-red-300' :
+                                 days >= 14 ? 'bg-orange-50 border-orange-300' :
+                                 'bg-yellow-50 border-yellow-300';
+                  
+                  const textColor = days === 999 ? 'text-purple-600' :
+                                   days >= 21 ? 'text-red-600' :
+                                   days >= 14 ? 'text-orange-600' :
+                                   'text-yellow-600';
+                  
+                  const headerColor = days === 999 ? 'text-purple-800' :
+                                     days >= 21 ? 'text-red-800' :
+                                     days >= 14 ? 'text-orange-800' :
+                                     'text-yellow-800';
+                  
+                  const buttonColor = days === 999 ? 'bg-purple-500 hover:bg-purple-600' :
+                                     days >= 21 ? 'bg-red-500 hover:bg-red-600' :
+                                     days >= 14 ? 'bg-orange-500 hover:bg-orange-600' :
+                                     'bg-yellow-500 hover:bg-yellow-600';
+
+                  return (
+                    <div key={street.id} className={`border rounded-xl p-4 shadow-sm ${bgColor} ${isFirst ? 'ring-2 ring-offset-2 ring-blue-400' : ''}`}>
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle size={24} className={`${textColor} ${days >= 14 ? 'animate-pulse' : ''}`} />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {isFirst && (
+                              <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                #1 הכי דחוף
+                              </span>
+                            )}
+                            <h3 className={`font-bold text-lg ${headerColor}`}>
+                              {days === 999 ? '🆕 רחוב שלא חולק מעולם!' : 
+                               days >= 21 ? '🚨 רחוב קריטי!' :
+                               days >= 14 ? '⚠️ רחוב דחוף!' :
+                               '📅 רחוב זקוק לתשומת לב'}
+                            </h3>
+                          </div>
+                          <p className={`text-sm font-medium ${headerColor.replace('800', '700')}`}>
+                            <span className="font-bold">{street.name}</span> (אזור {street.area}) - 
+                            {days === 999 ? ' לא חולק מעולם' : ` ${days} ימים ללא חלוקה`}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              street.area === 12 ? 'bg-purple-100 text-purple-700' :
+                              street.area === 14 ? 'bg-blue-100 text-blue-700' :
+                              'bg-indigo-100 text-indigo-700'
+                            }`}>
+                              אזור {street.area}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              street.isBig ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {street.isBig ? 'רחוב גדול' : 'רחוב קטן'}
+                            </span>
+                            {street.lastDelivered && (
+                              <span className="text-xs text-gray-600">
+                                חולק לאחרונה: {new Date(street.lastDelivered).toLocaleDateString('he-IL')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {street.area === todayArea && (
+                            <button
+                              onClick={() => markDelivered(street.id)}
+                              className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg ${buttonColor}`}
+                            >
+                              סמן כחולק עכשיו
+                            </button>
+                          )}
+                          {street.area !== todayArea && (
+                            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
+                              יטופל באזור {street.area}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  {oldestStreet.area === todayArea && (
-                    <button
-                      onClick={() => markDelivered(oldestStreet.id)}
-                      className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg ${
-                        oldestDays === 999 ? 'bg-purple-500 hover:bg-purple-600' :
-                        oldestDays >= 21 ? 'bg-red-500 hover:bg-red-600' :
-                        oldestDays >= 14 ? 'bg-orange-500 hover:bg-orange-600' :
-                        'bg-yellow-500 hover:bg-yellow-600'
-                      }`}
-                    >
-                      סמן כחולק עכשיו
-                    </button>
-                  )}
-                </div>
+                  );
+                })}
               </div>
             )}
             {/* סטטיסטיקת התקדמות */}
