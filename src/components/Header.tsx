@@ -52,9 +52,3 @@ export default function Header() {
     </header>
   );
 }
-        <Settings />
-        <ThemeToggle />
-      </div>
-    </header>
-  );
-}
