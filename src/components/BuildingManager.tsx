@@ -378,7 +378,8 @@ export default function BuildingManager() {
                   <input
                     type="checkbox"
                     name="allowMailbox"
-                    defaultChecked={resident?.allowMailbox}
+                    checked={formData.allowMailbox}
+                    onChange={(e) => setFormData({...formData, allowMailbox: e.target.checked})}
                     className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                   />
                   <div className="flex items-center gap-1">
@@ -391,7 +392,8 @@ export default function BuildingManager() {
                   <input
                     type="checkbox"
                     name="allowDoor"
-                    defaultChecked={resident?.allowDoor}
+                    checked={formData.allowDoor}
+                    onChange={(e) => setFormData({...formData, allowDoor: e.target.checked})}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <div className="flex items-center gap-1">
@@ -404,7 +406,8 @@ export default function BuildingManager() {
                   <input
                     type="checkbox"
                     name="isPrimary"
-                    defaultChecked={resident?.isPrimary}
+                    checked={formData.isPrimary}
+                    onChange={(e) => setFormData({...formData, isPrimary: e.target.checked})}
                     className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
                   />
                   <div className="flex items-center gap-1">
@@ -419,7 +422,8 @@ export default function BuildingManager() {
               <label className="block text-sm font-medium text-gray-700 mb-1">הערות</label>
               <textarea
                 name="notes"
-                defaultValue={resident?.notes}
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows={3}
                 className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="הערות נוספות..."
@@ -544,7 +548,9 @@ export default function BuildingManager() {
                             קוד: {building.code}
                           </span>
                         )}
-                      onChange={(e) => setFormData({...formData, allowMailbox: e.target.checked})}
+                      </div>
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingResident({building, resident: {
@@ -770,8 +776,8 @@ export default function BuildingManager() {
                   address={`${getStreetName(showWhatsApp.building.streetId)} ${showWhatsApp.building.number}`}
                   type="package"
                 />
-                  value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                <QuickWhatsApp
+                  recipientName={showWhatsApp.resident.fullName}
                   phone={showWhatsApp.resident.phone || ''}
                   address={`${getStreetName(showWhatsApp.building.streetId)} ${showWhatsApp.building.number}`}
                   type="general"
