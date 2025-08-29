@@ -461,7 +461,7 @@ export default function BuildingManager() {
               <span className={`mr-2 px-2 py-1 rounded-full text-xs ${
                 firebaseConnected ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
               }`}>
-                {firebaseConnected ? '🔥 Firebase מחובר' : '💾 מצב מקומי'}
+                💾 שמירה מקומית פעילה {firebaseConnected ? '+ Firebase' : '(Firebase כבוי)'}
               </span>
             </p>
           </div>

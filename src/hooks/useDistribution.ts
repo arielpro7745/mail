@@ -177,30 +177,40 @@ export function useDistribution() {
 
     initializeApp();
 
-    // Listen to real-time updates for streets
-    const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
-      const streets: Street[] = [];
-      snapshot.forEach((doc) => {
-        const streetData = doc.data();
-        streets.push({ 
-          id: doc.id, 
-          ...streetData,
-          // Ensure all required fields exist
-          lastDelivered: streetData.lastDelivered || "",
-          deliveryTimes: streetData.deliveryTimes || [],
-          averageTime: streetData.averageTime || undefined,
-          cycleStartDate: streetData.cycleStartDate || undefined
-        } as Street);
-      });
-      console.log(`Loaded ${streets.length} streets from Firebase:`, streets.map(s => ({ id: s.id, name: s.name, area: s.area, lastDelivered: s.lastDelivered })));
-      setData(streets);
-      saveStreetsToLocalStorage(streets);
-    }, (error) => {
-      console.error("Error in streets snapshot listener:", error);
-      console.log("🔄 ממשיך עם נתונים מקומיים");
-    });
+    // נסה להאזין ל-Firebase אבל אל תדרוס נתונים מקומיים
+    const tryFirebaseListener = async () => {
+      try {
+        // רק אם אין נתונים מקומיים, האזן ל-Firebase
+        if (localStreets.length === 0) {
+          const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+            const streets: Street[] = [];
+            snapshot.forEach((doc) => {
+              const streetData = doc.data();
+              streets.push({ 
+                id: doc.id, 
+                ...streetData,
+                lastDelivered: streetData.lastDelivered || "",
+                deliveryTimes: streetData.deliveryTimes || [],
+                averageTime: streetData.averageTime || undefined,
+                cycleStartDate: streetData.cycleStartDate || undefined
+              } as Street);
+            });
+            console.log("📥 נתונים מ-Firebase (רק אם אין מקומיים)");
+            setData(streets);
+            saveStreetsToLocalStorage(streets);
+          }, (error) => {
+            console.log("💾 Firebase לא זמין, ממשיך מקומית");
+          });
+          return () => unsubscribe();
+        } else {
+          console.log("💾 יש נתונים מקומיים, לא מאזין ל-Firebase");
+        }
+      } catch (error) {
+        console.log("💾 עובד במצב מקומי בלבד");
+      }
+    };
 
-    return () => unsubscribe();
+    tryFirebaseListener();
   }, []);
 
   const today = new Date();
