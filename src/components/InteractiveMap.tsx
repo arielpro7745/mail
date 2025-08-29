@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import { Building, Street } from '../types';
 import { streets } from '../data/streets';
-import { Map, Navigation, Route, MapPin, Clock, CheckCircle } from 'lucide-react';
+import { Map, Navigation, Router as Route, MapPin, Clock, CheckCircle } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
