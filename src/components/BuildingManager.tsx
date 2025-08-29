@@ -168,31 +168,53 @@ export default function BuildingManager() {
   const ResidentForm = ({ building, resident, onClose }: { building: Building; resident?: Resident; onClose: () => void }) => {
     const isEdit = Boolean(resident);
     const [contacts, setContacts] = useState<Contact[]>(resident?.contacts || []);
+   const [formData, setFormData] = useState({
+     fullName: resident?.fullName || '',
+     apartment: resident?.apartment || '',
+     phone: resident?.phone || '',
+     allowMailbox: resident?.allowMailbox || false,
+     allowDoor: resident?.allowDoor || false,
+     contactPreference: resident?.contactPreference || 'whatsapp',
+     notes: resident?.notes || '',
+     isPrimary: resident?.isPrimary || false,
+     relationship: resident?.relationship || ''
+   });
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const formData = new FormData(e.currentTarget);
+     console.log('Submitting resident form:', { isEdit, building: building.id, formData, contacts });
       
       const residentData = {
-        fullName: formData.get('fullName') as string,
-        apartment: formData.get('apartment') as string,
-        phone: (formData.get('phone') as string) || undefined,
-        allowMailbox: formData.get('allowMailbox') === 'on',
-        allowDoor: formData.get('allowDoor') === 'on',
-        contactPreference: formData.get('contactPreference') as any,
-        notes: (formData.get('notes') as string) || undefined,
-        isPrimary: formData.get('isPrimary') === 'on',
-        relationship: (formData.get('relationship') as string) || undefined,
+       fullName: formData.fullName,
+       apartment: formData.apartment,
+       phone: formData.phone || undefined,
+       allowMailbox: formData.allowMailbox,
+       allowDoor: formData.allowDoor,
+       contactPreference: formData.contactPreference as any,
+       notes: formData.notes || undefined,
+       isPrimary: formData.isPrimary,
+       relationship: formData.relationship || undefined,
         contacts
       };
 
+     // ולידציה
+     if (!residentData.fullName.trim()) {
+       alert('שם מלא הוא שדה חובה');
+       return;
+     }
+     if (!residentData.apartment.trim()) {
+       alert('מספר דירה הוא שדה חובה');
+       return;
+     }
       if (isEdit && resident) {
+       console.log('Updating resident:', resident.id, residentData);
         updateResident(building.id, resident.id, residentData);
       } else {
         const newResident: Resident = {
           id: nanoid(),
           ...residentData
         };
+       console.log('Adding new resident:', newResident);
         addResident(building.id, newResident);
       }
       
@@ -237,9 +259,11 @@ export default function BuildingManager() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">שם מלא</label>
                 <input
-                  name="fullName"
-                  defaultValue={resident?.fullName}
+                 type="text"
+                 value={formData.fullName}
+                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                 placeholder="שם מלא"
                   required
                 />
               </div>
@@ -247,9 +271,11 @@ export default function BuildingManager() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">דירה</label>
                 <input
-                  name="apartment"
-                  defaultValue={resident?.apartment}
+                 type="text"
+                 value={formData.apartment}
+                 onChange={(e) => setFormData({...formData, apartment: e.target.value})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                 placeholder="מספר דירה"
                   required
                 />
               </div>
@@ -257,20 +283,22 @@ export default function BuildingManager() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">טלפון</label>
                 <input
-                  name="phone"
                   type="tel"
-                  defaultValue={resident?.phone}
+                 value={formData.phone}
+                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                 placeholder="050-1234567"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">העדפת קשר</label>
                 <select
-                  name="contactPreference"
-                  defaultValue={resident?.contactPreference || 'whatsapp'}
+                 value={formData.contactPreference}
+                 onChange={(e) => setFormData({...formData, contactPreference: e.target.value as any})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
+                 <option value="">בחר העדפה</option>
                   <option value="call">שיחה</option>
                   <option value="whatsapp">WhatsApp</option>
                   <option value="whatsapp_photo">WhatsApp + צילום</option>
@@ -282,8 +310,9 @@ export default function BuildingManager() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">קשר משפחתי</label>
                 <input
-                  name="relationship"
-                  defaultValue={resident?.relationship}
+                 type="text"
+                 value={formData.relationship}
+                 onChange={(e) => setFormData({...formData, relationship: e.target.value})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="בן/בת, הורה, וכו׳"
                 />
@@ -351,8 +380,8 @@ export default function BuildingManager() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    name="allowMailbox"
-                    defaultChecked={resident?.allowMailbox}
+                   checked={formData.allowMailbox}
+                   onChange={(e) => setFormData({...formData, allowMailbox: e.target.checked})}
                     className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                   />
                   <div className="flex items-center gap-1">
@@ -364,8 +393,8 @@ export default function BuildingManager() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    name="allowDoor"
-                    defaultChecked={resident?.allowDoor}
+                   checked={formData.allowDoor}
+                   onChange={(e) => setFormData({...formData, allowDoor: e.target.checked})}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <div className="flex items-center gap-1">
@@ -377,8 +406,8 @@ export default function BuildingManager() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    name="isPrimary"
-                    defaultChecked={resident?.isPrimary}
+                   checked={formData.isPrimary}
+                   onChange={(e) => setFormData({...formData, isPrimary: e.target.checked})}
                     className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
                   />
                   <div className="flex items-center gap-1">
@@ -392,8 +421,8 @@ export default function BuildingManager() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">הערות</label>
               <textarea
-                name="notes"
-                defaultValue={resident?.notes}
+               value={formData.notes}
+               onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows={3}
                 className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="הערות נוספות..."
