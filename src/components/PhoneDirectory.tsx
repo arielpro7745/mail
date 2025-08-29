@@ -505,7 +505,7 @@ export default function PhoneDirectory() {
                                 href={createWhatsAppLink(phone, entry.name)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                                 title="שלח WhatsApp"
                               >
                                 <MessageCircle size={14} />
@@ -515,16 +515,18 @@ export default function PhoneDirectory() {
 
                           {/* אנשי קשר נוספים */}
                           {entry.contacts.map((contact, contactIndex) => (
-                            <div key={contactIndex} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                              <User size={16} className="text-gray-600" />
+                            <div key={contactIndex} className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                              <User size={16} className="text-purple-600" />
                               <div>
                                 <div className="font-medium text-gray-800">{contact.name}</div>
-                                <div className="text-sm text-gray-600">{contact.phone}</div>
-                                <div className="text-xs text-gray-500">איש קשר</div>
+                                <div className="text-xs text-gray-500">{contact.phone}</div>
+                                {contact.relationship && (
+                                  <div className="text-xs text-purple-600">{contact.relationship}</div>
+                                )}
                               </div>
                               <a
                                 href={`tel:${contact.phone}`}
-                                className="mr-auto p-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                                className="mr-auto p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
                                 title="התקשר"
                               >
                                 <Phone size={14} />
@@ -533,7 +535,7 @@ export default function PhoneDirectory() {
                                 href={createWhatsAppLink(contact.phone, contact.name)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                                 title="שלח WhatsApp"
                               >
                                 <MessageCircle size={14} />
