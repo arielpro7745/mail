@@ -9,7 +9,8 @@ export default function TabBar({current,setTab}:Props){
     {id:"tasks",label:"משימות", icon: CheckSquare},
     {id:"reports",label:"דוחות", icon: BarChart3},
     {id:"phones",label:"טלפונים", icon: Phone},
-    {id:"export",label:"ייצוא נתונים", icon: FileText}
+    {id:"export",label:"ייצוא נתונים", icon: FileText},
+    {id:"advanced",label:"🚀 מתקדם", icon: FileText}
   ];
   
   return(

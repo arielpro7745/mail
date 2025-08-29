@@ -18,15 +18,22 @@ import PhoneDirectory from "./components/PhoneDirectory";
 import DataExport from "./components/DataExport";
 import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
 import QuickActions from "./components/QuickActions";
+import InteractiveMap from "./components/InteractiveMap";
+import VoiceNotifications from "./components/VoiceNotifications";
+import AdvancedStats from "./components/AdvancedStats";
+import AutoBackup from "./components/AutoBackup";
+import NightModeScheduler from "./components/NightModeScheduler";
+import GPSExporter from "./components/GPSExporter";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 import { AlertTriangle } from "lucide-react";
 
 export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
+  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export" | "advanced">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
+  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
 
   const {
     todayArea,
@@ -372,6 +379,49 @@ export default function App() {
               totalCompleted={allCompletedToday.length}
             />
             
+            {/* תכונות מתקדמות */}
+            <div className="mt-8">
+              <button
+                onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl transition-all duration-200 shadow-lg mb-4"
+              >
+                <span className="text-lg">🚀</span>
+                {showAdvancedFeatures ? 'הסתר תכונות מתקדמות' : 'הצג תכונות מתקדמות'}
+              </button>
+
+              {showAdvancedFeatures && (
+                <div className="space-y-6">
+                  {/* מפה אינטראקטיבית */}
+                  <InteractiveMap 
+                    buildings={[]} 
+                    currentArea={todayArea}
+                    completedToday={completedToday}
+                  />
+                  
+                  {/* התראות קוליות */}
+                  <VoiceNotifications 
+                    onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)}
+                  />
+                  
+                  {/* סטטיסטיקות מתקדמות */}
+                  <AdvancedStats />
+                  
+                  {/* גיבוי אוטומטי */}
+                  <AutoBackup />
+                  
+                  {/* מצב לילה אוטומטי */}
+                  <NightModeScheduler />
+                  
+                  {/* ייצוא GPS */}
+                  <GPSExporter 
+                    buildings={[]}
+                    currentArea={todayArea}
+                    optimizedRoute={optimizedStreets}
+                  />
+                </div>
+              )}
+            </div>
+            
             <Notifications count={overdue} />
             <WalkingOrder area={todayArea} />
           </>
@@ -382,6 +432,42 @@ export default function App() {
         {tab === "reports" && <Reports />}
         {tab === "phones" && <PhoneDirectory />}
         {tab === "export" && <DataExport />}
+        {tab === "advanced" && (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">🚀 תכונות מתקדמות</h2>
+              <p className="text-gray-600">כלים חכמים לניהול מתקדם של חלוקת הדואר</p>
+            </div>
+            
+            {/* מפה אינטראקטיבית */}
+            <InteractiveMap 
+              buildings={[]} 
+              currentArea={todayArea}
+              completedToday={completedToday}
+            />
+            
+            {/* התראות קוליות */}
+            <VoiceNotifications 
+              onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)}
+            />
+            
+            {/* סטטיסטיקות מתקדמות */}
+            <AdvancedStats />
+            
+            {/* גיבוי אוטומטי */}
+            <AutoBackup />
+            
+            {/* מצב לילה אוטומטי */}
+            <NightModeScheduler />
+            
+            {/* ייצוא GPS */}
+            <GPSExporter 
+              buildings={[]}
+              currentArea={todayArea}
+              optimizedRoute={optimizedStreets}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
