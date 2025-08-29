@@ -24,12 +24,13 @@ import AdvancedStats from "./components/AdvancedStats";
 import AutoBackup from "./components/AutoBackup";
 import NightModeScheduler from "./components/NightModeScheduler";
 import GPSExporter from "./components/GPSExporter";
+import WhatsAppManager from "./components/WhatsAppManager";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 import { AlertTriangle } from "lucide-react";
 
 export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export" | "advanced">("regular");
+  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
@@ -432,6 +433,7 @@ export default function App() {
         {tab === "reports" && <Reports />}
         {tab === "phones" && <PhoneDirectory />}
         {tab === "export" && <DataExport />}
+        {tab === "whatsapp" && <WhatsAppManager />}
         {tab === "advanced" && (
           <div className="space-y-6">
             <div className="text-center mb-8">

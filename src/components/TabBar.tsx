@@ -1,4 +1,5 @@
 import { BarChart3, Building2, CheckSquare, FileText, Phone, Settings } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 
 interface Props{current:string;setTab:(t:string)=>void;}
 
@@ -10,6 +11,7 @@ export default function TabBar({current,setTab}:Props){
     {id:"reports",label:"דוחות", icon: BarChart3},
     {id:"phones",label:"טלפונים", icon: Phone},
     {id:"export",label:"ייצוא נתונים", icon: FileText},
+    {id:"whatsapp",label:"WhatsApp", icon: MessageCircle},
     {id:"advanced",label:"🚀 מתקדם", icon: FileText}
   ];
   
