@@ -397,7 +397,6 @@ export default function BuildingManager() {
                 rows={3}
                 className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="הערות נוספות..."
-                <option value="">בחר העדפה</option>
               />
             </div>
 
