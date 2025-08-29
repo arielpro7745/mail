@@ -544,8 +544,6 @@ export default function BuildingManager() {
                             קוד: {building.code}
                           </span>
                         )}
-                      </div>
-                      checked={formData.allowMailbox}
                       onChange={(e) => setFormData({...formData, allowMailbox: e.target.checked})}
                   <div className="flex gap-2">
                     <button
@@ -558,8 +556,8 @@ export default function BuildingManager() {
                         allowDoor: false,
                         isPrimary: false
                       } as Resident})}
-                      checked={formData.allowDoor}
-                      onChange={(e) => setFormData({...formData, allowDoor: e.target.checked})}
+                      className="flex items-center gap-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm"
+                    >
                       <Plus size={14} />
                       דייר
                     </button>
@@ -571,8 +569,8 @@ export default function BuildingManager() {
                     </button>
                     <button
                       onClick={() => {
-                      checked={formData.isPrimary}
-                      onChange={(e) => setFormData({...formData, isPrimary: e.target.checked})}
+                        if (window.confirm('בטוח למחוק בניין זה?')) {
+                          deleteBuilding(building.id);
                         }
                       }}
                       className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
