@@ -5,204 +5,256 @@ import { Building, Resident } from "../types";
 import { buildings as initialBuildings } from "../data/buildings";
 
 const COLLECTION_NAME = "buildings";
+const LOCAL_STORAGE_KEY = "buildings_data";
 
 export function useBuildings() {
   const [data, setData] = useState<Building[]>([]);
   const [loading, setLoading] = useState(true);
+  const [useFirebase, setUseFirebase] = useState(true);
 
-  // Initialize data if collection is empty
-  const initializeData = async () => {
+  // שמירה ב-localStorage
+  const saveToLocalStorage = (buildings: Building[]) => {
     try {
-      const snapshot = await getDocs(collection(db, COLLECTION_NAME));
-      if (snapshot.empty && initialBuildings.length > 0) {
-        // Initialize with default buildings data
-        const batch = initialBuildings.map(building => 
-          setDoc(doc(db, COLLECTION_NAME, building.id), building)
-        );
-        await Promise.all(batch);
-        console.log("Initialized buildings data in Firestore");
-      }
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(buildings));
+      console.log("✅ נתונים נשמרו ב-localStorage");
     } catch (error) {
-      console.error("Error initializing buildings data:", error);
-      if (error.code === 'permission-denied') {
-        console.warn("Firebase permission denied. Using local data. Please check your Firestore Security Rules.");
-        setData(initialBuildings);
-      }
+      console.error("❌ שגיאה בשמירה ב-localStorage:", error);
     }
   };
 
+  // טעינה מ-localStorage
+  const loadFromLocalStorage = (): Building[] => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log("✅ נתונים נטענו מ-localStorage:", parsed.length, "בניינים");
+        return parsed;
+      }
+    } catch (error) {
+      console.error("❌ שגיאה בטעינה מ-localStorage:", error);
+    }
+    return initialBuildings;
+  };
+
+  // Initialize data
   useEffect(() => {
-    const initializeApp = async () => {
-      await initializeData();
+    const initializeData = async () => {
+      console.log("🔄 מתחיל טעינת נתונים...");
+      
+      // תמיד טען מ-localStorage קודם
+      const localData = loadFromLocalStorage();
+      setData(localData);
       setLoading(false);
+
+      // נסה להתחבר ל-Firebase
+      try {
+        console.log("🔥 מנסה להתחבר ל-Firebase...");
+        const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+        
+        if (snapshot.empty && localData.length > 0) {
+          // אם Firebase ריק אבל יש נתונים מקומיים, העלה אותם
+          console.log("📤 מעלה נתונים מקומיים ל-Firebase...");
+          const batch = localData.map(building => 
+            setDoc(doc(db, COLLECTION_NAME, building.id), building)
+          );
+          await Promise.all(batch);
+          console.log("✅ נתונים הועלו ל-Firebase");
+        } else if (!snapshot.empty) {
+          // אם יש נתונים ב-Firebase, טען אותם
+          const firebaseData: Building[] = [];
+          snapshot.forEach((doc) => {
+            firebaseData.push({ id: doc.id, ...doc.data() } as Building);
+          });
+          console.log("✅ נתונים נטענו מ-Firebase:", firebaseData.length, "בניינים");
+          setData(firebaseData);
+          saveToLocalStorage(firebaseData);
+        }
+
+        // האזן לעדכונים בזמן אמת
+        const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+          const buildings: Building[] = [];
+          snapshot.forEach((doc) => {
+            buildings.push({ id: doc.id, ...doc.data() } as Building);
+          });
+          console.log("🔄 עדכון מ-Firebase:", buildings.length, "בניינים");
+          setData(buildings);
+          saveToLocalStorage(buildings);
+        }, (error) => {
+          console.error("❌ שגיאה ב-Firebase listener:", error);
+          setUseFirebase(false);
+        });
+
+        return () => unsubscribe();
+        
+      } catch (error) {
+        console.error("❌ שגיאה בחיבור ל-Firebase:", error);
+        setUseFirebase(false);
+        console.log("🔄 עובר למצב מקומי בלבד");
+      }
     };
 
-    initializeApp();
-
-    // Listen to real-time updates for buildings
-    const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
-      const buildings: Building[] = [];
-      snapshot.forEach((doc) => {
-        buildings.push({ id: doc.id, ...doc.data() } as Building);
-      });
-      setData(buildings);
-    }, (error) => {
-      console.error("Error in buildings snapshot listener:", error);
-      if (error.code === 'permission-denied') {
-        console.warn("Firebase permission denied for real-time updates. Using local data.");
-        // טען מ-localStorage אם Firebase לא עובד
-        const localData = localStorage.getItem('buildings_backup');
-        if (localData) {
-          try {
-            setData(JSON.parse(localData));
-          } catch {
-            setData(initialBuildings);
-          }
-        } else {
-          setData(initialBuildings);
-        }
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    initializeData();
   }, []);
 
   const addBuilding = async (building: Building) => {
-    try {
-      await setDoc(doc(db, COLLECTION_NAME, building.id), building);
-    } catch (error) {
-      console.error("Error adding building:", error);
-      // שמירה מקומית כגיבוי
-      const currentData = [...data, building];
-      setData(currentData);
-      localStorage.setItem('buildings_backup', JSON.stringify(currentData));
+    console.log("➕ מוסיף בניין:", building);
+    
+    // עדכון מיידי של ה-state
+    const newData = [...data, building];
+    setData(newData);
+    saveToLocalStorage(newData);
+    
+    // נסה לשמור ב-Firebase
+    if (useFirebase) {
+      try {
+        await setDoc(doc(db, COLLECTION_NAME, building.id), building);
+        console.log("✅ בניין נשמר ב-Firebase");
+      } catch (error) {
+        console.error("❌ שגיאה בשמירת בניין ב-Firebase:", error);
+      }
     }
   };
 
   const updateBuilding = async (id: string, patch: Partial<Building>) => {
-    try {
-      await updateDoc(doc(db, COLLECTION_NAME, id), patch);
-    } catch (error) {
-      console.error("Error updating building:", error);
-      // שמירה מקומית כגיבוי
-      const currentData = data.map(b => b.id === id ? { ...b, ...patch } : b);
-      setData(currentData);
-      localStorage.setItem('buildings_backup', JSON.stringify(currentData));
+    console.log("✏️ מעדכן בניין:", id, patch);
+    
+    // עדכון מיידי של ה-state
+    const newData = data.map(b => b.id === id ? { ...b, ...patch } : b);
+    setData(newData);
+    saveToLocalStorage(newData);
+    
+    // נסה לעדכן ב-Firebase
+    if (useFirebase) {
+      try {
+        await updateDoc(doc(db, COLLECTION_NAME, id), patch);
+        console.log("✅ בניין עודכן ב-Firebase");
+      } catch (error) {
+        console.error("❌ שגיאה בעדכון בניין ב-Firebase:", error);
+      }
     }
   };
 
   const deleteBuilding = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, COLLECTION_NAME, id));
-    } catch (error) {
-      console.error("Error deleting building:", error);
-      // שמירה מקומית כגיבוי
-      const currentData = data.filter(b => b.id !== id);
-      setData(currentData);
-      localStorage.setItem('buildings_backup', JSON.stringify(currentData));
+    console.log("🗑️ מוחק בניין:", id);
+    
+    // עדכון מיידי של ה-state
+    const newData = data.filter(b => b.id !== id);
+    setData(newData);
+    saveToLocalStorage(newData);
+    
+    // נסה למחוק מ-Firebase
+    if (useFirebase) {
+      try {
+        await deleteDoc(doc(db, COLLECTION_NAME, id));
+        console.log("✅ בניין נמחק מ-Firebase");
+      } catch (error) {
+        console.error("❌ שגיאה במחיקת בניין מ-Firebase:", error);
+      }
     }
   };
 
   const addResident = async (buildingId: string, resident: Resident) => {
-    try {
-      const building = data.find(b => b.id === buildingId);
-      if (building) {
-        console.log('Adding resident:', resident, 'to building:', buildingId);
-        const updatedResidents = [...building.residents, resident];
-        
-        // עדכון מיידי של ה-state המקומי
-        const newData = data.map(b => 
-          b.id === buildingId 
-            ? { ...b, residents: updatedResidents }
-            : b
-        );
-        setData(newData);
-        
-        // שמירה מקומית מיידית
-        localStorage.setItem('buildings_backup', JSON.stringify(newData));
-        
-        // ניסיון עדכון Firebase
-        try {
-          await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-            residents: updatedResidents
-          });
-          console.log('Resident saved to Firebase successfully');
-        } catch (firebaseError) {
-          console.warn('Firebase save failed, but local state updated:', firebaseError);
-        }
-        
-        console.log('Resident added successfully');
-      } else {
-        console.error('Building not found:', buildingId);
+    console.log("👤 מוסיף דייר:", resident, "לבניין:", buildingId);
+    
+    const building = data.find(b => b.id === buildingId);
+    if (!building) {
+      console.error("❌ בניין לא נמצא:", buildingId);
+      return;
+    }
+
+    // עדכון מיידי של ה-state
+    const updatedResidents = [...building.residents, resident];
+    const newData = data.map(b => 
+      b.id === buildingId 
+        ? { ...b, residents: updatedResidents }
+        : b
+    );
+    
+    setData(newData);
+    saveToLocalStorage(newData);
+    console.log("✅ דייר נוסף למצב מקומי");
+    
+    // נסה לשמור ב-Firebase
+    if (useFirebase) {
+      try {
+        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+          residents: updatedResidents
+        });
+        console.log("✅ דייר נשמר ב-Firebase");
+      } catch (error) {
+        console.error("❌ שגיאה בשמירת דייר ב-Firebase:", error);
       }
-    } catch (error) {
-      console.error("Error adding resident:", error);
     }
   };
 
   const updateResident = async (buildingId: string, residentId: string, patch: Partial<Resident>) => {
-    try {
-      const building = data.find(b => b.id === buildingId);
-      if (building) {
-        const updatedResidents = building.residents.map(r => 
-          r.id === residentId ? { ...r, ...patch } : r
-        );
-        
-        // עדכון מיידי של ה-state המקומי
-        const newData = data.map(b => 
-          b.id === buildingId 
-            ? { ...b, residents: updatedResidents }
-            : b
-        );
-        setData(newData);
-        
-        // שמירה מקומית מיידית
-        localStorage.setItem('buildings_backup', JSON.stringify(newData));
-        
-        // ניסיון עדכון Firebase
-        try {
-          await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-            residents: updatedResidents
-          });
-          console.log('Resident updated in Firebase successfully');
-        } catch (firebaseError) {
-          console.warn('Firebase update failed, but local state updated:', firebaseError);
-        }
+    console.log("✏️ מעדכן דייר:", residentId, patch);
+    
+    const building = data.find(b => b.id === buildingId);
+    if (!building) {
+      console.error("❌ בניין לא נמצא:", buildingId);
+      return;
+    }
+
+    // עדכון מיידי של ה-state
+    const updatedResidents = building.residents.map(r => 
+      r.id === residentId ? { ...r, ...patch } : r
+    );
+    const newData = data.map(b => 
+      b.id === buildingId 
+        ? { ...b, residents: updatedResidents }
+        : b
+    );
+    
+    setData(newData);
+    saveToLocalStorage(newData);
+    console.log("✅ דייר עודכן במצב מקומי");
+    
+    // נסה לעדכן ב-Firebase
+    if (useFirebase) {
+      try {
+        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+          residents: updatedResidents
+        });
+        console.log("✅ דייר עודכן ב-Firebase");
+      } catch (error) {
+        console.error("❌ שגיאה בעדכון דייר ב-Firebase:", error);
       }
-    } catch (error) {
-      console.error("Error updating resident:", error);
     }
   };
 
   const deleteResident = async (buildingId: string, residentId: string) => {
-    try {
-      const building = data.find(b => b.id === buildingId);
-      if (building) {
-        const updatedResidents = building.residents.filter(r => r.id !== residentId);
-        
-        // עדכון מיידי של ה-state המקומי
-        const newData = data.map(b => 
-          b.id === buildingId 
-            ? { ...b, residents: updatedResidents }
-            : b
-        );
-        setData(newData);
-        
-        // שמירה מקומית מיידית
-        localStorage.setItem('buildings_backup', JSON.stringify(newData));
-        
-        // ניסיון עדכון Firebase
-        try {
-          await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-            residents: updatedResidents
-          });
-        } catch (firebaseError) {
-          console.warn('Firebase delete failed, but local state updated:', firebaseError);
-        }
+    console.log("🗑️ מוחק דייר:", residentId);
+    
+    const building = data.find(b => b.id === buildingId);
+    if (!building) {
+      console.error("❌ בניין לא נמצא:", buildingId);
+      return;
+    }
+
+    // עדכון מיידי של ה-state
+    const updatedResidents = building.residents.filter(r => r.id !== residentId);
+    const newData = data.map(b => 
+      b.id === buildingId 
+        ? { ...b, residents: updatedResidents }
+        : b
+    );
+    
+    setData(newData);
+    saveToLocalStorage(newData);
+    console.log("✅ דייר נמחק מהמצב המקומי");
+    
+    // נסה למחוק מ-Firebase
+    if (useFirebase) {
+      try {
+        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+          residents: updatedResidents
+        });
+        console.log("✅ דייר נמחק מ-Firebase");
+      } catch (error) {
+        console.error("❌ שגיאה במחיקת דייר מ-Firebase:", error);
       }
-    } catch (error) {
-      console.error("Error deleting resident:", error);
     }
   };
 
