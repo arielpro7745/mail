@@ -676,15 +676,6 @@ export default function BuildingManager(){
     return a.number - b.number;
   });
 
-  // הסרת הקוד הישן
-          return true;
-        }
-        
-        return false;
-      });
-    });
-  };
-
   // סינון הבניינים לפי החיפוש
   const filteredBuildingsFromSearch = filterBuildings(buildings, searchTerm);
 
