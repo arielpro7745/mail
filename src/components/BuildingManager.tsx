@@ -166,7 +166,7 @@ export default function BuildingManager() {
 
   // טופס הוספת/עריכת דייר
   const ResidentForm = ({ building, resident, onClose }: { building: Building; resident?: Resident; onClose: () => void }) => {
-    const isEdit = Boolean(resident);
+    const isEdit = Boolean(resident && resident.fullName); // רק אם יש שם זה עריכה
     const [contacts, setContacts] = useState<Contact[]>(resident?.contacts || []);
     const [formData, setFormData] = useState({
       fullName: resident?.fullName || '',
@@ -209,7 +209,7 @@ export default function BuildingManager() {
         updateResident(building.id, resident.id, residentData);
       } else {
         const newResident: Resident = {
-          id: nanoid(),
+          id: resident?.id || nanoid(),
           ...residentData
         };
         console.log('Adding new resident:', newResident);
@@ -431,7 +431,7 @@ export default function BuildingManager() {
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-lg"
               >
-                {isEdit ? 'עדכן' : 'הוסף'} דייר
+                {isEdit ? 'עדכן דייר' : 'הוסף דייר'}
               </button>
               <button
                 type="button"
