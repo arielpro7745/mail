@@ -546,11 +546,10 @@ export default function BuildingManager() {
                         id: nanoid(),
                         fullName: '',
                         apartment: '',
-                        phone: '',
-                        allowMailbox: false,
+                        contacts: [],
+                        allowMailbox: true,
                         allowDoor: false,
-                        isPrimary: false,
-                        contacts: []
+                        isPrimary: false
                       } as Resident})}
                       className="flex items-center gap-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
                     >

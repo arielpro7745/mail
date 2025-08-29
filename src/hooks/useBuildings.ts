@@ -87,21 +87,32 @@ export function useBuildings() {
       if (building) {
         console.log('Adding resident:', resident, 'to building:', buildingId);
         const updatedResidents = [...building.residents, resident];
-        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-          residents: updatedResidents
-        });
+        
+        // עדכון מיידי של ה-state המקומי
+        setData(prevData => 
+          prevData.map(b => 
+            b.id === buildingId 
+              ? { ...b, residents: updatedResidents }
+              : b
+          )
+        );
+        
+        // ניסיון עדכון Firebase
+        try {
+          await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+            residents: updatedResidents
+          });
+          console.log('Resident saved to Firebase successfully');
+        } catch (firebaseError) {
+          console.warn('Firebase save failed, but local state updated:', firebaseError);
+        }
+        
         console.log('Resident added successfully');
+      } else {
+        console.error('Building not found:', buildingId);
       }
     } catch (error) {
       console.error("Error adding resident:", error);
-      // Fallback to local state update if Firebase fails
-      setData(prevData => 
-        prevData.map(b => 
-          b.id === buildingId 
-            ? { ...b, residents: [...b.residents, resident] }
-            : b
-        )
-      );
     }
   };
 
@@ -112,9 +123,25 @@ export function useBuildings() {
         const updatedResidents = building.residents.map(r => 
           r.id === residentId ? { ...r, ...patch } : r
         );
-        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-          residents: updatedResidents
-        });
+        
+        // עדכון מיידי של ה-state המקומי
+        setData(prevData => 
+          prevData.map(b => 
+            b.id === buildingId 
+              ? { ...b, residents: updatedResidents }
+              : b
+          )
+        );
+        
+        // ניסיון עדכון Firebase
+        try {
+          await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+            residents: updatedResidents
+          });
+          console.log('Resident updated in Firebase successfully');
+        } catch (firebaseError) {
+          console.warn('Firebase update failed, but local state updated:', firebaseError);
+        }
       }
     } catch (error) {
       console.error("Error updating resident:", error);
