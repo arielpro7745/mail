@@ -180,6 +180,24 @@ export default function BuildingManager() {
      relationship: resident?.relationship || ''
    });
 
+    // עדכון formData כשהדייר משתנה
+    useState(() => {
+      if (resident) {
+        setFormData({
+          fullName: resident.fullName || '',
+          apartment: resident.apartment || '',
+          phone: resident.phone || '',
+          allowMailbox: resident.allowMailbox || false,
+          allowDoor: resident.allowDoor || false,
+          contactPreference: resident.contactPreference || 'whatsapp',
+          notes: resident.notes || '',
+          isPrimary: resident.isPrimary || false,
+          relationship: resident.relationship || ''
+        });
+        setContacts(resident.contacts || []);
+      }
+    }, [resident]);
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
      console.log('Submitting resident form:', { isEdit, building: building.id, formData, contacts });
@@ -741,7 +759,7 @@ export default function BuildingManager() {
       {editingResident && (
         <ResidentForm 
           building={editingResident.building} 
-          resident={editingResident.resident.id ? editingResident.resident : undefined}
+          resident={editingResident.resident}
           onClose={() => setEditingResident(null)} 
         />
       )}
