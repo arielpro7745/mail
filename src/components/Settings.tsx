@@ -73,6 +73,19 @@ export default function Settings() {
                 className="rounded"
               />
             </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span>📍</span>
+                <span>כתובות קצרות</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.shortAddresses || false}
+                onChange={(e) => updateSettings({ shortAddresses: e.target.checked })}
+                className="rounded"
+              />
+            </div>
           </div>
 
           <button

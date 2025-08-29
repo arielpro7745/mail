@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useReports } from "../hooks/useReports";
+import { useSettings } from "../hooks/useSettings";
 import { streets } from "../data/streets";
+import { formatStreetName } from "../utils/addressFormatter";
 import LoadingSpinner from "./LoadingSpinner";
 import { 
   Phone, Search, Download, User, Home, 
@@ -9,6 +11,7 @@ import {
 
 export default function PhoneDirectory() {
   const { reportData } = useReports();
+  const { settings } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<'all' | 'mailbox' | 'door' | 'primary'>('all');
   const [selectedArea, setSelectedArea] = useState<'all' | '12' | '14' | '45'>('all');

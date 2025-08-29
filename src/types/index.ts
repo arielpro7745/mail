@@ -71,6 +71,7 @@ export interface AppSettings {
   reminderTime: string; // HH:MM format
   soundEnabled: boolean;
   optimizeRoutes: boolean;
+  shortAddresses?: boolean; // הצגת כתובות קצרות
 }
 
 /* ---------- סטטיסטיקות ---------- */

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useBuildings } from "../hooks/useBuildings";
+import { useSettings } from "../hooks/useSettings";
 import { Building, Resident, Contact } from "../types";
 import { streets } from "../data/streets";
+import { formatStreetAddress } from "../utils/addressFormatter";
 import { nanoid } from "nanoid";
 import LoadingSpinner from "./LoadingSpinner";
 import BuildingEntranceManager from "./BuildingEntranceManager";
@@ -14,6 +16,7 @@ import {
 
 export default function BuildingManager() {
   const { buildings, addBuilding, updateBuilding, deleteBuilding, addResident, updateResident, deleteResident, loading, firebaseConnected } = useBuildings();
+  const { settings } = useSettings();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
   const [editingResident, setEditingResident] = useState<{building: Building, resident: Resident} | null>(null);
@@ -43,7 +46,17 @@ export default function BuildingManager() {
   // קבלת שם רחוב
   const getStreetName = (streetId: string) => {
     const street = streets.find(s => s.id === streetId);
-    return street ? street.name : streetId;
+    if (!street) return streetId;
+    
+    // השתמש בהגדרת כתובות קצרות
+    if (settings.shortAddresses) {
+      return street.name
+        .replace(/\s+\d+‑\d+.*$/, '') // הסרת טווחי מספרים
+        .replace(/\s+\(\w+\)$/, '')   // הסרת סוגריים
+        .trim();
+    }
+    
+    return street.name;
   };
 
   // טופס הוספת/עריכת בניין
