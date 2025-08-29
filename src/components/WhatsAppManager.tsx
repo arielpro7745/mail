@@ -170,16 +170,9 @@ export default function WhatsAppManager() {
       category: 'general',
       template: `שלום {name},
 
-בהמשך לפנייתך, אני יכול להגיע למסירה:
-
-🕐 היום בין {timeSlot1}
-🕐 מחר בין {timeSlot2}
-🕐 או בזמן שנוח לך
-
-אנא בחר את הזמן המתאים ואשלח לך הודעה לפני ההגעה.
-
-פריט למסירה: {itemType}
-כתובת: {address}
+יש לי דואר רשום למסירה עבורך.
+אני אגיע אליך במהלך היום.
+האם תרצה שאניח את הרשום בתיבה?
 
 דוור מדואר ישראל`,
       variables: ['name', 'timeSlot1', 'timeSlot2', 'itemType', 'address'],

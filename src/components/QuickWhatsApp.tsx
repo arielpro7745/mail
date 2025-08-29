@@ -41,8 +41,9 @@ export default function QuickWhatsApp({ recipientName = '', phone = '', address 
 
 זה דוור מדואר ישראל 📮
 
-יש לי דואר למסירה עבורך.
-אנא עדכן אותי מתי נוח לך לקבל.
+יש לי דואר רשום למסירה עבורך.
+אני אגיע אליך במהלך היום.
+האם תרצה שאניח את הרשום בתיבה?
 
 תודה!`
   };
