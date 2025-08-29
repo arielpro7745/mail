@@ -403,7 +403,6 @@ export default function BuildingManager() {
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
-                disabled={!deliveryInfo.recipientName.trim() || !deliveryInfo.phone.trim()}
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-lg"
               >
                 {isEdit ? 'עדכן' : 'הוסף'} דייר
