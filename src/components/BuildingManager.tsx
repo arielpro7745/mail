@@ -509,75 +509,174 @@ export default function BuildingManager(){
   };
 
   // פונקציית חיפוש מדויקת יותר
-  const filterBuildings = (buildings: Building[], searchTerm: string) => {
+  const filterBuildings = (buildings: Building[], searchTerm: string): Building[] => {
     if (!searchTerm.trim()) return buildings;
     
     const term = searchTerm.toLowerCase().trim();
+    const searchWords = term.split(/\s+/).filter(Boolean);
     
     return buildings.filter(building => {
       const streetName = getStreetName(building.streetId).toLowerCase();
       const buildingNumber = building.number.toString();
       const entrance = building.entrance?.toLowerCase() || "";
       const code = building.code?.toLowerCase() || "";
+      const fullAddress = `${streetName} ${buildingNumber}${entrance ? ` ${entrance}` : ''}`.toLowerCase();
       
-      // חיפוש מדויק יותר בכתובת
-      const streetWords = streetName.split(' ');
-      const searchWords = term.split(' ');
-      
-      // בדיקה אם החיפוש מכיל מספר בית
-      const searchNumber = term.match(/\d+/)?.[0];
-      
-      // אם יש מספר בחיפוש, בדוק התאמה מדויקת למספר הבית
-      if (searchNumber) {
-        const exactNumberMatch = buildingNumber === searchNumber;
-        const streetMatch = searchWords.some(word => 
-          streetWords.some(streetWord => streetWord.includes(word))
-        );
-        
-        // רק אם יש התאמה מדויקת למספר הבית ולרחוב
-        if (exactNumberMatch && streetMatch) {
-          return true;
-        }
-        
-        // אם רק מספר הבית תואם בלי שם רחוב
-        if (searchWords.length === 1 && exactNumberMatch) {
-          return true;
-        }
-      } else {
-        // חיפוש רגיל ללא מספרים
-        if (streetName.includes(term) || 
-            entrance.includes(term) ||
-            code.includes(term)) {
-          return true;
-        }
+      // 1. חיפוש מדויק בכתובת המלאה
+      if (fullAddress.includes(term)) {
+        return true;
       }
       
-      // חיפוש בדיירים
+      // 2. חיפוש חלקי - כל מילת חיפוש צריכה להופיע איפשהו
+      const addressMatches = searchWords.every(word => 
+        streetName.includes(word) || 
+        buildingNumber.includes(word) ||
+        entrance.includes(word) ||
+        code.includes(word)
+      );
+      
+      if (addressMatches) {
+        return true;
+      }
+      
+      // 3. חיפוש בדיירים - חיפוש מתקדם יותר
       return building.residents.some(resident => {
         const residentName = resident.fullName.toLowerCase();
         const apartment = resident.apartment.toLowerCase();
         const phone = resident.phone?.toLowerCase() || "";
         const relationship = resident.relationship?.toLowerCase() || "";
+        const notes = resident.notes?.toLowerCase() || "";
+        const residentText = `${residentName} ${apartment} ${phone} ${relationship} ${notes}`;
         
-        // חיפוש בפרטי הדייר
-        if (residentName.includes(term) ||
-            apartment.includes(term) ||
-            phone.includes(term) ||
-            relationship.includes(term)) {
+        // חיפוש מדויק בכל הטקסט של הדייר
+        if (residentText.includes(term)) {
           return true;
         }
         
-        // חיפוש בטלפונים נוספים
-        if (resident.familyPhones?.some(phone => phone.toLowerCase().includes(term))) {
+        // חיפוש חלקי - כל מילת חיפוש צריכה להופיע
+        const residentMatches = searchWords.every(word =>
+          residentName.includes(word) ||
+          apartment.includes(word) ||
+          phone.includes(word) ||
+          relationship.includes(word) ||
+          notes.includes(word) ||
+          resident.familyPhones?.some(fp => fp.toLowerCase().includes(word)) ||
+          resident.contacts?.some(contact => 
+            contact.name.toLowerCase().includes(word) ||
+            contact.phone.toLowerCase().includes(word) ||
+            contact.relationship?.toLowerCase().includes(word)
+          )
+        );
+        
+        if (residentMatches) {
           return true;
         }
         
-        // חיפוש באנשי קשר
-        if (resident.contacts?.some(contact => 
-          contact.name.toLowerCase().includes(term) ||
-          contact.phone.toLowerCase().includes(term) ||
-          contact.relationship?.toLowerCase().includes(term)
-        )) {
+        // 4. חיפוש גמיש - לפחות מילה אחת תואמת
+        return searchWords.some(word =>
+          residentName.includes(word) ||
+          apartment.includes(word) ||
+          phone.includes(word) ||
+          relationship.includes(word) ||
+          notes.includes(word)
+        );
+      });
+    });
+  };
+
+  // פונקציה נוספת לחיפוש מהיר לפי מספר בית
+  const quickSearchByNumber = (buildings: Building[], searchTerm: string): Building[] => {
+    const numberMatch = searchTerm.match(/^\d+$/);
+    if (numberMatch) {
+      const number = parseInt(numberMatch[0]);
+      return buildings.filter(building => building.number === number);
+    }
+    return [];
+  };
+
+  // פונקציה לחיפוש מתקדם
+  const advancedSearch = (buildings: Building[], searchTerm: string): Building[] => {
+    if (!searchTerm.trim()) return buildings;
+    
+    // חיפוש מהיר לפי מספר בלבד
+    const quickResults = quickSearchByNumber(buildings, searchTerm.trim());
+    if (quickResults.length > 0) {
+      return quickResults;
+    }
+    
+    // חיפוש רגיל מתקדם
+    const regularResults = filterBuildings(buildings, searchTerm);
+    
+    // אם אין תוצאות, נסה חיפוש גמיש יותר
+    if (regularResults.length === 0) {
+      const term = searchTerm.toLowerCase().trim();
+      return buildings.filter(building => {
+        const streetName = getStreetName(building.streetId).toLowerCase();
+        
+        // חיפוש גמיש - חלק מהמילים
+        const streetWords = streetName.split(/\s+/);
+        const searchWords = term.split(/\s+/);
+        
+        // אם לפחות מילה אחת תואמת
+        const hasPartialMatch = searchWords.some(searchWord =>
+          streetWords.some(streetWord => 
+            streetWord.includes(searchWord) || searchWord.includes(streetWord)
+          ) ||
+          building.number.toString().includes(searchWord) ||
+          building.entrance?.toLowerCase().includes(searchWord) ||
+          building.residents.some(resident =>
+            resident.fullName.toLowerCase().includes(searchWord) ||
+            resident.apartment.toLowerCase().includes(searchWord)
+          )
+        );
+        
+        return hasPartialMatch;
+      });
+    }
+    
+    return regularResults;
+  };
+
+  // שימוש בחיפוש המתקדם במקום הרגיל
+  const searchResults = advancedSearch(buildings, searchTerm);
+  
+  // סינון נוסף לפי אזור ורחוב
+  filteredBuildings = searchResults.filter(building => {
+    const street = streets.find(s => s.id === building.streetId);
+    
+    // סינון לפי אזור
+    if (selectedArea !== 'all') {
+      if (!street || street.area.toString() !== selectedArea) return false;
+    }
+
+    // סינון לפי רחוב
+    if (selectedStreet !== 'all') {
+      if (building.streetId !== selectedStreet) return false;
+    }
+
+    return true;
+  });
+
+  // מיון התוצאות - תוצאות מדויקות יותר קודם
+  filteredBuildings.sort((a, b) => {
+    if (!searchTerm.trim()) return 0;
+    
+    const aStreet = getStreetName(a.streetId).toLowerCase();
+    const bStreet = getStreetName(b.streetId).toLowerCase();
+    const term = searchTerm.toLowerCase().trim();
+    
+    // בניינים עם התאמה מדויקת לשם הרחוב קודם
+    const aExactMatch = aStreet.includes(term);
+    const bExactMatch = bStreet.includes(term);
+    
+    if (aExactMatch && !bExactMatch) return -1;
+    if (!aExactMatch && bExactMatch) return 1;
+    
+    // מיון לפי מספר בית
+    return a.number - b.number;
+  });
+
+  // הסרת הקוד הישן
           return true;
         }
         
