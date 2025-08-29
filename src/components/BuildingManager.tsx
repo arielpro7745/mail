@@ -522,14 +522,42 @@ export default function BuildingManager(){
       const code = building.code?.toLowerCase() || "";
       const fullAddress = `${streetName} ${buildingNumber}${entrance ? ` ${entrance}` : ''}`.toLowerCase();
       
+      // חיפוש מיוחד לרחובות עם טווחים (כמו "התשעים ושלוש 1‑11")
+      const streetBaseName = streetName.split(/\s+\d+/).shift() || streetName; // "התשעים ושלוש"
+      const streetWithNumber = `${streetBaseName} ${buildingNumber}`.toLowerCase(); // "התשעים ושלוש 5"
+      
       // 1. חיפוש מדויק בכתובת המלאה
       if (fullAddress.includes(term)) {
         return true;
       }
       
+      // 1.5. חיפוש מיוחד לרחובות עם טווחים
+      if (streetWithNumber.includes(term)) {
+        return true;
+      }
+      
+      // חיפוש גמיש לרחובות עם טווחים - בדיקה אם החיפוש מתאים לטווח
+      const rangeMatch = streetName.match(/^(.+?)\s+(\d+)‑(\d+)/);
+      if (rangeMatch) {
+        const [, baseName, startNum, endNum] = rangeMatch;
+        const start = parseInt(startNum);
+        const end = parseInt(endNum);
+        const searchNumber = parseInt(buildingNumber);
+        
+        // בדיקה אם שם הרחוב הבסיסי + מספר הבניין תואמים לחיפוש
+        const baseWithBuilding = `${baseName.trim()} ${buildingNumber}`.toLowerCase();
+        if (baseWithBuilding.includes(term)) {
+          // בדיקה נוספת אם המספר בטווח הנכון
+          if (searchNumber >= start && searchNumber <= end) {
+            return true;
+          }
+        }
+      }
+      
       // 2. חיפוש חלקי - כל מילת חיפוש צריכה להופיע איפשהו
       const addressMatches = searchWords.every(word => 
-        streetName.includes(word) || 
+        streetName.includes(word) ||
+        streetBaseName.includes(word) ||
         buildingNumber.includes(word) ||
         entrance.includes(word) ||
         code.includes(word)
