@@ -196,6 +196,8 @@ export default function BuildingManager() {
         alert('מספר דירה הוא שדה חובה');
         return;
       }
+      
+      console.log('Form submission - isEdit:', isEdit, 'residentData:', residentData);
 
       if (isEdit && resident) {
         console.log('Updating resident:', resident.id, residentData);
