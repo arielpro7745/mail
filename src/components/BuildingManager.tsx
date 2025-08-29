@@ -168,34 +168,39 @@ export default function BuildingManager() {
   const ResidentForm = ({ building, resident, onClose }: { building: Building; resident?: Resident; onClose: () => void }) => {
     const isEdit = Boolean(resident);
     const [contacts, setContacts] = useState<Contact[]>(resident?.contacts || []);
+    const [formData, setFormData] = useState({
+      fullName: resident?.fullName || '',
+      apartment: resident?.apartment || '',
+      phone: resident?.phone || '',
+      allowMailbox: resident?.allowMailbox || true,
+      allowDoor: resident?.allowDoor || false,
+      contactPreference: resident?.contactPreference || 'whatsapp',
+      notes: resident?.notes || '',
+      isPrimary: resident?.isPrimary || false,
+      relationship: resident?.relationship || ''
+    });
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-      console.log('Submitting resident form:', { isEdit, building: building.id });
+      console.log('Submitting resident form:', { isEdit, building: building.id, formData });
       
-      const residentData = {
-        fullName: formData.get('fullName') as string,
-        apartment: formData.get('apartment') as string,
-        phone: (formData.get('phone') as string) || undefined,
-        allowMailbox: formData.get('allowMailbox') === 'on',
-        allowDoor: formData.get('allowDoor') === 'on',
-        contactPreference: (formData.get('contactPreference') as any) || 'whatsapp',
-        notes: (formData.get('notes') as string) || undefined,
-        isPrimary: formData.get('isPrimary') === 'on',
-        relationship: (formData.get('relationship') as string) || undefined,
-        contacts
-      };
-
       // ולידציה
-      if (!residentData.fullName.trim()) {
+      if (!formData.fullName.trim()) {
         alert('שם מלא הוא שדה חובה');
         return;
       }
-      if (!residentData.apartment.trim()) {
+      if (!formData.apartment.trim()) {
         alert('מספר דירה הוא שדה חובה');
         return;
       }
+
+      const residentData = {
+        ...formData,
+        phone: formData.phone || undefined,
+        notes: formData.notes || undefined,
+        relationship: formData.relationship || undefined,
+        contacts
+      };
       
       console.log('Form submission - isEdit:', isEdit, 'residentData:', residentData);
 
@@ -252,11 +257,11 @@ export default function BuildingManager() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">שם מלא</label>
                 <input
-                    name="fullName"
-                    type="text"
-                    defaultValue={resident?.fullName}
+                  type="text"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="שם מלא"
+                  placeholder="שם מלא"
                   required
                 />
               </div>
@@ -264,11 +269,11 @@ export default function BuildingManager() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">דירה</label>
                 <input
-                    name="apartment"
-                    type="text"
-                    defaultValue={resident?.apartment}
+                  type="text"
+                  value={formData.apartment}
+                  onChange={(e) => setFormData({...formData, apartment: e.target.value})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="מספר דירה"
+                  placeholder="מספר דירה"
                   required
                 />
               </div>
@@ -276,22 +281,22 @@ export default function BuildingManager() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">טלפון</label>
                 <input
-                    name="phone"
                   type="tel"
-                    defaultValue={resident?.phone}
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="050-1234567"
+                  placeholder="050-1234567"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">העדפת קשר</label>
                 <select
-                    name="contactPreference"
-                    defaultValue={resident?.contactPreference}
+                  value={formData.contactPreference}
+                  onChange={(e) => setFormData({...formData, contactPreference: e.target.value as any})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
-                    <option value="whatsapp">WhatsApp</option>
+                  <option value="whatsapp">WhatsApp</option>
                   <option value="call">שיחה</option>
                   <option value="whatsapp_photo">WhatsApp + צילום</option>
                   <option value="both">שניהם</option>
@@ -302,9 +307,9 @@ export default function BuildingManager() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">קשר משפחתי</label>
                 <input
-                    name="relationship"
-                    type="text"
-                    defaultValue={resident?.relationship}
+                  type="text"
+                  value={formData.relationship}
+                  onChange={(e) => setFormData({...formData, relationship: e.target.value})}
                   className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="בן/בת, הורה, וכו׳"
                 />
@@ -540,8 +545,8 @@ export default function BuildingManager() {
                           </span>
                         )}
                       </div>
-                    </div>
-                  </div>
+                      checked={formData.allowMailbox}
+                      onChange={(e) => setFormData({...formData, allowMailbox: e.target.checked})}
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingResident({building, resident: {
@@ -553,8 +558,8 @@ export default function BuildingManager() {
                         allowDoor: false,
                         isPrimary: false
                       } as Resident})}
-                      className="flex items-center gap-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
-                    >
+                      checked={formData.allowDoor}
+                      onChange={(e) => setFormData({...formData, allowDoor: e.target.checked})}
                       <Plus size={14} />
                       דייר
                     </button>
@@ -566,8 +571,8 @@ export default function BuildingManager() {
                     </button>
                     <button
                       onClick={() => {
-                        if (window.confirm('בטוח למחוק בניין זה?')) {
-                          deleteBuilding(building.id);
+                      checked={formData.isPrimary}
+                      onChange={(e) => setFormData({...formData, isPrimary: e.target.checked})}
                         }
                       }}
                       className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
@@ -767,8 +772,8 @@ export default function BuildingManager() {
                   address={`${getStreetName(showWhatsApp.building.streetId)} ${showWhatsApp.building.number}`}
                   type="package"
                 />
-                <QuickWhatsApp
-                  recipientName={showWhatsApp.resident.fullName}
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
                   phone={showWhatsApp.resident.phone || ''}
                   address={`${getStreetName(showWhatsApp.building.streetId)} ${showWhatsApp.building.number}`}
                   type="general"
