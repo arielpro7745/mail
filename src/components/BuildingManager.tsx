@@ -377,7 +377,6 @@ export default function BuildingManager() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    name="allowMailbox"
                     checked={formData.allowMailbox}
                     onChange={(e) => setFormData({...formData, allowMailbox: e.target.checked})}
                     className="rounded border-gray-300 text-green-600 focus:ring-green-500"
@@ -391,7 +390,6 @@ export default function BuildingManager() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    name="allowDoor"
                     checked={formData.allowDoor}
                     onChange={(e) => setFormData({...formData, allowDoor: e.target.checked})}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -405,7 +403,6 @@ export default function BuildingManager() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    name="isPrimary"
                     checked={formData.isPrimary}
                     onChange={(e) => setFormData({...formData, isPrimary: e.target.checked})}
                     className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
@@ -421,7 +418,6 @@ export default function BuildingManager() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">הערות</label>
               <textarea
-                name="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows={3}
