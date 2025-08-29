@@ -397,12 +397,14 @@ export default function BuildingManager() {
                 rows={3}
                 className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="הערות נוספות..."
+                <option value="">בחר העדפה</option>
               />
             </div>
 
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
+                disabled={!deliveryInfo.recipientName.trim() || !deliveryInfo.phone.trim()}
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-4 rounded-xl transition-all duration-200 font-medium shadow-lg"
               >
                 {isEdit ? 'עדכן' : 'הוסף'} דייר
@@ -527,6 +529,10 @@ export default function BuildingManager() {
                         id: nanoid(),
                         fullName: '',
                         apartment: '',
+                        phone: '',
+                        allowMailbox: false,
+                        allowDoor: false,
+                        isPrimary: false,
                         contacts: []
                       } as Resident})}
                       className="flex items-center gap-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"

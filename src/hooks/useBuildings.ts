@@ -85,13 +85,23 @@ export function useBuildings() {
     try {
       const building = data.find(b => b.id === buildingId);
       if (building) {
+        console.log('Adding resident:', resident, 'to building:', buildingId);
         const updatedResidents = [...building.residents, resident];
         await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
           residents: updatedResidents
         });
+        console.log('Resident added successfully');
       }
     } catch (error) {
       console.error("Error adding resident:", error);
+      // Fallback to local state update if Firebase fails
+      setData(prevData => 
+        prevData.map(b => 
+          b.id === buildingId 
+            ? { ...b, residents: [...b.residents, resident] }
+            : b
+        )
+      );
     }
   };
 
