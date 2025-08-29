@@ -525,31 +525,61 @@ export default function BuildingManager(){
       // חיפוש מיוחד לרחובות עם טווחים (כמו "התשעים ושלוש 1‑11")
       const streetBaseName = streetName.split(/\s+\d+/).shift() || streetName; // "התשעים ושלוש"
       const streetWithNumber = `${streetBaseName} ${buildingNumber}`.toLowerCase(); // "התשעים ושלוש 5"
+      // חיפוש בכתובת המלאה
+      if (fullAddress.toLowerCase().includes(term)) return true;
       
-      // 1. חיפוש מדויק בכתובת המלאה
-      if (fullAddress.includes(term)) {
-        return true;
-      }
+      // חיפוש בשם הבניין
+      if (building.name && building.name.toLowerCase().includes(term)) return true;
       
-      // 1.5. חיפוש מיוחד לרחובות עם טווחים
-      if (streetWithNumber.includes(term)) {
-        return true;
-      }
+      // חיפוש בדיירים
+      const residentMatch = building.residents.some(resident => 
+        resident.fullName.toLowerCase().includes(term) ||
+        resident.apartment.toLowerCase().includes(term) ||
+        (resident.phone && resident.phone.includes(term))
+      );
+      if (residentMatch) return true;
       
-      // חיפוש גמיש לרחובות עם טווחים - בדיקה אם החיפוש מתאים לטווח
-      const rangeMatch = streetName.match(/^(.+?)\s+(\d+)‑(\d+)/);
-      if (rangeMatch) {
-        const [, baseName, startNum, endNum] = rangeMatch;
-        const start = parseInt(startNum);
-        const end = parseInt(endNum);
-        const searchNumber = parseInt(buildingNumber);
+      // חיפוש מתקדם: "שם רחוב + מספר בניין"
+      const parts = term.split(/\s+/);
+      if (parts.length >= 2) {
+        const lastPart = parts[parts.length - 1];
+        const buildingNumber = parseInt(lastPart);
         
-        // בדיקה אם שם הרחוב הבסיסי + מספר הבניין תואמים לחיפוש
-        const baseWithBuilding = `${baseName.trim()} ${buildingNumber}`.toLowerCase();
-        if (baseWithBuilding.includes(term)) {
-          // בדיקה נוספת אם המספר בטווח הנכון
-          if (searchNumber >= start && searchNumber <= end) {
+        if (!isNaN(buildingNumber) && building.number === buildingNumber) {
+          const streetPart = parts.slice(0, -1).join(' ');
+          
+          // בדיקה אם שם הרחוב מתחיל עם החלק שחיפשנו
+          if (streetName.toLowerCase().includes(streetPart)) {
             return true;
+          }
+          
+          // בדיקה מתקדמת לרחובות עם טווחים
+          // לדוגמה: "התשעים ושלוש 5" ירצה למצוא "התשעים ושלוש 1‑11"
+          const streetWords = streetName.toLowerCase().split(/\s+/);
+          const searchWords = streetPart.toLowerCase().split(/\s+/);
+          
+          // בדיקה אם כל המילים בחיפוש קיימות בשם הרחוב
+          const allWordsMatch = searchWords.every(searchWord => 
+            streetWords.some(streetWord => streetWord.includes(searchWord))
+          );
+          
+          if (allWordsMatch) {
+            // בדיקה אם המספר נמצא בטווח (אם יש טווח)
+            const rangeMatch = streetName.match(/(\d+)‑(\d+)/);
+            if (rangeMatch) {
+              const [, start, end] = rangeMatch;
+              const rangeStart = parseInt(start);
+              const rangeEnd = parseInt(end);
+              
+              // בדיקה אם המספר נמצא בטווח
+              if (buildingNumber >= Math.min(rangeStart, rangeEnd) && 
+                  buildingNumber <= Math.max(rangeStart, rangeEnd)) {
+                return true;
+              }
+            } else {
+              // אם אין טווח, פשוט בדוק התאמה
+              return true;
+            }
           }
         }
       }

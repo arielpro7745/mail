@@ -19,6 +19,7 @@ import DataExport from "./components/DataExport";
 import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
+import { AlertTriangle } from "lucide-react";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export">("regular");
@@ -78,6 +79,33 @@ export default function App() {
     return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
   }).length;
 
+  // מציאת הרחוב שהכי הרבה זמן לא חולק (מכל האזורים)
+  const getOldestUndeliveredStreet = () => {
+    const today = new Date();
+    let oldestStreet: Street | null = null;
+    let maxDays = 0;
+    
+    // בדיקה של כל הרחובות מכל האזורים
+    allCompletedToday.concat(pendingToday).forEach(street => {
+      if (!street.lastDelivered) {
+        // רחוב שלא חולק מעולם - עדיפות עליונה
+        if (!oldestStreet || !oldestStreet.lastDelivered) {
+          oldestStreet = street;
+          maxDays = 999; // ערך גבוה לרחובות שלא חולקו מעולם
+        }
+      } else {
+        const days = totalDaysBetween(new Date(street.lastDelivered), today);
+        if (days > maxDays || (days === maxDays && !oldestStreet?.lastDelivered)) {
+          oldestStreet = street;
+          maxDays = days;
+        }
+      }
+    });
+    
+    return { street: oldestStreet, days: maxDays };
+  };
+  
+  const { street: oldestStreet, days: oldestDays } = getOldestUndeliveredStreet();
   const handleStartTimer = (street: Street) => {
     setCurrentStreet(street);
   };
@@ -110,6 +138,78 @@ export default function App() {
           <>
             <AreaToggle area={todayArea} onEnd={endDay} />
 
+            {/* התראה על הרחוב הוותיק ביותר */}
+            {oldestStreet && oldestDays >= 7 && (
+              <div className={`border rounded-xl p-4 mb-6 shadow-sm ${
+                oldestDays === 999 ? 'bg-purple-50 border-purple-300' :
+                oldestDays >= 21 ? 'bg-red-50 border-red-300' :
+                oldestDays >= 14 ? 'bg-orange-50 border-orange-300' :
+                'bg-yellow-50 border-yellow-300'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <AlertTriangle size={24} className={
+                    oldestDays === 999 ? 'text-purple-600 animate-pulse' :
+                    oldestDays >= 21 ? 'text-red-600 animate-pulse' :
+                    oldestDays >= 14 ? 'text-orange-600' :
+                    'text-yellow-600'
+                  } />
+                  <div className="flex-1">
+                    <h3 className={`font-bold text-lg ${
+                      oldestDays === 999 ? 'text-purple-800' :
+                      oldestDays >= 21 ? 'text-red-800' :
+                      oldestDays >= 14 ? 'text-orange-800' :
+                      'text-yellow-800'
+                    }`}>
+                      {oldestDays === 999 ? '🆕 רחוב שלא חולק מעולם!' : 
+                       oldestDays >= 21 ? '🚨 רחוב קריטי!' :
+                       oldestDays >= 14 ? '⚠️ רחוב דחוף!' :
+                       '📅 רחוב זקוק לתשומת לב'}
+                    </h3>
+                    <p className={`text-sm font-medium ${
+                      oldestDays === 999 ? 'text-purple-700' :
+                      oldestDays >= 21 ? 'text-red-700' :
+                      oldestDays >= 14 ? 'text-orange-700' :
+                      'text-yellow-700'
+                    }`}>
+                      <span className="font-bold">{oldestStreet.name}</span> (אזור {oldestStreet.area}) - 
+                      {oldestDays === 999 ? ' לא חולק מעולם' : ` ${oldestDays} ימים ללא חלוקה`}
+                    </p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        oldestStreet.area === 12 ? 'bg-purple-100 text-purple-700' :
+                        oldestStreet.area === 14 ? 'bg-blue-100 text-blue-700' :
+                        'bg-indigo-100 text-indigo-700'
+                      }`}>
+                        אזור {oldestStreet.area}
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        oldestStreet.isBig ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {oldestStreet.isBig ? 'רחוב גדול' : 'רחוב קטן'}
+                      </span>
+                      {oldestStreet.lastDelivered && (
+                        <span className="text-xs text-gray-600">
+                          חולק לאחרונה: {new Date(oldestStreet.lastDelivered).toLocaleDateString('he-IL')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {oldestStreet.area === todayArea && (
+                    <button
+                      onClick={() => markDelivered(oldestStreet.id)}
+                      className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg ${
+                        oldestDays === 999 ? 'bg-purple-500 hover:bg-purple-600' :
+                        oldestDays >= 21 ? 'bg-red-500 hover:bg-red-600' :
+                        oldestDays >= 14 ? 'bg-orange-500 hover:bg-orange-600' :
+                        'bg-yellow-500 hover:bg-yellow-600'
+                      }`}
+                    >
+                      סמן כחולק עכשיו
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             {/* סטטיסטיקת התקדמות */}
             <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
               <div className="flex items-center justify-between mb-2">
