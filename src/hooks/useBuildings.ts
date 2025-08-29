@@ -5,18 +5,22 @@ import { Building, Resident } from "../types";
 import { buildings as initialBuildings } from "../data/buildings";
 
 const COLLECTION_NAME = "buildings";
-const LOCAL_STORAGE_KEY = "buildings_data";
+const LOCAL_STORAGE_KEY = "buildings_data_v2"; // שינוי מפתח לגרסה חדשה
 
 export function useBuildings() {
   const [data, setData] = useState<Building[]>([]);
   const [loading, setLoading] = useState(true);
-  const [useFirebase, setUseFirebase] = useState(true);
 
   // שמירה ב-localStorage
   const saveToLocalStorage = (buildings: Building[]) => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(buildings));
-      console.log("✅ נתונים נשמרו ב-localStorage");
+      const dataToSave = {
+        buildings,
+        timestamp: Date.now(),
+        version: "2.0"
+      };
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+      console.log("✅ נתונים נשמרו ב-localStorage:", buildings.length, "בניינים");
     } catch (error) {
       console.error("❌ שגיאה בשמירה ב-localStorage:", error);
     }
@@ -28,26 +32,43 @@ export function useBuildings() {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        console.log("✅ נתונים נטענו מ-localStorage:", parsed.length, "בניינים");
-        return parsed;
+        if (parsed.buildings && Array.isArray(parsed.buildings)) {
+          console.log("✅ נתונים נטענו מ-localStorage:", parsed.buildings.length, "בניינים");
+          return parsed.buildings;
+        }
+      }
+      
+      // נסה לטעון מהמפתח הישן
+      const oldSaved = localStorage.getItem("buildings_data");
+      if (oldSaved) {
+        const oldParsed = JSON.parse(oldSaved);
+        if (Array.isArray(oldParsed)) {
+          console.log("✅ נתונים נטענו מהמפתח הישן:", oldParsed.length, "בניינים");
+          // שמור בפורמט החדש
+          saveToLocalStorage(oldParsed);
+          return oldParsed;
+        }
       }
     } catch (error) {
       console.error("❌ שגיאה בטעינה מ-localStorage:", error);
     }
+    
+    console.log("📦 משתמש בנתונים ראשוניים");
     return initialBuildings;
   };
 
-  // Initialize data
+  // Initialize data - טעינה מיידית מ-localStorage
   useEffect(() => {
-    const initializeData = async () => {
-      console.log("🔄 מתחיל טעינת נתונים...");
-      
-      // תמיד טען מ-localStorage קודם
-      const localData = loadFromLocalStorage();
-      setData(localData);
-      setLoading(false);
+    console.log("🔄 מתחיל טעינת נתונים...");
+    
+    // טען מיד מ-localStorage
+    const localData = loadFromLocalStorage();
+    setData(localData);
+    setLoading(false);
+    console.log("⚡ נתונים נטענו מיד מ-localStorage");
 
-      // נסה להתחבר ל-Firebase
+    // נסה להתחבר ל-Firebase ברקע
+    const initializeFirebase = async () => {
       try {
         console.log("🔥 מנסה להתחבר ל-Firebase...");
         const snapshot = await getDocs(collection(db, COLLECTION_NAME));
@@ -61,14 +82,20 @@ export function useBuildings() {
           await Promise.all(batch);
           console.log("✅ נתונים הועלו ל-Firebase");
         } else if (!snapshot.empty) {
-          // אם יש נתונים ב-Firebase, טען אותם
+          // אם יש נתונים ב-Firebase, בדוק אם הם חדשים יותר
           const firebaseData: Building[] = [];
           snapshot.forEach((doc) => {
             firebaseData.push({ id: doc.id, ...doc.data() } as Building);
           });
+          
           console.log("✅ נתונים נטענו מ-Firebase:", firebaseData.length, "בניינים");
-          setData(firebaseData);
-          saveToLocalStorage(firebaseData);
+          
+          // עדכן רק אם יש הבדל
+          if (JSON.stringify(firebaseData) !== JSON.stringify(localData)) {
+            setData(firebaseData);
+            saveToLocalStorage(firebaseData);
+            console.log("🔄 נתונים עודכנו מ-Firebase");
+          }
         }
 
         // האזן לעדכונים בזמן אמת
@@ -77,42 +104,41 @@ export function useBuildings() {
           snapshot.forEach((doc) => {
             buildings.push({ id: doc.id, ...doc.data() } as Building);
           });
-          console.log("🔄 עדכון מ-Firebase:", buildings.length, "בניינים");
+          console.log("🔄 עדכון בזמן אמת מ-Firebase:", buildings.length, "בניינים");
           setData(buildings);
           saveToLocalStorage(buildings);
         }, (error) => {
           console.error("❌ שגיאה ב-Firebase listener:", error);
-          setUseFirebase(false);
+          console.log("🔄 ממשיך עם נתונים מקומיים");
         });
 
         return () => unsubscribe();
         
       } catch (error) {
         console.error("❌ שגיאה בחיבור ל-Firebase:", error);
-        setUseFirebase(false);
-        console.log("🔄 עובר למצב מקומי בלבד");
+        console.log("🔄 עובד במצב מקומי בלבד");
       }
     };
 
-    initializeData();
+    initializeFirebase();
   }, []);
 
   const addBuilding = async (building: Building) => {
-    console.log("➕ מוסיף בניין:", building);
+    console.log("➕ מוסיף בניין:", building.id, building.number);
     
     // עדכון מיידי של ה-state
     const newData = [...data, building];
     setData(newData);
     saveToLocalStorage(newData);
+    console.log("✅ בניין נוסף למצב מקומי");
     
     // נסה לשמור ב-Firebase
-    if (useFirebase) {
-      try {
-        await setDoc(doc(db, COLLECTION_NAME, building.id), building);
-        console.log("✅ בניין נשמר ב-Firebase");
-      } catch (error) {
-        console.error("❌ שגיאה בשמירת בניין ב-Firebase:", error);
-      }
+    try {
+      await setDoc(doc(db, COLLECTION_NAME, building.id), building);
+      console.log("✅ בניין נשמר ב-Firebase בהצלחה");
+    } catch (error) {
+      console.error("❌ שגיאה בשמירת בניין ב-Firebase:", error);
+      console.log("💾 הבניין נשמר מקומית בכל מקרה");
     }
   };
 
@@ -123,15 +149,15 @@ export function useBuildings() {
     const newData = data.map(b => b.id === id ? { ...b, ...patch } : b);
     setData(newData);
     saveToLocalStorage(newData);
+    console.log("✅ בניין עודכן במצב מקומי");
     
     // נסה לעדכן ב-Firebase
-    if (useFirebase) {
-      try {
-        await updateDoc(doc(db, COLLECTION_NAME, id), patch);
-        console.log("✅ בניין עודכן ב-Firebase");
-      } catch (error) {
-        console.error("❌ שגיאה בעדכון בניין ב-Firebase:", error);
-      }
+    try {
+      await updateDoc(doc(db, COLLECTION_NAME, id), patch);
+      console.log("✅ בניין עודכן ב-Firebase בהצלחה");
+    } catch (error) {
+      console.error("❌ שגיאה בעדכון בניין ב-Firebase:", error);
+      console.log("💾 הבניין עודכן מקומית בכל מקרה");
     }
   };
 
@@ -142,20 +168,20 @@ export function useBuildings() {
     const newData = data.filter(b => b.id !== id);
     setData(newData);
     saveToLocalStorage(newData);
+    console.log("✅ בניין נמחק מהמצב המקומי");
     
     // נסה למחוק מ-Firebase
-    if (useFirebase) {
-      try {
-        await deleteDoc(doc(db, COLLECTION_NAME, id));
-        console.log("✅ בניין נמחק מ-Firebase");
-      } catch (error) {
-        console.error("❌ שגיאה במחיקת בניין מ-Firebase:", error);
-      }
+    try {
+      await deleteDoc(doc(db, COLLECTION_NAME, id));
+      console.log("✅ בניין נמחק מ-Firebase בהצלחה");
+    } catch (error) {
+      console.error("❌ שגיאה במחיקת בניין מ-Firebase:", error);
+      console.log("💾 הבניין נמחק מקומית בכל מקרה");
     }
   };
 
   const addResident = async (buildingId: string, resident: Resident) => {
-    console.log("👤 מוסיף דייר:", resident, "לבניין:", buildingId);
+    console.log("👤 מוסיף דייר:", resident.fullName, "לבניין:", buildingId);
     
     const building = data.find(b => b.id === buildingId);
     if (!building) {
@@ -176,15 +202,14 @@ export function useBuildings() {
     console.log("✅ דייר נוסף למצב מקומי");
     
     // נסה לשמור ב-Firebase
-    if (useFirebase) {
-      try {
-        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-          residents: updatedResidents
-        });
-        console.log("✅ דייר נשמר ב-Firebase");
-      } catch (error) {
-        console.error("❌ שגיאה בשמירת דייר ב-Firebase:", error);
-      }
+    try {
+      await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+        residents: updatedResidents
+      });
+      console.log("✅ דייר נשמר ב-Firebase בהצלחה");
+    } catch (error) {
+      console.error("❌ שגיאה בשמירת דייר ב-Firebase:", error);
+      console.log("💾 הדייר נשמר מקומית בכל מקרה");
     }
   };
 
@@ -212,15 +237,14 @@ export function useBuildings() {
     console.log("✅ דייר עודכן במצב מקומי");
     
     // נסה לעדכן ב-Firebase
-    if (useFirebase) {
-      try {
-        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-          residents: updatedResidents
-        });
-        console.log("✅ דייר עודכן ב-Firebase");
-      } catch (error) {
-        console.error("❌ שגיאה בעדכון דייר ב-Firebase:", error);
-      }
+    try {
+      await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+        residents: updatedResidents
+      });
+      console.log("✅ דייר עודכן ב-Firebase בהצלחה");
+    } catch (error) {
+      console.error("❌ שגיאה בעדכון דייר ב-Firebase:", error);
+      console.log("💾 הדייר עודכן מקומית בכל מקרה");
     }
   };
 
@@ -246,15 +270,14 @@ export function useBuildings() {
     console.log("✅ דייר נמחק מהמצב המקומי");
     
     // נסה למחוק מ-Firebase
-    if (useFirebase) {
-      try {
-        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-          residents: updatedResidents
-        });
-        console.log("✅ דייר נמחק מ-Firebase");
-      } catch (error) {
-        console.error("❌ שגיאה במחיקת דייר מ-Firebase:", error);
-      }
+    try {
+      await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+        residents: updatedResidents
+      });
+      console.log("✅ דייר נמחק מ-Firebase בהצלחה");
+    } catch (error) {
+      console.error("❌ שגיאה במחיקת דייר מ-Firebase:", error);
+      console.log("💾 הדייר נמחק מקומית בכל מקרה");
     }
   };
 
