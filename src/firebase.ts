@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_Q-2csWkkehcMsHsnLAAt2JnfylY23Bg",
@@ -14,4 +14,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-export const analytics = getAnalytics(app);
+
+// Initialize analytics only in browser
+if (typeof window !== 'undefined') {
+  getAnalytics(app);
+}
+
+console.log("🔥 Firebase initialized successfully!");
+console.log("📊 Firestore database ready");

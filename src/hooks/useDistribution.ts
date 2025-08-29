@@ -91,7 +91,6 @@ export function useDistribution() {
     const initializeApp = async () => {
       await initializeData();
       await loadCurrentArea();
-      setLoading(false);
     };
 
     initializeApp();
@@ -113,6 +112,7 @@ export function useDistribution() {
       });
       console.log(`Loaded ${streets.length} streets from Firebase:`, streets.map(s => ({ id: s.id, name: s.name, area: s.area, lastDelivered: s.lastDelivered })));
       setData(streets);
+      setLoading(false);
     }, (error) => {
       console.error("Error in streets snapshot listener:", error);
       if (error.code === 'permission-denied') {

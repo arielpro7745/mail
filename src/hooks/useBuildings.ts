@@ -34,6 +34,7 @@ export function useBuildings() {
   useEffect(() => {
     const initializeApp = async () => {
       await initializeData();
+      setLoading(false);
     };
 
     initializeApp();
@@ -45,7 +46,6 @@ export function useBuildings() {
         buildings.push({ id: doc.id, ...doc.data() } as Building);
       });
       setData(buildings);
-      setLoading(false);
     }, (error) => {
       console.error("Error in buildings snapshot listener:", error);
       if (error.code === 'permission-denied') {
