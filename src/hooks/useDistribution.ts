@@ -10,13 +10,75 @@ import { shouldStreetReappear, totalDaysBetween } from "../utils/dates";
 import { useSettings } from "./useSettings";
 
 const COLLECTION_NAME = "streets";
-const AREA_DOC = "currentArea";
+const AREA_STORAGE_KEY = "current_area_v2";
+const STREETS_STORAGE_KEY = "streets_data_v2";
 
 export function useDistribution() {
   const [data, setData] = useState<Street[]>([]);
   const [todayArea, setTodayArea] = useState<Area>(12);
   const [loading, setLoading] = useState(true);
   const { settings } = useSettings();
+
+  // שמירה ב-localStorage
+  const saveStreetsToLocalStorage = (streets: Street[]) => {
+    try {
+      const dataToSave = {
+        streets,
+        timestamp: Date.now(),
+        version: "2.0"
+      };
+      localStorage.setItem(STREETS_STORAGE_KEY, JSON.stringify(dataToSave));
+      console.log("✅ רחובות נשמרו ב-localStorage:", streets.length, "רחובות");
+    } catch (error) {
+      console.error("❌ שגיאה בשמירת רחובות ב-localStorage:", error);
+    }
+  };
+
+  // טעינה מ-localStorage
+  const loadStreetsFromLocalStorage = (): Street[] => {
+    try {
+      const saved = localStorage.getItem(STREETS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.streets && Array.isArray(parsed.streets)) {
+          console.log("✅ רחובות נטענו מ-localStorage:", parsed.streets.length, "רחובות");
+          return parsed.streets;
+        }
+      }
+    } catch (error) {
+      console.error("❌ שגיאה בטעינת רחובות מ-localStorage:", error);
+    }
+    
+    console.log("📦 משתמש ברחובות ראשוניים");
+    return initialStreets;
+  };
+
+  // שמירת אזור נוכחי
+  const saveCurrentAreaToLocalStorage = (area: Area) => {
+    try {
+      localStorage.setItem(AREA_STORAGE_KEY, area.toString());
+      console.log("✅ אזור נוכחי נשמר:", area);
+    } catch (error) {
+      console.error("❌ שגיאה בשמירת אזור:", error);
+    }
+  };
+
+  // טעינת אזור נוכחי
+  const loadCurrentAreaFromLocalStorage = (): Area => {
+    try {
+      const saved = localStorage.getItem(AREA_STORAGE_KEY);
+      if (saved) {
+        const area = parseInt(saved) as Area;
+        console.log("✅ אזור נוכחי נטען:", area);
+        return area;
+      }
+    } catch (error) {
+      console.error("❌ שגיאה בטעינת אזור:", error);
+    }
+    
+    console.log("📦 משתמש באזור ברירת מחדל: 12");
+    return 12;
+  };
 
   // Initialize data if collection is empty
   const initializeData = async () => {
@@ -61,33 +123,53 @@ export function useDistribution() {
   // Load current area
   const loadCurrentArea = async () => {
     try {
+      // טען מ-localStorage קודם
+      const localArea = loadCurrentAreaFromLocalStorage();
+      setTodayArea(localArea);
+      
+      // נסה לסנכרן עם Firebase
       const areaDoc = await getDocs(collection(db, "settings"));
-      const areaData = areaDoc.docs.find(doc => doc.id === AREA_DOC);
+      const areaData = areaDoc.docs.find(doc => doc.id === "currentArea");
       if (areaData) {
-        setTodayArea(areaData.data().area as Area);
-      } else {
-        // Initialize area setting
-        await setDoc(doc(db, "settings", AREA_DOC), { area: 12 });
+        const firebaseArea = areaData.data().area as Area;
+        if (firebaseArea !== localArea) {
+          setTodayArea(firebaseArea);
+          saveCurrentAreaToLocalStorage(firebaseArea);
+        }
       }
     } catch (error) {
       console.error("Error loading current area:", error);
-      if (error.code === 'permission-denied') {
-        console.warn("Firebase permission denied. Using default area. Please check your Firestore Security Rules.");
-        setTodayArea(12);
-      }
+      console.log("🔄 משתמש באזור מקומי");
     }
   };
 
   // Save current area
   const saveCurrentArea = async (area: Area) => {
+    // שמור מיד מקומית
+    saveCurrentAreaToLocalStorage(area);
+    
+    // נסה לשמור ב-Firebase
     try {
-      await setDoc(doc(db, "settings", AREA_DOC), { area });
+      await setDoc(doc(db, "settings", "currentArea"), { area });
+      console.log("✅ אזור נשמר ב-Firebase");
     } catch (error) {
       console.error("Error saving current area:", error);
+      console.log("💾 אזור נשמר מקומית בכל מקרה");
     }
   };
 
   useEffect(() => {
+    console.log("🚀 מתחיל אתחול האפליקציה...");
+    
+    // טען נתונים מיד מ-localStorage
+    const localStreets = loadStreetsFromLocalStorage();
+    const localArea = loadCurrentAreaFromLocalStorage();
+    
+    setData(localStreets);
+    setTodayArea(localArea);
+    setLoading(false);
+    console.log("⚡ נתונים נטענו מיד מהמחשב");
+
     const initializeApp = async () => {
       await initializeData();
       await loadCurrentArea();
@@ -112,13 +194,10 @@ export function useDistribution() {
       });
       console.log(`Loaded ${streets.length} streets from Firebase:`, streets.map(s => ({ id: s.id, name: s.name, area: s.area, lastDelivered: s.lastDelivered })));
       setData(streets);
-      setLoading(false);
+      saveStreetsToLocalStorage(streets);
     }, (error) => {
       console.error("Error in streets snapshot listener:", error);
-      if (error.code === 'permission-denied') {
-        console.warn("Firebase permission denied for real-time updates. Using local data.");
-        setData(initialStreets);
-      }
+      console.log("🔄 ממשיך עם נתונים מקומיים");
     });
 
     return () => unsubscribe();
@@ -377,37 +456,41 @@ export function useDistribution() {
         updates.averageTime = averageTime;
       }
 
+      // עדכון מיידי של ה-state
+      const newData = data.map(s => 
+        s.id === id ? { ...s, ...updates } : s
+      );
+      setData(newData);
+      saveStreetsToLocalStorage(newData);
+      console.log("✅ רחוב סומן כחולק במצב מקומי");
+
+      // נסה לעדכן ב-Firebase
       await updateDoc(doc(db, COLLECTION_NAME, id), updates);
-      console.log(`Street ${id} marked as delivered at ${updates.lastDelivered}`);
+      console.log("✅ רחוב עודכן ב-Firebase בהצלחה");
     } catch (error) {
       console.error("Error marking delivered:", error);
-      // If Firebase fails, update local state as fallback
-      setData(prevData => 
-        prevData.map(s => 
-          s.id === id 
-            ? { ...s, lastDelivered: new Date().toISOString() }
-            : s
-        )
-      );
+      console.log("💾 רחוב עודכן מקומית בכל מקרה");
     }
   };
 
   const undoDelivered = async (id: string) => {
+    // עדכון מיידי של ה-state
+    const newData = data.map(s => 
+      s.id === id ? { ...s, lastDelivered: "" } : s
+    );
+    setData(newData);
+    saveStreetsToLocalStorage(newData);
+    console.log("✅ ביטול חלוקה במצב מקומי");
+    
+    // נסה לעדכן ב-Firebase
     try {
       await updateDoc(doc(db, COLLECTION_NAME, id), {
         lastDelivered: ""
       });
-      console.log(`Street ${id} delivery undone`);
+      console.log("✅ ביטול חלוקה עודכן ב-Firebase");
     } catch (error) {
       console.error("Error undoing delivery:", error);
-      // If Firebase fails, update local state as fallback
-      setData(prevData => 
-        prevData.map(s => 
-          s.id === id 
-            ? { ...s, lastDelivered: "" }
-            : s
-        )
-      );
+      console.log("💾 ביטול חלוקה עודכן מקומית בכל מקרה");
     }
   };
 
@@ -415,7 +498,9 @@ export function useDistribution() {
     const newArea: Area = todayArea === 12 ? 14 : todayArea === 14 ? 45 : 12;
     
     setTodayArea(newArea);
+    saveCurrentAreaToLocalStorage(newArea);
     await saveCurrentArea(newArea);
+    console.log("✅ מעבר לאזור:", newArea);
   };
 
   // פונקציה נפרדת לאיפוס מחזור
