@@ -489,4 +489,3 @@ export default function PhoneDirectory() {
                           {/* טלפונים נוספים */}
                           {entry.additionalPhones.map((phone, phoneIndex) => (
                             <div key={phoneIndex} className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                              <Phone size={16} className="text-blue-600" />
