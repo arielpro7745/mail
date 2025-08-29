@@ -10,6 +10,7 @@ const defaultSettings: AppSettings = {
   reminderTime: "08:00",
   soundEnabled: true,
   optimizeRoutes: true,
+  shortAddresses: false,
 };
 
 export function useSettings() {

@@ -347,7 +347,9 @@ export default function Reports() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <MapPin size={16} className="text-gray-400" />
-                          <span className="font-medium">{street.name}</span>
+                          <span className="font-medium">
+                            {formatStreetName(street.name, settings.shortAddresses)}
+                          </span>
                         </div>
                       </td>
                       <td className="text-center py-3 px-4">
