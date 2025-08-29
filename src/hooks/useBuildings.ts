@@ -34,7 +34,6 @@ export function useBuildings() {
   useEffect(() => {
     const initializeApp = async () => {
       await initializeData();
-      setLoading(false);
     };
 
     initializeApp();
@@ -46,12 +45,24 @@ export function useBuildings() {
         buildings.push({ id: doc.id, ...doc.data() } as Building);
       });
       setData(buildings);
+      setLoading(false);
     }, (error) => {
       console.error("Error in buildings snapshot listener:", error);
       if (error.code === 'permission-denied') {
         console.warn("Firebase permission denied for real-time updates. Using local data.");
-        setData(initialBuildings);
+        // טען מ-localStorage אם Firebase לא עובד
+        const localData = localStorage.getItem('buildings_backup');
+        if (localData) {
+          try {
+            setData(JSON.parse(localData));
+          } catch {
+            setData(initialBuildings);
+          }
+        } else {
+          setData(initialBuildings);
+        }
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -62,6 +73,10 @@ export function useBuildings() {
       await setDoc(doc(db, COLLECTION_NAME, building.id), building);
     } catch (error) {
       console.error("Error adding building:", error);
+      // שמירה מקומית כגיבוי
+      const currentData = [...data, building];
+      setData(currentData);
+      localStorage.setItem('buildings_backup', JSON.stringify(currentData));
     }
   };
 
@@ -70,6 +85,10 @@ export function useBuildings() {
       await updateDoc(doc(db, COLLECTION_NAME, id), patch);
     } catch (error) {
       console.error("Error updating building:", error);
+      // שמירה מקומית כגיבוי
+      const currentData = data.map(b => b.id === id ? { ...b, ...patch } : b);
+      setData(currentData);
+      localStorage.setItem('buildings_backup', JSON.stringify(currentData));
     }
   };
 
@@ -78,6 +97,10 @@ export function useBuildings() {
       await deleteDoc(doc(db, COLLECTION_NAME, id));
     } catch (error) {
       console.error("Error deleting building:", error);
+      // שמירה מקומית כגיבוי
+      const currentData = data.filter(b => b.id !== id);
+      setData(currentData);
+      localStorage.setItem('buildings_backup', JSON.stringify(currentData));
     }
   };
 
@@ -89,13 +112,15 @@ export function useBuildings() {
         const updatedResidents = [...building.residents, resident];
         
         // עדכון מיידי של ה-state המקומי
-        setData(prevData => 
-          prevData.map(b => 
-            b.id === buildingId 
-              ? { ...b, residents: updatedResidents }
-              : b
-          )
+        const newData = data.map(b => 
+          b.id === buildingId 
+            ? { ...b, residents: updatedResidents }
+            : b
         );
+        setData(newData);
+        
+        // שמירה מקומית מיידית
+        localStorage.setItem('buildings_backup', JSON.stringify(newData));
         
         // ניסיון עדכון Firebase
         try {
@@ -125,13 +150,15 @@ export function useBuildings() {
         );
         
         // עדכון מיידי של ה-state המקומי
-        setData(prevData => 
-          prevData.map(b => 
-            b.id === buildingId 
-              ? { ...b, residents: updatedResidents }
-              : b
-          )
+        const newData = data.map(b => 
+          b.id === buildingId 
+            ? { ...b, residents: updatedResidents }
+            : b
         );
+        setData(newData);
+        
+        // שמירה מקומית מיידית
+        localStorage.setItem('buildings_backup', JSON.stringify(newData));
         
         // ניסיון עדכון Firebase
         try {
@@ -153,9 +180,26 @@ export function useBuildings() {
       const building = data.find(b => b.id === buildingId);
       if (building) {
         const updatedResidents = building.residents.filter(r => r.id !== residentId);
-        await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
-          residents: updatedResidents
-        });
+        
+        // עדכון מיידי של ה-state המקומי
+        const newData = data.map(b => 
+          b.id === buildingId 
+            ? { ...b, residents: updatedResidents }
+            : b
+        );
+        setData(newData);
+        
+        // שמירה מקומית מיידית
+        localStorage.setItem('buildings_backup', JSON.stringify(newData));
+        
+        // ניסיון עדכון Firebase
+        try {
+          await updateDoc(doc(db, COLLECTION_NAME, buildingId), {
+            residents: updatedResidents
+          });
+        } catch (firebaseError) {
+          console.warn('Firebase delete failed, but local state updated:', firebaseError);
+        }
       }
     } catch (error) {
       console.error("Error deleting resident:", error);
