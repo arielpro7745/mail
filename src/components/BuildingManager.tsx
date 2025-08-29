@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 export default function BuildingManager() {
-  const { buildings, addBuilding, updateBuilding, deleteBuilding, addResident, updateResident, deleteResident, loading } = useBuildings();
+  const { buildings, addBuilding, updateBuilding, deleteBuilding, addResident, updateResident, deleteResident, loading, firebaseConnected } = useBuildings();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
   const [editingResident, setEditingResident] = useState<{building: Building, resident: Resident} | null>(null);
@@ -458,6 +458,11 @@ export default function BuildingManager() {
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800">ניהול בניינים ודיירים</h2>
             <p className="text-gray-600 font-medium text-sm md:text-base">
               {filteredBuildings.length} בניינים, {filteredBuildings.reduce((sum, b) => sum + b.residents.length, 0)} דיירים
+              <span className={`mr-2 px-2 py-1 rounded-full text-xs ${
+                firebaseConnected ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {firebaseConnected ? '🔥 Firebase מחובר' : '💾 מצב מקומי'}
+              </span>
             </p>
           </div>
         </div>
