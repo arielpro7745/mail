@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Building } from '../types';
 import { streets } from '../data/streets';
-import { Navigation, Download, MapPin, Route, Smartphone } from 'lucide-react';
+import { Navigation, Download, MapPin, Router as Route, Smartphone } from 'lucide-react';
 
 interface Props {
   buildings: Building[];
