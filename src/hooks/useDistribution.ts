@@ -161,53 +161,56 @@ export function useDistribution() {
   useEffect(() => {
     console.log("🚀 מתחיל אתחול האפליקציה...");
     
+    // טען נתונים מיד מ-localStorage
+    const localStreets = loadStreetsFromLocalStorage();
+    const localArea = loadCurrentAreaFromLocalStorage();
+    
+    setData(localStreets);
+    setTodayArea(localArea);
+    setLoading(false);
+    console.log("⚡ נתונים נטענו מיד מהמחשב");
+
     const initializeApp = async () => {
       await initializeData();
       await loadCurrentArea();
-      
-      // נסה להאזין ל-Firebase תמיד
+    };
+
+    initializeApp();
+
+    // נסה להאזין ל-Firebase אבל אל תדרוס נתונים מקומיים
+    const tryFirebaseListener = async () => {
       try {
-        console.log("🔥 מתחבר ל-Firebase לסנכרון...");
-        const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
-          const streets: Street[] = [];
-          snapshot.forEach((doc) => {
-            const streetData = doc.data();
-            streets.push({ 
-              id: doc.id, 
-              ...streetData,
-              lastDelivered: streetData.lastDelivered || "",
-              deliveryTimes: streetData.deliveryTimes || [],
-              averageTime: streetData.averageTime || undefined,
-              cycleStartDate: streetData.cycleStartDate || undefined
-            } as Street);
+        // רק אם אין נתונים מקומיים, האזן ל-Firebase
+        if (localStreets.length === 0) {
+          const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+            const streets: Street[] = [];
+            snapshot.forEach((doc) => {
+              const streetData = doc.data();
+              streets.push({ 
+                id: doc.id, 
+                ...streetData,
+                lastDelivered: streetData.lastDelivered || "",
+                deliveryTimes: streetData.deliveryTimes || [],
+                averageTime: streetData.averageTime || undefined,
+                cycleStartDate: streetData.cycleStartDate || undefined
+              } as Street);
+            });
+            console.log("📥 נתונים מ-Firebase (רק אם אין מקומיים)");
+            setData(streets);
+            saveStreetsToLocalStorage(streets);
+          }, (error) => {
+            console.log("💾 Firebase לא זמין, ממשיך מקומית");
           });
-          console.log("📥 נתונים מסונכרנים מ-Firebase:", streets.length, "רחובות");
-          setData(streets);
-          saveStreetsToLocalStorage(streets);
-          setLoading(false);
-        }, (error) => {
-          console.error("❌ שגיאה בסנכרון Firebase:", error);
-          console.log("💾 עובר למצב מקומי");
-          // טען מ-localStorage רק אם Firebase נכשל
-          const localStreets = loadStreetsFromLocalStorage();
-          const localArea = loadCurrentAreaFromLocalStorage();
-          setData(localStreets);
-          setTodayArea(localArea);
-          setLoading(false);
-        });
-        
-        return () => unsubscribe();
+          return () => unsubscribe();
+        } else {
+          console.log("💾 יש נתונים מקומיים, לא מאזין ל-Firebase");
+        }
       } catch (error) {
-        console.error("❌ Firebase לא זמין:", error);
-        // טען מ-localStorage רק אם Firebase לא זמין בכלל
-        const localStreets = loadStreetsFromLocalStorage();
-        const localArea = loadCurrentAreaFromLocalStorage();
-        setData(localStreets);
-        setTodayArea(localArea);
-        setLoading(false);
+        console.log("💾 עובד במצב מקומי בלבד");
       }
     };
 
+    tryFirebaseListener();
   }, []);
 
   const today = new Date();
@@ -463,55 +466,51 @@ export function useDistribution() {
         updates.averageTime = averageTime;
       }
 
-      // עדכון ב-Firebase ראשון (יסנכרן אוטומטית ל-state)
-      await updateDoc(doc(db, COLLECTION_NAME, id), updates);
-      console.log("✅ רחוב עודכן ב-Firebase ויסונכרן לכל המכשירים");
-    } catch (error) {
-      console.error("Error marking delivered:", error);
-      // אם Firebase נכשל, עדכן מקומית
+      // עדכון מיידי של ה-state
       const newData = data.map(s => 
-        s.id === id ? { ...s, lastDelivered: new Date().toISOString() } : s
+        s.id === id ? { ...s, ...updates } : s
       );
       setData(newData);
       saveStreetsToLocalStorage(newData);
-      console.log("💾 Firebase נכשל, עודכן מקומית");
+      console.log("✅ רחוב סומן כחולק במצב מקומי");
+
+      // נסה לעדכן ב-Firebase
+      await updateDoc(doc(db, COLLECTION_NAME, id), updates);
+      console.log("✅ רחוב עודכן ב-Firebase בהצלחה");
+    } catch (error) {
+      console.error("Error marking delivered:", error);
+      console.log("💾 רחוב עודכן מקומית בכל מקרה");
     }
   };
 
   const undoDelivered = async (id: string) => {
+    // עדכון מיידי של ה-state
+    const newData = data.map(s => 
+      s.id === id ? { ...s, lastDelivered: "" } : s
+    );
+    setData(newData);
+    saveStreetsToLocalStorage(newData);
+    console.log("✅ ביטול חלוקה במצב מקומי");
+    
+    // נסה לעדכן ב-Firebase
     try {
-      // עדכון ב-Firebase ראשון (יסנכרן אוטומטית ל-state)
       await updateDoc(doc(db, COLLECTION_NAME, id), {
         lastDelivered: ""
       });
-      console.log("✅ ביטול חלוקה עודכן ב-Firebase ויסונכרן לכל המכשירים");
+      console.log("✅ ביטול חלוקה עודכן ב-Firebase");
     } catch (error) {
       console.error("Error undoing delivery:", error);
-      // אם Firebase נכשל, עדכן מקומית
-      const newData = data.map(s => 
-        s.id === id ? { ...s, lastDelivered: "" } : s
-      );
-      setData(newData);
-      saveStreetsToLocalStorage(newData);
-      console.log("💾 Firebase נכשל, עודכן מקומית");
+      console.log("💾 ביטול חלוקה עודכן מקומית בכל מקרה");
     }
   };
 
   const endDay = async () => {
     const newArea: Area = todayArea === 12 ? 14 : todayArea === 14 ? 45 : 12;
     
-    try {
-      // שמור ב-Firebase ראשון
-      await saveCurrentArea(newArea);
-      setTodayArea(newArea);
-      console.log("✅ מעבר לאזור:", newArea, "- מסונכרן לכל המכשירים");
-    } catch (error) {
-      console.error("Error changing area:", error);
-      // אם Firebase נכשל, עדכן מקומית
-      setTodayArea(newArea);
-      saveCurrentAreaToLocalStorage(newArea);
-      console.log("💾 Firebase נכשל, אזור עודכן מקומית");
-    }
+    setTodayArea(newArea);
+    saveCurrentAreaToLocalStorage(newArea);
+    await saveCurrentArea(newArea);
+    console.log("✅ מעבר לאזור:", newArea);
   };
 
   // פונקציה נפרדת לאיפוס מחזור
