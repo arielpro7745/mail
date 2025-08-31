@@ -9,25 +9,51 @@ const COLLECTION_NAME = "tasks";
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [firebaseConnected, setFirebaseConnected] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
-      const tasksData: Task[] = [];
-      snapshot.forEach((doc) => {
-        tasksData.push({ id: doc.id, ...doc.data() } as Task);
-      });
-      setTasks(tasksData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setLoading(false);
-    }, (error) => {
-      console.error("Error in tasks snapshot listener:", error);
-      if (error.code === 'permission-denied') {
-        console.warn("Firebase permission denied for real-time updates. Using empty tasks list.");
+    const initializeTasks = async () => {
+      try {
+        // בדוק חיבור Firebase
+        const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+        setFirebaseConnected(true);
+        
+        const tasksData: Task[] = [];
+        snapshot.forEach((doc) => {
+          tasksData.push({ id: doc.id, ...doc.data() } as Task);
+        });
+        setTasks(tasksData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        console.log("📥 משימות נטענו מ-Firebase:", tasksData.length);
+        
+        // הגדר מאזין לשינויים בזמן אמת
+        const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+          const tasksData: Task[] = [];
+          snapshot.forEach((doc) => {
+            tasksData.push({ id: doc.id, ...doc.data() } as Task);
+          });
+          setTasks(tasksData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+          console.log("🔄 עדכון משימות מ-Firebase בזמן אמת");
+        }, (error) => {
+          console.error("Error in tasks snapshot listener:", error);
+          setFirebaseConnected(false);
+        });
+        
+        setLoading(false);
+        return unsubscribe;
+      } catch (error) {
+        console.error("Error initializing tasks:", error);
+        setFirebaseConnected(false);
         setTasks([]);
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    const unsubscribe = initializeTasks();
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const addTask = async (taskData: Omit<Task, 'id' | 'createdAt'>) => {

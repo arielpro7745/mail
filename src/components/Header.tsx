@@ -1,11 +1,13 @@
 import ThemeToggle from "./ThemeToggle";
 import Settings from "./Settings";
 import { useState, useEffect } from "react";
-import { Clock, Wifi, WifiOff } from "lucide-react";
+import { Clock, Wifi, WifiOff, Database, DatabaseZap } from "lucide-react";
+import { testFirebaseConnection } from "../firebase";
 
 export default function Header() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [firebaseConnected, setFirebaseConnected] = useState(false);
   
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -16,8 +18,19 @@ export default function Header() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
+    // בדוק חיבור Firebase
+    const checkFirebase = async () => {
+      const connected = await testFirebaseConnection();
+      setFirebaseConnected(connected);
+    };
+    
+    checkFirebase();
+    // בדוק כל 30 שניות
+    const firebaseTimer = setInterval(checkFirebase, 30000);
+    
     return () => {
       clearInterval(timer);
+      clearInterval(firebaseTimer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
@@ -40,6 +53,10 @@ export default function Header() {
               <div className="flex items-center gap-1">
                 {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
                 {isOnline ? 'מחובר' : 'לא מחובר'}
+              </div>
+              <div className="flex items-center gap-1">
+                {firebaseConnected ? <DatabaseZap size={14} /> : <Database size={14} />}
+                {firebaseConnected ? 'Firebase פעיל' : 'Firebase כבוי'}
               </div>
             </div>
           </div>

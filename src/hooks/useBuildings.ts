@@ -80,39 +80,69 @@ export function useBuildings() {
   useEffect(() => {
     console.log("🚀 מתחיל אתחול useBuildings...");
     
-    // טען מיד מ-localStorage
-    const localData = loadFromLocalStorage();
-    setData(localData);
-    setLoading(false);
-    console.log("⚡ נתונים נטענו מיד:", localData.length, "בניינים");
-
-    // נסה להתחבר ל-Firebase ברקע אבל אל תשנה את הנתונים המקומיים
-    const tryFirebaseConnection = async () => {
+    const initializeBuildings = async () => {
       try {
         const isConnected = await checkFirebaseConnection();
         if (isConnected) {
-          console.log("🔥 Firebase זמין - אבל שומר על נתונים מקומיים");
-          // רק אם אין נתונים מקומיים בכלל, טען מ-Firebase
-          if (localData.length === 0) {
-            const snapshot = await getDocs(collection(db, COLLECTION_NAME));
-            if (!snapshot.empty) {
-              const firebaseData: Building[] = [];
-              snapshot.forEach((doc) => {
-                firebaseData.push({ id: doc.id, ...doc.data() } as Building);
-              });
-              console.log("📥 טוען מ-Firebase כי אין נתונים מקומיים");
-              setData(firebaseData);
-              saveToLocalStorage(firebaseData);
-            }
+          // טען מ-Firebase תחילה
+          const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+          if (!snapshot.empty) {
+            const firebaseData: Building[] = [];
+            snapshot.forEach((doc) => {
+              firebaseData.push({ id: doc.id, ...doc.data() } as Building);
+            });
+            console.log("📥 נתונים נטענו מ-Firebase:", firebaseData.length, "בניינים");
+            setData(firebaseData);
+            saveToLocalStorage(firebaseData);
+          } else {
+            // אם אין ב-Firebase, אתחל עם נתונים ראשוניים
+            console.log("📦 מאתחל עם נתונים ראשוניים");
+            setData(initialBuildings);
+            saveToLocalStorage(initialBuildings);
+            
+            // שמור ב-Firebase
+            const batch = initialBuildings.map(building => 
+              setDoc(doc(db, COLLECTION_NAME, building.id), building)
+            );
+            await Promise.all(batch);
           }
+          
+          // הגדר מאזין לשינויים בזמן אמת
+          const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+            const firebaseData: Building[] = [];
+            snapshot.forEach((doc) => {
+              firebaseData.push({ id: doc.id, ...doc.data() } as Building);
+            });
+            console.log("🔄 עדכון בניינים מ-Firebase בזמן אמת");
+            setData(firebaseData);
+            saveToLocalStorage(firebaseData);
+          }, (error) => {
+            console.error("Firebase listener error:", error);
+            setFirebaseConnected(false);
+          });
+          
+          return unsubscribe;
+        } else {
+          // אם Firebase לא זמין, טען מקומית
+          const localData = loadFromLocalStorage();
+          setData(localData);
         }
       } catch (error) {
-        console.log("💾 Firebase לא זמין, עובד במצב מקומי בלבד");
+        console.error("Error initializing buildings:", error);
+        const localData = loadFromLocalStorage();
+        setData(localData);
       }
+      
+      setLoading(false);
     };
 
-    // רק נסה להתחבר, אל תשנה נתונים קיימים
-    tryFirebaseConnection();
+    const unsubscribe = initializeBuildings();
+    
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const addBuilding = async (building: Building) => {

@@ -123,23 +123,24 @@ export function useDistribution() {
   // Load current area
   const loadCurrentArea = async () => {
     try {
-      // טען מ-localStorage קודם
-      const localArea = loadCurrentAreaFromLocalStorage();
-      setTodayArea(localArea);
-      
       // נסה לסנכרן עם Firebase
       const areaDoc = await getDocs(collection(db, "settings"));
       const areaData = areaDoc.docs.find(doc => doc.id === "currentArea");
       if (areaData) {
         const firebaseArea = areaData.data().area as Area;
-        if (firebaseArea !== localArea) {
-          setTodayArea(firebaseArea);
-          saveCurrentAreaToLocalStorage(firebaseArea);
-        }
+        setTodayArea(firebaseArea);
+        saveCurrentAreaToLocalStorage(firebaseArea);
+      } else {
+        // אם אין ב-Firebase, טען מקומית
+        const localArea = loadCurrentAreaFromLocalStorage();
+        setTodayArea(localArea);
+        await saveCurrentArea(localArea);
       }
     } catch (error) {
       console.error("Error loading current area:", error);
-      console.log("🔄 משתמש באזור מקומי");
+      // אם יש שגיאה, טען מקומית
+      const localArea = loadCurrentAreaFromLocalStorage();
+      setTodayArea(localArea);
     }
   };
 
@@ -161,56 +162,79 @@ export function useDistribution() {
   useEffect(() => {
     console.log("🚀 מתחיל אתחול האפליקציה...");
     
-    // טען נתונים מיד מ-localStorage
-    const localStreets = loadStreetsFromLocalStorage();
-    const localArea = loadCurrentAreaFromLocalStorage();
-    
-    setData(localStreets);
-    setTodayArea(localArea);
-    setLoading(false);
-    console.log("⚡ נתונים נטענו מיד מהמחשב");
-
     const initializeApp = async () => {
       await initializeData();
       await loadCurrentArea();
+      
+      // טען נתונים מ-Firebase תחילה
+      try {
+        const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+        if (!snapshot.empty) {
+          const firebaseStreets: Street[] = [];
+          snapshot.forEach((doc) => {
+            const streetData = doc.data();
+            firebaseStreets.push({ 
+              id: doc.id, 
+              ...streetData,
+              lastDelivered: streetData.lastDelivered || "",
+              deliveryTimes: streetData.deliveryTimes || [],
+              averageTime: streetData.averageTime || undefined,
+              cycleStartDate: streetData.cycleStartDate || undefined
+            } as Street);
+          });
+          console.log("📥 נתונים נטענו מ-Firebase:", firebaseStreets.length);
+          setData(firebaseStreets);
+          saveStreetsToLocalStorage(firebaseStreets);
+        } else {
+          // אם אין ב-Firebase, טען מקומית
+          const localStreets = loadStreetsFromLocalStorage();
+          setData(localStreets);
+        }
+      } catch (error) {
+        console.error("Error loading from Firebase:", error);
+        // אם יש שגיאה, טען מקומית
+        const localStreets = loadStreetsFromLocalStorage();
+        setData(localStreets);
+      }
+      
+      setLoading(false);
     };
 
     initializeApp();
 
-    // נסה להאזין ל-Firebase אבל אל תדרוס נתונים מקומיים
-    const tryFirebaseListener = async () => {
+    // האזן לשינויים ב-Firebase בזמן אמת
+    const setupFirebaseListener = () => {
       try {
-        // רק אם אין נתונים מקומיים, האזן ל-Firebase
-        if (localStreets.length === 0) {
-          const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
-            const streets: Street[] = [];
-            snapshot.forEach((doc) => {
-              const streetData = doc.data();
-              streets.push({ 
-                id: doc.id, 
-                ...streetData,
-                lastDelivered: streetData.lastDelivered || "",
-                deliveryTimes: streetData.deliveryTimes || [],
-                averageTime: streetData.averageTime || undefined,
-                cycleStartDate: streetData.cycleStartDate || undefined
-              } as Street);
-            });
-            console.log("📥 נתונים מ-Firebase (רק אם אין מקומיים)");
-            setData(streets);
-            saveStreetsToLocalStorage(streets);
-          }, (error) => {
-            console.log("💾 Firebase לא זמין, ממשיך מקומית");
+        const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+          const streets: Street[] = [];
+          snapshot.forEach((doc) => {
+            const streetData = doc.data();
+            streets.push({ 
+              id: doc.id, 
+              ...streetData,
+              lastDelivered: streetData.lastDelivered || "",
+              deliveryTimes: streetData.deliveryTimes || [],
+              averageTime: streetData.averageTime || undefined,
+              cycleStartDate: streetData.cycleStartDate || undefined
+            } as Street);
           });
-          return () => unsubscribe();
-        } else {
-          console.log("💾 יש נתונים מקומיים, לא מאזין ל-Firebase");
-        }
+          console.log("🔄 עדכון מ-Firebase בזמן אמת:", streets.length);
+          setData(streets);
+          saveStreetsToLocalStorage(streets);
+        }, (error) => {
+          console.error("Firebase listener error:", error);
+        });
+        return unsubscribe;
       } catch (error) {
-        console.log("💾 עובד במצב מקומי בלבד");
+        console.error("Error setting up Firebase listener:", error);
+        return () => {};
       }
     };
 
-    tryFirebaseListener();
+    const unsubscribe = setupFirebaseListener();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const today = new Date();

@@ -40,7 +40,8 @@ import { doc, getDoc } from "firebase/firestore";
 const testFirebaseConnection = async () => {
   try {
     console.log("🧪 בודק חיבור ל-Firebase...");
-    const testDoc = await getDoc(doc(db, "test", "connection"));
+    // נסה לקרוא מקולקציית הרחובות במקום מסמך טסט
+    const testDoc = await getDoc(doc(db, "streets", "test"));
     console.log("✅ חיבור ל-Firebase עובד!");
     return true;
   } catch (error) {
