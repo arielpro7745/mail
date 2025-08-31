@@ -7,7 +7,7 @@ import { Reports } from './components/Reports';
 import { Settings } from './components/Settings';
 import { TaskManager } from './components/TaskManager';
 import { WalkingOrder } from './components/WalkingOrder';
-import { BuildingManager } from './components/BuildingManager';
+import BuildingManager from './components/BuildingManager';
 import { PhoneDirectory } from './components/PhoneDirectory';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { useDistribution } from './hooks/useDistribution';
