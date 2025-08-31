@@ -1,7 +1,7 @@
 import ThemeToggle from "./ThemeToggle";
 import Settings from "./Settings";
 import { useState, useEffect } from "react";
-import { Clock, Wifi, WifiOff, Database, DatabaseZap } from "lucide-react";
+import { Clock, Wifi, WifiOff, Database, Database as DatabaseZap } from "lucide-react";
 import { testFirebaseConnection } from "../firebase";
 
 export default function Header() {
@@ -53,10 +53,6 @@ export default function Header() {
               <div className="flex items-center gap-1">
                 {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
                 {isOnline ? 'מחובר' : 'לא מחובר'}
-              </div>
-              <div className="flex items-center gap-1">
-                {firebaseConnected ? <DatabaseZap size={14} /> : <Database size={14} />}
-                {firebaseConnected ? 'Firebase פעיל' : 'Firebase כבוי'}
               </div>
             </div>
           </div>
