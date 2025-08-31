@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, doc, getDocs, setDoc, updateDoc, onSnapshot, connectFirestoreEmulator } from "firebase/firestore";
-import { db } from "../firebase";
+import { db } from "../lib/firebase";
 import { streets as initialStreets } from "../data/streets";
 import { Street, Area } from "../types";
 import { sortByUrgency, pickForToday } from "../utils/schedule";
@@ -12,14 +12,11 @@ import { useSettings } from "./useSettings";
 const COLLECTION_NAME = "streets";
 
 export function useDistribution() {
-const FIREBASE_TIMEOUT = 5000; // 5 שניות timeout
   const [data, setData] = useState<Street[]>([]);
   const [todayArea, setTodayArea] = useState<Area>(12);
   const [loading, setLoading] = useState(true);
   const [firebaseError, setFirebaseError] = useState<string | null>(null);
   const { settings } = useSettings();
-
-  console.log("🚀 useDistribution initialized");
 
   console.log("🚀 useDistribution initialized - Firebase only mode");
 
@@ -282,13 +279,6 @@ const FIREBASE_TIMEOUT = 5000; // 5 שניות timeout
   };
 
   // רחובות שחולקו היום
-  // פונקציה לטעינה מהירה מ-localStorage
-  const loadLocalDataImmediately = () => {
-    console.log("⚡ טוען נתונים מקומיים מיד...");
-    const localStreets = loadStreetsFromLocalStorage();
-    const localArea = loadCurrentAreaFromLocalStorage();
-  };
-        
   const completedToday = areaStreets.filter(
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
   );
