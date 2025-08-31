@@ -88,6 +88,7 @@ export function useDistribution() {
     console.log("⚡ טוען נתונים מקומיים מיד...");
     const localStreets = loadStreetsFromLocalStorage();
     const localArea = loadCurrentAreaFromLocalStorage();
+  }
   // Initialize data if collection is empty
   const initializeData = async () => {
     try {
