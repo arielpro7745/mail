@@ -3,7 +3,17 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore, enableIndexedDbPersistence, getDoc, doc } from 'firebase/firestore'
 import { getAnalytics, isSupported } from 'firebase/analytics'
 
-export const app = initializeApp(cfg)
+// Firebase configuration - replace with your actual config
+const firebaseConfig = {
+  apiKey: "demo-key",
+  authDomain: "demo-project.firebaseapp.com",
+  projectId: "demo-project",
+  storageBucket: "demo-project.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
+}
+
+export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 
