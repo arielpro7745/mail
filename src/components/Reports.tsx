@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useReports } from "../hooks/useReports";
 import { useDistribution } from "../hooks/useDistribution";
+import { useSettings } from "../hooks/useSettings";
 import { totalDaysBetween, daysSinceCycleStart, daysRemainingInCycle } from "../utils/dates";
 import { formatStreetName } from "../utils/addressFormatter";
 import LoadingSpinner from "./LoadingSpinner";
@@ -13,6 +14,7 @@ import {
 export default function Reports() {
   const { reportData } = useReports();
   const { loading, allStreets } = useDistribution();
+  const { settings } = useSettings();
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'recent' | 'old'>('all');
   const [areaFilter, setAreaFilter] = useState<'all' | '12' | '14' | '45'>('all');
