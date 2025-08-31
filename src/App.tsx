@@ -2,7 +2,7 @@ import React from 'react';
 import { Header } from './components/Header';
 import { TabBar } from './components/TabBar';
 import { StreetTable } from './components/StreetTable';
-import { CompletedToday } from './components/CompletedToday';
+import CompletedToday from './components/CompletedToday';
 import { Reports } from './components/Reports';
 import { Settings } from './components/Settings';
 import { TaskManager } from './components/TaskManager';
