@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, doc, getDocs, setDoc, updateDoc, onSnapshot, connectFirestoreEmulator } from "firebase/firestore";
 import { db } from "./lib/firebase";
-import { streets as initialStreets } from "../data/streets";
+import { streets as initialStreets } from "./data/streets";
 import { Street, Area } from "../types";
 import { sortByUrgency, pickForToday } from "../utils/schedule";
 import { optimizeRoute } from "../utils/routeOptimizer";
