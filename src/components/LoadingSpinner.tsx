@@ -7,7 +7,7 @@ import { sortByUrgency, pickForToday } from "../utils/schedule";
 import { optimizeRoute } from "../utils/routeOptimizer";
 import { isSameDay } from "../utils/isSameDay";
 import { shouldStreetReappear, totalDaysBetween } from "../utils/dates";
-import { useSettings } from "./useSettings";
+import { useSettings } from "../hooks/useSettings";
 
 const COLLECTION_NAME = "streets";
 
