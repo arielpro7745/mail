@@ -1,476 +1,569 @@
-import { useState, useEffect } from "react";
-import Header from "./components/Header";
-import TabBar from "./components/TabBar";
-import { useDistribution } from "./hooks/useDistribution";
-import { useNotifications } from "./hooks/useNotifications";
-import { AreaToggle } from "./components/AreaToggle";
-import StreetTable from "./components/StreetTable";
-import Notifications from "./components/Notifications";
-import BuildingManager from "./components/BuildingManager";
-import CompletedToday from "./components/CompletedToday";
-import WalkingOrder from "./components/WalkingOrder";
-import LoadingSpinner from "./components/LoadingSpinner";
-import DeliveryTimer from "./components/DeliveryTimer";
-import RouteOptimizer from "./components/RouteOptimizer";
-import TaskManager from "./components/TaskManager";
-import Reports from "./components/Reports";
-import PhoneDirectory from "./components/PhoneDirectory";
-import DataExport from "./components/DataExport";
-import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
-import QuickActions from "./components/QuickActions";
-import InteractiveMap from "./components/InteractiveMap";
-import VoiceNotifications from "./components/VoiceNotifications";
-import AdvancedStats from "./components/AdvancedStats";
-import AutoBackup from "./components/AutoBackup";
-import NightModeScheduler from "./components/NightModeScheduler";
-import GPSExporter from "./components/GPSExporter";
-import WhatsAppManager from "./components/WhatsAppManager";
-import { Street } from "./types";
-import { totalDaysBetween } from "./utils/dates";
-import { AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { collection, doc, getDocs, setDoc, updateDoc, onSnapshot, connectFirestoreEmulator } from "firebase/firestore";
+import { db } from "../firebase";
+import { streets as initialStreets } from "../data/streets";
+import { Street, Area } from "../types";
+import { sortByUrgency, pickForToday } from "../utils/schedule";
+import { optimizeRoute } from "../utils/routeOptimizer";
+import { isSameDay } from "../utils/isSameDay";
+import { shouldStreetReappear, totalDaysBetween } from "../utils/dates";
+import { useSettings } from "./useSettings";
 
-export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced">("regular");
-  const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
-  const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
-  const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
-  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
+const COLLECTION_NAME = "streets";
+const AREA_STORAGE_KEY = "current_area_v2";
+const STREETS_STORAGE_KEY = "streets_data_v2";
+const FIREBASE_TIMEOUT = 5000; // 5 שניות timeout
 
-  const {
+export function useDistribution() {
+  const [data, setData] = useState<Street[]>([]);
+  const [todayArea, setTodayArea] = useState<Area>(12);
+  const [loading, setLoading] = useState(true);
+  const { settings } = useSettings();
+
+  console.log("🚀 useDistribution initialized");
+
+  // שמירה ב-localStorage
+  const saveStreetsToLocalStorage = (streets: Street[]) => {
+    try {
+      const dataToSave = {
+        streets,
+        timestamp: Date.now(),
+        version: "2.0"
+      };
+      localStorage.setItem(STREETS_STORAGE_KEY, JSON.stringify(dataToSave));
+      console.log("✅ רחובות נשמרו ב-localStorage:", streets.length, "רחובות");
+    } catch (error) {
+      console.error("❌ שגיאה בשמירת רחובות ב-localStorage:", error);
+    }
+  };
+
+  // טעינה מ-localStorage
+  const loadStreetsFromLocalStorage = (): Street[] => {
+    try {
+      const saved = localStorage.getItem(STREETS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.streets && Array.isArray(parsed.streets)) {
+          console.log("✅ רחובות נטענו מ-localStorage:", parsed.streets.length, "רחובות");
+          return parsed.streets;
+        }
+      }
+    } catch (error) {
+      console.error("❌ שגיאה בטעינת רחובות מ-localStorage:", error);
+    }
+    
+    console.log("📦 משתמש ברחובות ראשוניים");
+    return initialStreets;
+  };
+
+  // שמירת אזור נוכחי
+  const saveCurrentAreaToLocalStorage = (area: Area) => {
+    try {
+      localStorage.setItem(AREA_STORAGE_KEY, area.toString());
+      console.log("✅ אזור נוכחי נשמר:", area);
+    } catch (error) {
+      console.error("❌ שגיאה בשמירת אזור:", error);
+    }
+  };
+
+  // טעינת אזור נוכחי
+  const loadCurrentAreaFromLocalStorage = (): Area => {
+    try {
+      const saved = localStorage.getItem(AREA_STORAGE_KEY);
+      if (saved) {
+        const area = parseInt(saved) as Area;
+        console.log("✅ אזור נוכחי נטען:", area);
+        return area;
+      }
+    } catch (error) {
+      console.error("❌ שגיאה בטעינת אזור:", error);
+    }
+    
+    console.log("📦 משתמש באזור ברירת מחדל: 12");
+    return 12;
+  };
+
+  // פונקציה לטעינה מהירה מ-localStorage
+  const loadLocalDataImmediately = () => {
+    console.log("⚡ טוען נתונים מקומיים מיד...");
+    const localStreets = loadStreetsFromLocalStorage();
+    const localArea = loadCurrentAreaFromLocalStorage();
+  // Initialize data if collection is empty
+  const initializeData = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+      if (snapshot.empty) {
+        // Initialize with default streets data
+        const batch = initialStreets.map(street => 
+          setDoc(doc(db, COLLECTION_NAME, street.id), street)
+        );
+        await Promise.all(batch);
+        console.log("Initialized streets data in Firestore");
+      } else {
+        console.log(`Found ${snapshot.size} existing streets in Firestore`);
+        
+        // Check if we need to add missing streets from area 12
+        const existingStreetIds = new Set();
+        snapshot.forEach(doc => {
+          existingStreetIds.add(doc.id);
+        });
+        
+        // Find missing streets and add them
+        const missingStreets = initialStreets.filter(street => !existingStreetIds.has(street.id));
+        if (missingStreets.length > 0) {
+          console.log(`Adding ${missingStreets.length} missing streets:`, missingStreets.map(s => s.name));
+          const batch = missingStreets.map(street => 
+            setDoc(doc(db, COLLECTION_NAME, street.id), street)
+          );
+          await Promise.all(batch);
+          console.log("Added missing streets to Firestore");
+        }
+      }
+    } catch (error) {
+      console.error("Error initializing data:", error);
+      if (error.code === 'permission-denied') {
+        console.warn("Firebase permission denied. Using local data. Please check your Firestore Security Rules.");
+        setData(initialStreets);
+      }
+    }
+  };
+
+  // Load current area
+  const loadCurrentArea = async () => {
+    try {
+      // טען מ-localStorage קודם
+      const localArea = loadCurrentAreaFromLocalStorage();
+      setTodayArea(localArea);
+      
+      // נסה לסנכרן עם Firebase
+      const areaDoc = await getDocs(collection(db, "settings"));
+      const areaData = areaDoc.docs.find(doc => doc.id === "currentArea");
+      if (areaData) {
+        const firebaseArea = areaData.data().area as Area;
+        if (firebaseArea !== localArea) {
+          setTodayArea(firebaseArea);
+          saveCurrentAreaToLocalStorage(firebaseArea);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading current area:", error);
+      console.log("🔄 משתמש באזור מקומי");
+    }
+  };
+
+  // Save current area
+  const saveCurrentArea = async (area: Area) => {
+    // שמור מיד מקומית
+    saveCurrentAreaToLocalStorage(area);
+    
+    // נסה לשמור ב-Firebase
+    try {
+      await setDoc(doc(db, "settings", "currentArea"), { area });
+      console.log("✅ אזור נשמר ב-Firebase");
+    } catch (error) {
+      console.error("Error saving current area:", error);
+      console.log("💾 אזור נשמר מקומית בכל מקרה");
+    }
+  };
+
+  useEffect(() => {
+    console.log("🚀 מתחיל אתחול האפליקציה...");
+    
+    const initializeApp = async () => {
+      await initializeData();
+      await loadCurrentArea();
+      
+      // נסה להאזין ל-Firebase תמיד
+      try {
+        console.log("🔥 מתחבר ל-Firebase לסנכרון...");
+        const unsubscribe = onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+          const streets: Street[] = [];
+          snapshot.forEach((doc) => {
+            const streetData = doc.data();
+            streets.push({ 
+              id: doc.id, 
+              ...streetData,
+              lastDelivered: streetData.lastDelivered || "",
+              deliveryTimes: streetData.deliveryTimes || [],
+              averageTime: streetData.averageTime || undefined,
+              cycleStartDate: streetData.cycleStartDate || undefined
+            } as Street);
+          });
+          console.log("📥 נתונים מסונכרנים מ-Firebase:", streets.length, "רחובות");
+          setData(streets);
+          saveStreetsToLocalStorage(streets);
+          setLoading(false);
+        }, (error) => {
+          console.error("❌ שגיאה בסנכרון Firebase:", error);
+          console.log("💾 עובר למצב מקומי");
+          // טען מ-localStorage רק אם Firebase נכשל
+          const localStreets = loadStreetsFromLocalStorage();
+          const localArea = loadCurrentAreaFromLocalStorage();
+          setData(localStreets);
+          setTodayArea(localArea);
+          setLoading(false);
+        });
+        
+        return () => unsubscribe();
+      } catch (error) {
+        console.error("❌ Firebase לא זמין:", error);
+        // טען מ-localStorage רק אם Firebase לא זמין בכלל
+        const localStreets = loadStreetsFromLocalStorage();
+        const localArea = loadCurrentAreaFromLocalStorage();
+        setData(localStreets);
+        setTodayArea(localArea);
+        setLoading(false);
+      }
+    };
+
+  }, []);
+
+  const today = new Date();
+  const areaStreets = data.filter(s => s.area === todayArea);
+  
+  // מיון רחובות לפי דחיפות - מהישן לחדש
+  const sortStreetsByUrgency = (streets: Street[]) => {
+    console.log("🔍 מתחיל מיון רחובות:");
+    streets.forEach(street => {
+      const days = street.lastDelivered 
+        ? totalDaysBetween(new Date(street.lastDelivered), today)
+        : 999;
+      console.log(`📍 ${street.name}: ${street.lastDelivered ? `${days} ימים (${street.lastDelivered})` : 'לא חולק מעולם'}`);
+    });
+
+    return [...streets].sort((a, b) => {
+      // רחובות שלא חולקו מעולם - ראשונים
+      if (!a.lastDelivered && !b.lastDelivered) {
+        console.log(`🔄 שניהם לא חולקו: ${a.name} vs ${b.name} -> מיון לפי שם`);
+        // אם שניהם לא חולקו, מיין לפי שם
+        return a.name.localeCompare(b.name);
+      }
+      if (!a.lastDelivered) {
+        console.log(`🔄 ${a.name} לא חולק מעולם, ${b.name} חולק -> ${a.name} ראשון`);
+        return -1; // a ראשון
+      }
+      if (!b.lastDelivered) {
+        console.log(`🔄 ${b.name} לא חולק מעולם, ${a.name} חולק -> ${b.name} ראשון`);
+        return 1;  // b ראשון
+      }
+      
+      // מיון לפי מספר ימים - הכי הרבה ימים ראשון
+      const aDays = totalDaysBetween(new Date(a.lastDelivered), today);
+      const bDays = totalDaysBetween(new Date(b.lastDelivered), today);
+      
+      console.log(`🔄 ${a.name} (${aDays} ימים) vs ${b.name} (${bDays} ימים)`);
+      
+      if (aDays !== bDays) {
+        const result = bDays - aDays; // יותר ימים ראשון
+        console.log(`📅 ימים שונים: ${result > 0 ? a.name : b.name} ראשון (${result > 0 ? aDays : bDays} ימים)`);
+        return bDays - aDays; // יותר ימים ראשון
+      }
+      
+      // אם אותו תאריך, רחובות גדולים קודם
+      if (a.isBig !== b.isBig) {
+        console.log(`🏢 אותו מספר ימים, רחוב גדול: ${a.isBig ? a.name : b.name} ראשון`);
+        return a.isBig ? -1 : 1;
+      }
+      
+      // לבסוף מיין לפי שם הרחוב
+      console.log(`📝 אותו מספר ימים ואותו סוג, מיון לפי שם: ${a.name.localeCompare(b.name) < 0 ? a.name : b.name} ראשון`);
+      return a.name.localeCompare(b.name);
+    });
+  };
+
+  // פונקציה לקבלת רמת דחיפות של רחוב
+  const getStreetUrgencyLevel = (street: Street) => {
+    if (!street.lastDelivered) return 'never'; // לא חולק מעולם
+    
+    const days = totalDaysBetween(new Date(street.lastDelivered), today);
+    if (days >= 14) return 'critical'; // קריטי
+    if (days >= 10) return 'urgent';   // דחוף
+    if (days >= 7) return 'warning';   // אזהרה
+    return 'normal'; // רגיל
+  };
+
+  // פונקציה לקבלת צבע לפי רמת דחיפות
+  const getUrgencyColor = (urgencyLevel: string) => {
+    switch (urgencyLevel) {
+      case 'never': return 'bg-purple-50 border-purple-300';
+      case 'critical': return 'bg-red-50 border-red-300';
+      case 'urgent': return 'bg-orange-50 border-orange-300';
+      case 'warning': return 'bg-yellow-50 border-yellow-300';
+      default: return 'bg-white border-gray-200';
+    }
+  };
+
+  // פונקציה לקבלת תווית דחיפות
+  const getUrgencyLabel = (urgencyLevel: string) => {
+    switch (urgencyLevel) {
+      case 'never': return 'לא חולק מעולם';
+      case 'critical': return 'קריטי - מעל 14 ימים';
+      case 'urgent': return 'דחוף - 10-13 ימים';
+      case 'warning': return 'אזהרה - 7-9 ימים';
+      default: return 'רגיל';
+    }
+  };
+
+  // קיבוץ רחובות לפי רמת דחיפות
+  const groupStreetsByUrgency = (streets: Street[]) => {
+    const groups = {
+      never: [] as Street[],
+      critical: [] as Street[],
+      urgent: [] as Street[],
+      warning: [] as Street[],
+      normal: [] as Street[]
+    };
+
+    streets.forEach(street => {
+      const urgencyLevel = getStreetUrgencyLevel(street);
+      groups[urgencyLevel as keyof typeof groups].push(street);
+    });
+
+    // מיון בתוך כל קבוצה
+    Object.keys(groups).forEach(key => {
+      groups[key as keyof typeof groups].sort((a, b) => {
+        // רחובות שלא חולקו מעולם
+        if (!a.lastDelivered && !b.lastDelivered) {
+          return a.name.localeCompare(b.name);
+        }
+        if (!a.lastDelivered) return -1;
+        if (!b.lastDelivered) return 1;
+        
+        // מיון לפי תאריך - הישן ביותר ראשון
+        const aDays = totalDaysBetween(new Date(a.lastDelivered), today);
+        const bDays = totalDaysBetween(new Date(b.lastDelivered), today);
+        
+        if (aDays !== bDays) {
+          return bDays - aDays; // יותר ימים ראשון
+        }
+        
+        // אם אותו מספר ימים, רחובות גדולים קודם
+        if (a.isBig !== b.isBig) return a.isBig ? -1 : 1;
+        
+        // לבסוף מיין לפי שם הרחוב
+        return a.name.localeCompare(b.name);
+      });
+    });
+
+    return groups;
+  };
+
+  // רחובות שחולקו היום
+  const completedToday = areaStreets.filter(
+    s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
+  );
+  
+  // רחובות שצריכים חלוקה (לא חולקו היום)
+  const streetsNeedingDelivery = areaStreets.filter(s => {
+    // אם חולק היום, לא צריך להופיע
+    if (s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)) {
+      return false;
+    }
+    
+    // כל רחוב שלא חולק היום צריך להופיע ברשימה
+    return true;
+  });
+
+  // רחובות מקובצים לפי דחיפות
+  const urgencyGroups = groupStreetsByUrgency(streetsNeedingDelivery);
+  
+  // רחובות ממוינים לפי דחיפות (רשימה שטוחה)
+  const sortedStreetsByUrgency = streetsNeedingDelivery.sort((a, b) => {
+    console.log("🔄 מיון רחובות בחלוקה רגילה:");
+    
+    // רחובות שלא חולקו מעולם - ראשונים
+    if (!a.lastDelivered && !b.lastDelivered) {
+      console.log(`🔄 שניהם לא חולקו: ${a.name} vs ${b.name} -> מיון לפי שם`);
+      return a.name.localeCompare(b.name);
+    }
+    if (!a.lastDelivered) {
+      console.log(`🔄 ${a.name} לא חולק מעולם, ${b.name} חולק -> ${a.name} ראשון`);
+      return -1; // a ראשון
+    }
+    if (!b.lastDelivered) {
+      console.log(`🔄 ${b.name} לא חולק מעולם, ${a.name} חולק -> ${b.name} ראשון`);
+      return 1;  // b ראשון
+    }
+    
+    // מיון לפי מספר ימים - הכי הרבה ימים ראשון
+    const aDays = totalDaysBetween(new Date(a.lastDelivered), today);
+    const bDays = totalDaysBetween(new Date(b.lastDelivered), today);
+    
+    console.log(`🔄 ${a.name} (${aDays} ימים) vs ${b.name} (${bDays} ימים)`);
+    
+    if (aDays !== bDays) {
+      const result = bDays - aDays; // יותר ימים ראשון
+      console.log(`📅 ימים שונים: ${result > 0 ? a.name : b.name} ראשון (${result > 0 ? aDays : bDays} ימים)`);
+      return bDays - aDays; // יותר ימים ראשון
+    }
+    
+    // אם אותו מספר ימים, רחובות גדולים קודם
+    if (a.isBig !== b.isBig) {
+      console.log(`🏢 אותו מספר ימים, רחוב גדול: ${a.isBig ? a.name : b.name} ראשון`);
+      return a.isBig ? -1 : 1;
+    }
+    
+    // לבסוף מיין לפי שם הרחוב
+    console.log(`📝 אותו מספר ימים ואותו סוג, מיון לפי שם: ${a.name.localeCompare(b.name) < 0 ? a.name : b.name} ראשון`);
+    return a.name.localeCompare(b.name);
+  });
+  
+  console.log("🎯 תוצאת המיון הסופית (10 ראשונים):");
+  sortedStreetsByUrgency.slice(0, 10).forEach((street, index) => {
+    const days = street.lastDelivered 
+      ? totalDaysBetween(new Date(street.lastDelivered), today)
+      : 999;
+    console.log(`${index + 1}. ${street.name}: ${street.lastDelivered ? `${days} ימים` : 'לא חולק מעולם'}`);
+  });
+  
+
+  // ספירת רחובות לפי דחיפות
+  const urgencyCounts = {
+    never: urgencyGroups.never.length,
+    critical: urgencyGroups.critical.length,
+    urgent: urgencyGroups.urgent.length,
+    warning: urgencyGroups.warning.length,
+    normal: urgencyGroups.normal.length
+  };
+
+  // רחובות דחופים (קריטי + דחוף + לא חולק מעולם)
+  const urgentStreetsCount = urgencyCounts.never + urgencyCounts.critical + urgencyCounts.urgent;
+
+  // רחובות דחופים (עברו 14 ימים)
+  const overdueStreets = streetsNeedingDelivery.filter(s => {
+    if (!s.lastDelivered) return true; // לא חולק מעולם
+    const days = totalDaysBetween(new Date(s.lastDelivered), today);
+    return days >= 14;
+  });
+
+  let pendingToday: Street[];
+  let displayCompletedToday: Street[];
+  let isAllCompleted: boolean;
+
+  // השתמש ברחובות הממוינים לפי מספר ימים
+  pendingToday = sortedStreetsByUrgency;
+  displayCompletedToday = completedToday;
+  isAllCompleted = streetsNeedingDelivery.length === 0;
+
+  // Apply route optimization if enabled
+  if (settings.optimizeRoutes && pendingToday.length > 0) {
+    pendingToday = optimizeRoute(pendingToday, todayArea);
+    console.log("🛣️ אופטימיזציה הופעלה - סדר המיון עשוי להשתנות");
+  }
+
+  const recommended = pickForToday(pendingToday);
+
+  const markDelivered = async (id: string, deliveryTime?: number) => {
+    try {
+      const street = data.find(s => s.id === id);
+      if (!street) return;
+
+      const updates: Partial<Street> = {
+        lastDelivered: new Date().toISOString(),
+        cycleStartDate: street.cycleStartDate || new Date().toISOString()
+      };
+
+      if (deliveryTime) {
+        const newTimes = [...(street.deliveryTimes || []), deliveryTime];
+        const averageTime = Math.round(newTimes.reduce((a, b) => a + b, 0) / newTimes.length);
+        
+        updates.deliveryTimes = newTimes;
+        updates.averageTime = averageTime;
+      }
+
+      // עדכון ב-Firebase ראשון (יסנכרן אוטומטית ל-state)
+      await updateDoc(doc(db, COLLECTION_NAME, id), updates);
+      console.log("✅ רחוב עודכן ב-Firebase ויסונכרן לכל המכשירים");
+    } catch (error) {
+      console.error("Error marking delivered:", error);
+      // אם Firebase נכשל, עדכן מקומית
+      const newData = data.map(s => 
+        s.id === id ? { ...s, lastDelivered: new Date().toISOString() } : s
+      );
+      setData(newData);
+      saveStreetsToLocalStorage(newData);
+      console.log("💾 Firebase נכשל, עודכן מקומית");
+    }
+  };
+
+  const undoDelivered = async (id: string) => {
+    try {
+      // עדכון ב-Firebase ראשון (יסנכרן אוטומטית ל-state)
+      await updateDoc(doc(db, COLLECTION_NAME, id), {
+        lastDelivered: ""
+      });
+      console.log("✅ ביטול חלוקה עודכן ב-Firebase ויסונכרן לכל המכשירים");
+    } catch (error) {
+      console.error("Error undoing delivery:", error);
+      // אם Firebase נכשל, עדכן מקומית
+      const newData = data.map(s => 
+        s.id === id ? { ...s, lastDelivered: "" } : s
+      );
+      setData(newData);
+      saveStreetsToLocalStorage(newData);
+      console.log("💾 Firebase נכשל, עודכן מקומית");
+    }
+  };
+
+  const endDay = async () => {
+    const newArea: Area = todayArea === 12 ? 14 : todayArea === 14 ? 45 : 12;
+    
+    try {
+      // שמור ב-Firebase ראשון
+      await saveCurrentArea(newArea);
+      setTodayArea(newArea);
+      console.log("✅ מעבר לאזור:", newArea, "- מסונכרן לכל המכשירים");
+    } catch (error) {
+      console.error("Error changing area:", error);
+      // אם Firebase נכשל, עדכן מקומית
+      setTodayArea(newArea);
+      saveCurrentAreaToLocalStorage(newArea);
+      console.log("💾 Firebase נכשל, אזור עודכן מקומית");
+    }
+  };
+
+  // פונקציה נפרדת לאיפוס מחזור
+  const resetCycle = async () => {
+    const currentAreaStreets = data.filter(s => s.area === todayArea);
+    
+    try {
+      const resetPromises = currentAreaStreets.map(street => {
+        const updates: Partial<Street> = {
+          cycleStartDate: new Date().toISOString(), // תחילת מחזור חדש
+          // לא מאפסים את lastDelivered - שומרים את התאריך האחרון
+          deliveryTimes: street.deliveryTimes || [],
+          averageTime: street.averageTime || undefined
+        };
+        return updateDoc(doc(db, COLLECTION_NAME, street.id), updates);
+      });
+      await Promise.all(resetPromises);
+      console.log(`מחזור חלוקה באזור ${todayArea} אופס בהצלחה`);
+    } catch (error) {
+      console.error("Error resetting delivery cycle:", error);
+    }
+  };
+
+  return {
     todayArea,
     pendingToday,
-    completedToday,
+    completedToday: displayCompletedToday,
     recommended,
     markDelivered,
     undoDelivered,
     endDay,
     loading,
-    allCompletedToday,
-    totalStreetsInArea,
-    isAllCompleted,
-    streetsNeedingDelivery,
-    overdueStreets,
     resetCycle,
+    // נתונים נוספים לסטטיסטיקה
+    allCompletedToday: completedToday,
+    totalStreetsInArea: areaStreets.length,
+    isAllCompleted: isAllCompleted,
+    streetsNeedingDelivery: streetsNeedingDelivery.length,
+    overdueStreets: overdueStreets.length,
+    allStreets: data,
     urgencyGroups,
     urgencyCounts,
     getStreetUrgencyLevel,
     getUrgencyColor,
     getUrgencyLabel,
-  } = useDistribution();
-
-  // Initialize notifications
-  useNotifications();
-
-  // Check for Firebase permission errors
-  useEffect(() => {
-    const checkFirebaseErrors = () => {
-      // Listen for console errors related to Firebase permissions
-      const originalError = console.error;
-      console.error = (...args) => {
-        const message = args.join(' ');
-        if (message.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
-          setShowFirebaseGuide(true);
-        }
-        originalError.apply(console, args);
-      };
-
-      return () => {
-        console.error = originalError;
-      };
-    };
-
-    const cleanup = checkFirebaseErrors();
-    return cleanup;
-  }, []);
-
-  const overdue = pendingToday.filter((s) => {
-    if (!s.lastDelivered) return true;
-    return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
-  }).length;
-
-  // מציאת הרחוב שהכי הרבה זמן לא חולק (מכל האזורים)
-  const getOldestUndeliveredStreets = (count = 3) => {
-    const today = new Date();
-    const streetsByUrgency: Array<{street: Street, days: number}> = [];
-    
-    // בדיקה של כל הרחובות מכל האזורים
-    const allStreets = [...new Set([...allCompletedToday, ...pendingToday])]; // הסרת כפילויות
-    
-    allStreets.forEach(street => {
-      if (!street.lastDelivered) {
-        streetsByUrgency.push({street, days: 999});
-      } else {
-        const days = totalDaysBetween(new Date(street.lastDelivered), today);
-        streetsByUrgency.push({street, days});
-      }
-    });
-    
-    // מיון לפי דחיפות: לא חולק מעולם ראשון, אחר כך לפי מספר ימים
-    return streetsByUrgency
-      .sort((a, b) => {
-        if (a.days === 999 && b.days !== 999) return -1;
-        if (b.days === 999 && a.days !== 999) return 1;
-        if (a.days !== b.days) return b.days - a.days;
-        // אם אותו מספר ימים, רחובות גדולים קודם
-        if (a.street.isBig !== b.street.isBig) return a.street.isBig ? -1 : 1;
-        return a.street.name.localeCompare(b.street.name);
-      })
-      .slice(0, count)
-      .filter(item => item.days >= 7); // רק רחובות שעברו לפחות שבוע
   };
-  
-  const criticalStreets = getOldestUndeliveredStreets(3);
-  const handleStartTimer = (street: Street) => {
-    setCurrentStreet(street);
-  };
-
-  const handleCompleteDelivery = (timeInMinutes: number) => {
-    if (currentStreet) {
-      markDelivered(currentStreet.id, timeInMinutes);
-      setCurrentStreet(null);
-    }
-  };
-
-  const handleOptimizeRoute = (streets: Street[]) => {
-    setOptimizedStreets(streets);
-  };
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  const displayStreets = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {showFirebaseGuide && <FirebaseSetupGuide />}
-      <Header />
-      <main className="max-w-7xl mx-auto p-4">
-        <TabBar current={tab} setTab={setTab} />
-
-        {tab === "regular" && (
-          <>
-            <AreaToggle area={todayArea} onEnd={endDay} />
-
-            {/* התראה על הרחובות הוותיקים ביותר */}
-            {criticalStreets.length > 0 && (
-              <div className="space-y-3 mb-6">
-                {criticalStreets.map(({street, days}, index) => {
-                  const isFirst = index === 0;
-                  const bgColor = days === 999 ? 'bg-purple-50 border-purple-300' :
-                                 days >= 21 ? 'bg-red-50 border-red-300' :
-                                 days >= 14 ? 'bg-orange-50 border-orange-300' :
-                                 'bg-yellow-50 border-yellow-300';
-                  
-                  const textColor = days === 999 ? 'text-purple-600' :
-                                   days >= 21 ? 'text-red-600' :
-                                   days >= 14 ? 'text-orange-600' :
-                                   'text-yellow-600';
-                  
-                  const headerColor = days === 999 ? 'text-purple-800' :
-                                     days >= 21 ? 'text-red-800' :
-                                     days >= 14 ? 'text-orange-800' :
-                                     'text-yellow-800';
-                  
-                  const buttonColor = days === 999 ? 'bg-purple-500 hover:bg-purple-600' :
-                                     days >= 21 ? 'bg-red-500 hover:bg-red-600' :
-                                     days >= 14 ? 'bg-orange-500 hover:bg-orange-600' :
-                                     'bg-yellow-500 hover:bg-yellow-600';
-
-                  return (
-                    <div key={street.id} className={`border rounded-xl p-4 shadow-sm ${bgColor} ${isFirst ? 'ring-2 ring-offset-2 ring-blue-400' : ''}`}>
-                      <div className="flex items-center gap-3">
-                        <AlertTriangle size={24} className={`${textColor} ${days >= 14 ? 'animate-pulse' : ''}`} />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {isFirst && (
-                              <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                                #1 הכי דחוף
-                              </span>
-                            )}
-                            <h3 className={`font-bold text-lg ${headerColor}`}>
-                              {days === 999 ? '🆕 רחוב שלא חולק מעולם!' : 
-                               days >= 21 ? '🚨 רחוב קריטי!' :
-                               days >= 14 ? '⚠️ רחוב דחוף!' :
-                               '📅 רחוב זקוק לתשומת לב'}
-                            </h3>
-                          </div>
-                          <p className={`text-sm font-medium ${headerColor.replace('800', '700')}`}>
-                            <span className="font-bold">{street.name}</span> (אזור {street.area}) - 
-                            {days === 999 ? ' לא חולק מעולם' : ` ${days} ימים ללא חלוקה`}
-                          </p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              street.area === 12 ? 'bg-purple-100 text-purple-700' :
-                              street.area === 14 ? 'bg-blue-100 text-blue-700' :
-                              'bg-indigo-100 text-indigo-700'
-                            }`}>
-                              אזור {street.area}
-                            </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              street.isBig ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {street.isBig ? 'רחוב גדול' : 'רחוב קטן'}
-                            </span>
-                            {street.lastDelivered && (
-                              <span className="text-xs text-gray-600">
-                                חולק לאחרונה: {new Date(street.lastDelivered).toLocaleDateString('he-IL')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          {street.area === todayArea && (
-                            <button
-                              onClick={() => markDelivered(street.id)}
-                              className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg ${buttonColor}`}
-                            >
-                              סמן כחולק עכשיו
-                            </button>
-                          )}
-                          {street.area !== todayArea && (
-                            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
-                              יטופל באזור {street.area}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {/* סטטיסטיקת התקדמות */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-800">מעקב חלוקה יומי</h3>
-                <span className="text-sm text-gray-600">
-                  אזור {todayArea}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-700 font-medium">חולקו היום</span>
-                    <span className="text-xl font-bold text-blue-600">{allCompletedToday.length}</span>
-                  </div>
-                </div>
-                
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-orange-700 font-medium">ממתינים</span>
-                    <span className="text-xl font-bold text-orange-600">{streetsNeedingDelivery}</span>
-                  </div>
-                </div>
-                
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-red-700 font-medium">דחופים (14+ ימים)</span>
-                    <span className="text-xl font-bold text-red-600">{overdueStreets}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
-                💡 רחובות מסודרים לפי דחיפות: לא חולק מעולם → קריטי (14+ ימים) → דחוף (10-13 ימים) → אזהרה (7-9 ימים) → רגיל
-              </div>
-            </div>
-
-            {currentStreet && (
-              <div className="mb-6">
-                <DeliveryTimer
-                  streetName={currentStreet.name}
-                  onComplete={handleCompleteDelivery}
-                />
-              </div>
-            )}
-
-            {!isAllCompleted && (
-              <RouteOptimizer
-                streets={pendingToday}
-                area={todayArea}
-                onOptimize={handleOptimizeRoute}
-              />
-            )}
-
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                מומלץ להיום
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                  {recommended.length}
-                </span>
-                {urgencyCounts.never > 0 && (
-                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    🆕 {urgencyCounts.never} לא חולק
-                  </span>
-                )}
-                {urgencyCounts.critical > 0 && (
-                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    🚨 {urgencyCounts.critical} קריטי
-                  </span>
-                )}
-                {urgencyCounts.urgent > 0 && (
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    ⚠️ {urgencyCounts.urgent} דחוף
-                  </span>
-                )}
-              </h2>
-              <div className="text-xs text-gray-600 bg-green-50 px-3 py-2 rounded mb-3 flex items-center justify-between">
-                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
-                <span className="text-blue-600 font-medium">אזור נוכחי: {todayArea}</span>
-              </div>
-              <div className="overflow-x-auto">
-                <StreetTable 
-                  list={recommended} 
-                  onDone={markDelivered}
-                  onStartTimer={handleStartTimer}
-                  getStreetUrgencyLevel={getStreetUrgencyLevel}
-                  getUrgencyColor={getUrgencyColor}
-                  getUrgencyLabel={getUrgencyLabel}
-                />
-              </div>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                כל הרחובות
-                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
-                  {displayStreets.length}
-                </span>
-                {urgencyCounts.never > 0 && (
-                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                    לא חולק: {urgencyCounts.never}
-                  </span>
-                )}
-                {urgencyCounts.critical > 0 && (
-                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
-                    קריטי: {urgencyCounts.critical}
-                  </span>
-                )}
-                {urgencyCounts.urgent > 0 && (
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                    דחוף: {urgencyCounts.urgent}
-                  </span>
-                )}
-                {urgencyCounts.warning > 0 && (
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                    אזהרה: {urgencyCounts.warning}
-                  </span>
-                )}
-              </h2>
-              <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
-                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
-              </div>
-              <div className="overflow-x-auto">
-                <StreetTable 
-                  list={displayStreets} 
-                  onDone={markDelivered}
-                  onStartTimer={handleStartTimer}
-                  getStreetUrgencyLevel={getStreetUrgencyLevel}
-                  getUrgencyColor={getUrgencyColor}
-                  getUrgencyLabel={getUrgencyLabel}
-                />
-              </div>
-            </section>
-
-            <CompletedToday 
-              list={completedToday} 
-              onUndo={undoDelivered}
-              totalCompleted={allCompletedToday.length}
-            />
-            
-            {/* תכונות מתקדמות */}
-            <div className="mt-8">
-              <button
-                onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl transition-all duration-200 shadow-lg mb-4"
-              >
-                <span className="text-lg">🚀</span>
-                {showAdvancedFeatures ? 'הסתר תכונות מתקדמות' : 'הצג תכונות מתקדמות'}
-              </button>
-
-              {showAdvancedFeatures && (
-                <div className="space-y-6">
-                  {/* מפה אינטראקטיבית */}
-                  <InteractiveMap 
-                    buildings={[]} 
-                    currentArea={todayArea}
-                    completedToday={completedToday}
-                  />
-                  
-                  {/* התראות קוליות */}
-                  <VoiceNotifications 
-                    onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)}
-                  />
-                  
-                  {/* סטטיסטיקות מתקדמות */}
-                  <AdvancedStats />
-                  
-                  {/* גיבוי אוטומטי */}
-                  <AutoBackup />
-                  
-                  {/* מצב לילה אוטומטי */}
-                  <NightModeScheduler />
-                  
-                  {/* ייצוא GPS */}
-                  <GPSExporter 
-                    buildings={[]}
-                    currentArea={todayArea}
-                    optimizedRoute={optimizedStreets}
-                  />
-                </div>
-              )}
-            </div>
-            
-            <Notifications count={overdue} />
-            <WalkingOrder area={todayArea} />
-          </>
-        )}
-
-        {tab === "buildings" && <BuildingManager />}
-        {tab === "tasks" && <TaskManager />}
-        {tab === "reports" && <Reports />}
-        {tab === "phones" && <PhoneDirectory />}
-        {tab === "export" && <DataExport />}
-        {tab === "whatsapp" && <WhatsAppManager />}
-        {tab === "advanced" && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">🚀 תכונות מתקדמות</h2>
-              <p className="text-gray-600">כלים חכמים לניהול מתקדם של חלוקת הדואר</p>
-            </div>
-            
-            {/* מפה אינטראקטיבית */}
-            <InteractiveMap 
-              buildings={[]} 
-              currentArea={todayArea}
-              completedToday={completedToday}
-            />
-            
-            {/* התראות קוליות */}
-            <VoiceNotifications 
-              onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)}
-            />
-            
-            {/* סטטיסטיקות מתקדמות */}
-            <AdvancedStats />
-            
-            {/* גיבוי אוטומטי */}
-            <AutoBackup />
-            
-            {/* מצב לילה אוטומטי */}
-            <NightModeScheduler />
-            
-            {/* ייצוא GPS */}
-            <GPSExporter 
-              buildings={[]}
-              currentArea={todayArea}
-              optimizedRoute={optimizedStreets}
-            />
-          </div>
-        )}
-      </main>
-    </div>
-  );
 }
