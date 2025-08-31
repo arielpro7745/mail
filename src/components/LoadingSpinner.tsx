@@ -287,7 +287,8 @@ const FIREBASE_TIMEOUT = 5000; // 5 שניות timeout
     console.log("⚡ טוען נתונים מקומיים מיד...");
     const localStreets = loadStreetsFromLocalStorage();
     const localArea = loadCurrentAreaFromLocalStorage();
-        </div>
+  };
+        
   const completedToday = areaStreets.filter(
     s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
   );
