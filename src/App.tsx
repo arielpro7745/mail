@@ -3,7 +3,7 @@ import { collection, doc, getDocs, setDoc, updateDoc, onSnapshot, connectFiresto
 import { db } from "./lib/firebase";
 import { streets as initialStreets } from "./data/streets";
 import { Street, Area } from "../types";
-import { sortByUrgency, pickForToday } from "../utils/schedule";
+import { sortByUrgency, pickForToday } from "./utils/schedule";
 import { optimizeRoute } from "../utils/routeOptimizer";
 import { isSameDay } from "../utils/isSameDay";
 import { shouldStreetReappear, totalDaysBetween } from "../utils/dates";
