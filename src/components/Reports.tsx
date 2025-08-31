@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useReports } from "../hooks/useReports";
 import { useDistribution } from "../hooks/useDistribution";
 import { totalDaysBetween, daysSinceCycleStart, daysRemainingInCycle } from "../utils/dates";
+import { formatStreetName } from "../utils/addressFormatter";
 import LoadingSpinner from "./LoadingSpinner";
 import { 
   BarChart3, TrendingUp, AlertTriangle, Clock, 
