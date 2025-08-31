@@ -9,7 +9,7 @@ import { TaskManager } from './components/TaskManager';
 import { WalkingOrder } from './components/WalkingOrder';
 import BuildingManager from './components/BuildingManager';
 import { PhoneDirectory } from './components/PhoneDirectory';
-import { LoadingSpinner } from './components/LoadingSpinner';
+import LoadingSpinner from './components/LoadingSpinner';
 import { useDistribution } from './hooks/useDistribution';
 import { useSettings } from './hooks/useSettings';
 
