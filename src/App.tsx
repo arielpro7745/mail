@@ -1,31 +1,42 @@
-import React, { useState } from 'react';
-import Header from './components/Header';
-import TabBar from './components/TabBar';
-import StreetTable from './components/StreetTable';
-import CompletedToday from './components/CompletedToday';
-import Reports from './components/Reports';
-import Settings from './components/Settings';
-import TaskManager from './components/TaskManager';
-import WalkingOrder from './components/WalkingOrder';
-import BuildingManager from './components/BuildingManager';
-import PhoneDirectory from './components/PhoneDirectory';
-import DataExport from './components/DataExport';
-import WhatsAppManager from './components/WhatsAppManager';
-import AdvancedStats from './components/AdvancedStats';
-import LoadingSpinner from './components/LoadingSpinner';
-import { AreaToggle } from './components/AreaToggle';
-import QuickActions from './components/QuickActions';
-import Notifications from './components/Notifications';
-import DeliveryTimer from './components/DeliveryTimer';
-import { useDistribution } from './hooks/useDistribution';
-import { useSettings } from './hooks/useSettings';
-import { useDeliveryTimer } from './hooks/useDeliveryTimer';
-import { Street } from './types';
+import { useState, useEffect } from "react";
+import Header from "./components/Header";
+import TabBar from "./components/TabBar";
+import { useDistribution } from "./hooks/useDistribution";
+import { useNotifications } from "./hooks/useNotifications";
+import { AreaToggle } from "./components/AreaToggle";
+import StreetTable from "./components/StreetTable";
+import Notifications from "./components/Notifications";
+import BuildingManager from "./components/BuildingManager";
+import CompletedToday from "./components/CompletedToday";
+import WalkingOrder from "./components/WalkingOrder";
+import LoadingSpinner from "./components/LoadingSpinner";
+import DeliveryTimer from "./components/DeliveryTimer";
+import RouteOptimizer from "./components/RouteOptimizer";
+import TaskManager from "./components/TaskManager";
+import Reports from "./components/Reports";
+import PhoneDirectory from "./components/PhoneDirectory";
+import DataExport from "./components/DataExport";
+import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
+import QuickActions from "./components/QuickActions";
+import InteractiveMap from "./components/InteractiveMap";
+import VoiceNotifications from "./components/VoiceNotifications";
+import AdvancedStats from "./components/AdvancedStats";
+import AutoBackup from "./components/AutoBackup";
+import NightModeScheduler from "./components/NightModeScheduler";
+import GPSExporter from "./components/GPSExporter";
+import WhatsAppManager from "./components/WhatsAppManager";
+import { Street } from "./types";
+import { totalDaysBetween } from "./utils/dates";
+import { AlertTriangle } from "lucide-react";
 
-function App() {
-  const { 
-    loading, 
-    firebaseError,
+export default function App() {
+  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced">("regular");
+  const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
+  const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
+  const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
+  const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
+
+  const {
     todayArea,
     pendingToday,
     completedToday,
@@ -33,142 +44,433 @@ function App() {
     markDelivered,
     undoDelivered,
     endDay,
+    loading,
+    allCompletedToday,
+    totalStreetsInArea,
+    isAllCompleted,
+    streetsNeedingDelivery,
+    overdueStreets,
+    resetCycle,
     urgencyGroups,
     urgencyCounts,
     getStreetUrgencyLevel,
     getUrgencyColor,
-    getUrgencyLabel
+    getUrgencyLabel,
   } = useDistribution();
+
+  // Initialize notifications
+  useNotifications();
+
+  // Check for Firebase permission errors
+  useEffect(() => {
+    const checkFirebaseErrors = () => {
+      // Listen for console errors related to Firebase permissions
+      const originalError = console.error;
+      console.error = (...args) => {
+        const message = args.join(' ');
+        if (message.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
+          setShowFirebaseGuide(true);
+        }
+        originalError.apply(console, args);
+      };
+
+      return () => {
+        console.error = originalError;
+      };
+    };
+
+    const cleanup = checkFirebaseErrors();
+    return cleanup;
+  }, []);
+
+  const overdue = pendingToday.filter((s) => {
+    if (!s.lastDelivered) return true;
+    return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
+  }).length;
+
+  // מציאת הרחוב שהכי הרבה זמן לא חולק (מכל האזורים)
+  const getOldestUndeliveredStreets = (count = 3) => {
+    const today = new Date();
+    const streetsByUrgency: Array<{street: Street, days: number}> = [];
+    
+    // בדיקה של כל הרחובות מכל האזורים
+    const allStreets = [...new Set([...allCompletedToday, ...pendingToday])]; // הסרת כפילויות
+    
+    allStreets.forEach(street => {
+      if (!street.lastDelivered) {
+        streetsByUrgency.push({street, days: 999});
+      } else {
+        const days = totalDaysBetween(new Date(street.lastDelivered), today);
+        streetsByUrgency.push({street, days});
+      }
+    });
+    
+    // מיון לפי דחיפות: לא חולק מעולם ראשון, אחר כך לפי מספר ימים
+    return streetsByUrgency
+      .sort((a, b) => {
+        if (a.days === 999 && b.days !== 999) return -1;
+        if (b.days === 999 && a.days !== 999) return 1;
+        if (a.days !== b.days) return b.days - a.days;
+        // אם אותו מספר ימים, רחובות גדולים קודם
+        if (a.street.isBig !== b.street.isBig) return a.street.isBig ? -1 : 1;
+        return a.street.name.localeCompare(b.street.name);
+      })
+      .slice(0, count)
+      .filter(item => item.days >= 7); // רק רחובות שעברו לפחות שבוע
+  };
   
-  const { settings } = useSettings();
-  const [currentTab, setCurrentTab] = useState('regular');
-  const [timerStreet, setTimerStreet] = useState<Street | null>(null);
-  const { startTimer, stopTimer, formatTime, isRunning } = useDeliveryTimer();
+  const criticalStreets = getOldestUndeliveredStreets(3);
+  const handleStartTimer = (street: Street) => {
+    setCurrentStreet(street);
+  };
+
+  const handleCompleteDelivery = (timeInMinutes: number) => {
+    if (currentStreet) {
+      markDelivered(currentStreet.id, timeInMinutes);
+      setCurrentStreet(null);
+    }
+  };
+
+  const handleOptimizeRoute = (streets: Street[]) => {
+    setOptimizedStreets(streets);
+  };
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  if (firebaseError) {
-    return (
-      <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
-        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full text-center">
-          <h2 className="text-xl font-bold text-red-600 mb-4">שגיאת חיבור</h2>
-          <p className="text-gray-700 mb-4">{firebaseError}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
-            נסה שוב
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const displayStreets = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
 
-  const handleStartTimer = (street: Street) => {
-    setTimerStreet(street);
-    startTimer();
-  };
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {showFirebaseGuide && <FirebaseSetupGuide />}
+      <Header />
+      <main className="max-w-7xl mx-auto p-4">
+        <TabBar current={tab} setTab={setTab} />
 
-  const handleCompleteWithTimer = (timeInMinutes: number) => {
-    if (timerStreet) {
-      markDelivered(timerStreet.id, timeInMinutes);
-      setTimerStreet(null);
-    }
-  };
-
-  const renderTabContent = () => {
-    switch (currentTab) {
-      case 'regular':
-        return (
-          <div>
+        {tab === "regular" && (
+          <>
             <AreaToggle area={todayArea} onEnd={endDay} />
-            
-            {/* התראות על רחובות דחופים */}
-            <Notifications count={urgencyCounts.critical + urgencyCounts.never} />
-            
-            {/* פעולות מהירות */}
-            <QuickActions />
-            
-            {/* טיימר פעיל */}
-            {timerStreet && (
+
+            {/* התראה על הרחובות הוותיקים ביותר */}
+            {criticalStreets.length > 0 && (
+              <div className="space-y-3 mb-6">
+                {criticalStreets.map(({street, days}, index) => {
+                  const isFirst = index === 0;
+                  const bgColor = days === 999 ? 'bg-purple-50 border-purple-300' :
+                                 days >= 21 ? 'bg-red-50 border-red-300' :
+                                 days >= 14 ? 'bg-orange-50 border-orange-300' :
+                                 'bg-yellow-50 border-yellow-300';
+                  
+                  const textColor = days === 999 ? 'text-purple-600' :
+                                   days >= 21 ? 'text-red-600' :
+                                   days >= 14 ? 'text-orange-600' :
+                                   'text-yellow-600';
+                  
+                  const headerColor = days === 999 ? 'text-purple-800' :
+                                     days >= 21 ? 'text-red-800' :
+                                     days >= 14 ? 'text-orange-800' :
+                                     'text-yellow-800';
+                  
+                  const buttonColor = days === 999 ? 'bg-purple-500 hover:bg-purple-600' :
+                                     days >= 21 ? 'bg-red-500 hover:bg-red-600' :
+                                     days >= 14 ? 'bg-orange-500 hover:bg-orange-600' :
+                                     'bg-yellow-500 hover:bg-yellow-600';
+
+                  return (
+                    <div key={street.id} className={`border rounded-xl p-4 shadow-sm ${bgColor} ${isFirst ? 'ring-2 ring-offset-2 ring-blue-400' : ''}`}>
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle size={24} className={`${textColor} ${days >= 14 ? 'animate-pulse' : ''}`} />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {isFirst && (
+                              <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                #1 הכי דחוף
+                              </span>
+                            )}
+                            <h3 className={`font-bold text-lg ${headerColor}`}>
+                              {days === 999 ? '🆕 רחוב שלא חולק מעולם!' : 
+                               days >= 21 ? '🚨 רחוב קריטי!' :
+                               days >= 14 ? '⚠️ רחוב דחוף!' :
+                               '📅 רחוב זקוק לתשומת לב'}
+                            </h3>
+                          </div>
+                          <p className={`text-sm font-medium ${headerColor.replace('800', '700')}`}>
+                            <span className="font-bold">{street.name}</span> (אזור {street.area}) - 
+                            {days === 999 ? ' לא חולק מעולם' : ` ${days} ימים ללא חלוקה`}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              street.area === 12 ? 'bg-purple-100 text-purple-700' :
+                              street.area === 14 ? 'bg-blue-100 text-blue-700' :
+                              'bg-indigo-100 text-indigo-700'
+                            }`}>
+                              אזור {street.area}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              street.isBig ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {street.isBig ? 'רחוב גדול' : 'רחוב קטן'}
+                            </span>
+                            {street.lastDelivered && (
+                              <span className="text-xs text-gray-600">
+                                חולק לאחרונה: {new Date(street.lastDelivered).toLocaleDateString('he-IL')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {street.area === todayArea && (
+                            <button
+                              onClick={() => markDelivered(street.id)}
+                              className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg ${buttonColor}`}
+                            >
+                              סמן כחולק עכשיו
+                            </button>
+                          )}
+                          {street.area !== todayArea && (
+                            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
+                              יטופל באזור {street.area}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* סטטיסטיקת התקדמות */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-gray-800">מעקב חלוקה יומי</h3>
+                <span className="text-sm text-gray-600">
+                  אזור {todayArea}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-blue-700 font-medium">חולקו היום</span>
+                    <span className="text-xl font-bold text-blue-600">{allCompletedToday.length}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-orange-700 font-medium">ממתינים</span>
+                    <span className="text-xl font-bold text-orange-600">{streetsNeedingDelivery}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-red-700 font-medium">דחופים (14+ ימים)</span>
+                    <span className="text-xl font-bold text-red-600">{overdueStreets}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
+                💡 רחובות מסודרים לפי דחיפות: לא חולק מעולם → קריטי (14+ ימים) → דחוף (10-13 ימים) → אזהרה (7-9 ימים) → רגיל
+              </div>
+            </div>
+
+            {currentStreet && (
               <div className="mb-6">
-                <DeliveryTimer 
-                  streetName={timerStreet.name}
-                  onComplete={handleCompleteWithTimer}
+                <DeliveryTimer
+                  streetName={currentStreet.name}
+                  onComplete={handleCompleteDelivery}
                 />
               </div>
             )}
-            
-            {/* רחובות ממתינים */}
-            {pendingToday.length > 0 && (
-              <section className="mb-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-xl font-bold text-gray-800">רחובות לחלוקה היום</h2>
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                    {pendingToday.length} רחובות
+
+            {!isAllCompleted && (
+              <RouteOptimizer
+                streets={pendingToday}
+                area={todayArea}
+                onOptimize={handleOptimizeRoute}
+              />
+            )}
+
+            <section className="mb-8">
+              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                מומלץ להיום
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                  {recommended.length}
+                </span>
+                {urgencyCounts.never > 0 && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    🆕 {urgencyCounts.never} לא חולק
                   </span>
-                </div>
+                )}
+                {urgencyCounts.critical > 0 && (
+                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    🚨 {urgencyCounts.critical} קריטי
+                  </span>
+                )}
+                {urgencyCounts.urgent > 0 && (
+                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    ⚠️ {urgencyCounts.urgent} דחוף
+                  </span>
+                )}
+              </h2>
+              <div className="text-xs text-gray-600 bg-green-50 px-3 py-2 rounded mb-3 flex items-center justify-between">
+                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
+                <span className="text-blue-600 font-medium">אזור נוכחי: {todayArea}</span>
+              </div>
+              <div className="overflow-x-auto">
                 <StreetTable 
-                  list={pendingToday} 
+                  list={recommended} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
                   getStreetUrgencyLevel={getStreetUrgencyLevel}
                   getUrgencyColor={getUrgencyColor}
                   getUrgencyLabel={getUrgencyLabel}
                 />
-              </section>
-            )}
-            
-            {/* רחובות שהושלמו היום */}
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                כל הרחובות
+                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
+                  {displayStreets.length}
+                </span>
+                {urgencyCounts.never > 0 && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                    לא חולק: {urgencyCounts.never}
+                  </span>
+                )}
+                {urgencyCounts.critical > 0 && (
+                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                    קריטי: {urgencyCounts.critical}
+                  </span>
+                )}
+                {urgencyCounts.urgent > 0 && (
+                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                    דחוף: {urgencyCounts.urgent}
+                  </span>
+                )}
+                {urgencyCounts.warning > 0 && (
+                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                    אזהרה: {urgencyCounts.warning}
+                  </span>
+                )}
+              </h2>
+              <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
+                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
+              </div>
+              <div className="overflow-x-auto">
+                <StreetTable 
+                  list={displayStreets} 
+                  onDone={markDelivered}
+                  onStartTimer={handleStartTimer}
+                  getStreetUrgencyLevel={getStreetUrgencyLevel}
+                  getUrgencyColor={getUrgencyColor}
+                  getUrgencyLabel={getUrgencyLabel}
+                />
+              </div>
+            </section>
+
             <CompletedToday 
               list={completedToday} 
               onUndo={undoDelivered}
+              totalCompleted={allCompletedToday.length}
             />
             
-            {/* סדר הליכה מומלץ */}
-            <WalkingOrder area={todayArea} />
-          </div>
-        );
-      
-      case 'buildings':
-        return <BuildingManager />;
-      
-      case 'tasks':
-        return <TaskManager />;
-      
-      case 'reports':
-        return <Reports />;
-      
-      case 'phones':
-        return <PhoneDirectory />;
-      
-      case 'export':
-        return <DataExport />;
-      
-      case 'whatsapp':
-        return <WhatsAppManager />;
-      
-      case 'advanced':
-        return <AdvancedStats />;
-      
-      default:
-        return <div>טאב לא נמצא</div>;
-    }
-  };
+            {/* תכונות מתקדמות */}
+            <div className="mt-8">
+              <button
+                onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl transition-all duration-200 shadow-lg mb-4"
+              >
+                <span className="text-lg">🚀</span>
+                {showAdvancedFeatures ? 'הסתר תכונות מתקדמות' : 'הצג תכונות מתקדמות'}
+              </button>
 
-  return (
-    <div className={`min-h-screen ${settings.darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
-      <Header />
-      <main className="container mx-auto px-4 py-6">
-        <TabBar current={currentTab} setTab={setCurrentTab} />
-        <div className="mt-6">
-          {renderTabContent()}
-        </div>
+              {showAdvancedFeatures && (
+                <div className="space-y-6">
+                  {/* מפה אינטראקטיבית */}
+                  <InteractiveMap 
+                    buildings={[]} 
+                    currentArea={todayArea}
+                    completedToday={completedToday}
+                  />
+                  
+                  {/* התראות קוליות */}
+                  <VoiceNotifications 
+                    onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)}
+                  />
+                  
+                  {/* סטטיסטיקות מתקדמות */}
+                  <AdvancedStats />
+                  
+                  {/* גיבוי אוטומטי */}
+                  <AutoBackup />
+                  
+                  {/* מצב לילה אוטומטי */}
+                  <NightModeScheduler />
+                  
+                  {/* ייצוא GPS */}
+                  <GPSExporter 
+                    buildings={[]}
+                    currentArea={todayArea}
+                    optimizedRoute={optimizedStreets}
+                  />
+                </div>
+              )}
+            </div>
+            
+            <Notifications count={overdue} />
+            <WalkingOrder area={todayArea} />
+          </>
+        )}
+
+        {tab === "buildings" && <BuildingManager />}
+        {tab === "tasks" && <TaskManager />}
+        {tab === "reports" && <Reports />}
+        {tab === "phones" && <PhoneDirectory />}
+        {tab === "export" && <DataExport />}
+        {tab === "whatsapp" && <WhatsAppManager />}
+        {tab === "advanced" && (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">🚀 תכונות מתקדמות</h2>
+              <p className="text-gray-600">כלים חכמים לניהול מתקדם של חלוקת הדואר</p>
+            </div>
+            
+            {/* מפה אינטראקטיבית */}
+            <InteractiveMap 
+              buildings={[]} 
+              currentArea={todayArea}
+              completedToday={completedToday}
+            />
+            
+            {/* התראות קוליות */}
+            <VoiceNotifications 
+              onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)}
+            />
+            
+            {/* סטטיסטיקות מתקדמות */}
+            <AdvancedStats />
+            
+            {/* גיבוי אוטומטי */}
+            <AutoBackup />
+            
+            {/* מצב לילה אוטומטי */}
+            <NightModeScheduler />
+            
+            {/* ייצוא GPS */}
+            <GPSExporter 
+              buildings={[]}
+              currentArea={todayArea}
+              optimizedRoute={optimizedStreets}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
 }
-
-export default App;
