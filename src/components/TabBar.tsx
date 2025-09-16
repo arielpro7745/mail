@@ -7,6 +7,7 @@ export default function TabBar({current,setTab}:Props){
   const tabs=[
     {id:"regular",label:"חלוקה רגילה", icon: CheckSquare},
     {id:"buildings",label:"בניינים ודיירים", icon: Building2},
+    {id:"holidays",label:"🎄 חגים", icon: Calendar},
     {id:"tasks",label:"משימות", icon: CheckSquare},
     {id:"reports",label:"דוחות", icon: BarChart3},
     {id:"phones",label:"טלפונים", icon: Phone},

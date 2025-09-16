@@ -25,12 +25,13 @@ import AutoBackup from "./components/AutoBackup";
 import NightModeScheduler from "./components/NightModeScheduler";
 import GPSExporter from "./components/GPSExporter";
 import WhatsAppManager from "./components/WhatsAppManager";
+import HolidayManager from "./components/HolidayManager";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 import { AlertTriangle } from "lucide-react";
 
 export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced">("regular");
+  const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
@@ -429,6 +430,7 @@ export default function App() {
         )}
 
         {tab === "buildings" && <BuildingManager />}
+        {tab === "holidays" && <HolidayManager />}
         {tab === "tasks" && <TaskManager />}
         {tab === "reports" && <Reports />}
         {tab === "phones" && <PhoneDirectory />}

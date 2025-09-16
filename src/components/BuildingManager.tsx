@@ -8,6 +8,8 @@ import { nanoid } from "nanoid";
 import LoadingSpinner from "./LoadingSpinner";
 import BuildingEntranceManager from "./BuildingEntranceManager";
 import QuickWhatsApp from "./QuickWhatsApp";
+import QuickResidentAdd from "./QuickResidentAdd";
+import CSVResidentImport from "./CSVResidentImport";
 import { 
   Building2, Plus, Edit, Trash2, User, Phone, 
   Mail, DoorOpen, Crown, MapPin, Search, X,
@@ -525,6 +527,12 @@ export default function BuildingManager() {
           </div>
         </div>
       </div>
+
+      {/* הוספה מהירה של דיירים */}
+      <QuickResidentAdd />
+
+      {/* ייבוא דיירים מ-CSV */}
+      <CSVResidentImport />
 
       {/* רשימת בניינים */}
       <div className="space-y-6">
