@@ -542,7 +542,7 @@ export default function HolidayManager() {
             })}
           </div>
         </div>
-      )}
+      </div>
 
       {/* סוגי דואר */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-lg">
