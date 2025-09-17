@@ -71,8 +71,8 @@ export const holidayPeriods: HolidayPeriod[] = [
   {
     id: 'rosh-hashana',
     name: 'ראש השנה',
-    startDate: '2024-09-01',
-    endDate: '2024-09-20',
+    startDate: '2025-09-15',
+    endDate: '2025-09-25',
     isActive: false,
     mailTypes: ['calendars', 'charity-flyers', 'holiday-cards', 'regular-mail'],
     estimatedVolume: 'extreme',
@@ -81,8 +81,8 @@ export const holidayPeriods: HolidayPeriod[] = [
   {
     id: 'yom-kippur',
     name: 'יום כיפור',
-    startDate: '2024-09-21',
-    endDate: '2024-09-28',
+    startDate: '2025-10-11',
+    endDate: '2025-10-15',
     isActive: false,
     mailTypes: ['charity-flyers', 'regular-mail'],
     estimatedVolume: 'high',
@@ -91,8 +91,8 @@ export const holidayPeriods: HolidayPeriod[] = [
   {
     id: 'sukkot',
     name: 'סוכות',
-    startDate: '2024-10-01',
-    endDate: '2024-10-15',
+    startDate: '2025-10-16',
+    endDate: '2025-10-25',
     isActive: false,
     mailTypes: ['holiday-cards', 'regular-mail'],
     estimatedVolume: 'medium'
@@ -100,8 +100,8 @@ export const holidayPeriods: HolidayPeriod[] = [
   {
     id: 'chanukah',
     name: 'חנוכה',
-    startDate: '2024-12-01',
-    endDate: '2024-12-20',
+    startDate: '2025-12-14',
+    endDate: '2025-12-22',
     isActive: false,
     mailTypes: ['holiday-cards', 'charity-flyers', 'regular-mail'],
     estimatedVolume: 'high'
@@ -109,8 +109,8 @@ export const holidayPeriods: HolidayPeriod[] = [
   {
     id: 'passover',
     name: 'פסח',
-    startDate: '2025-04-01',
-    endDate: '2025-04-20',
+    startDate: '2025-04-13',
+    endDate: '2025-04-21',
     isActive: false,
     mailTypes: ['holiday-cards', 'charity-flyers', 'regular-mail'],
     estimatedVolume: 'extreme',
