@@ -26,6 +26,9 @@ import NightModeScheduler from "./components/NightModeScheduler";
 import GPSExporter from "./components/GPSExporter";
 import WhatsAppManager from "./components/WhatsAppManager";
 import HolidayManager from "./components/HolidayManager";
+import HolidayModeIndicator from "./components/HolidayModeIndicator";
+import HolidayAdjustedStreetTable from "./components/HolidayAdjustedStreetTable";
+import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 import { AlertTriangle } from "lucide-react";
@@ -36,6 +39,9 @@ export default function App() {
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
   const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
+  
+  // הוק מצב חג
+  const { isHolidayMode } = useHolidayMode();
 
   const {
     todayArea,
@@ -151,6 +157,9 @@ export default function App() {
 
         {tab === "regular" && (
           <>
+            {/* אינדיקטור מצב חג */}
+            <HolidayModeIndicator />
+            
             <AreaToggle area={todayArea} onEnd={endDay} />
 
             {/* התראה על הרחובות הוותיקים ביותר */}
@@ -321,8 +330,9 @@ export default function App() {
                 📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
                 <span className="text-blue-600 font-medium">אזור נוכחי: {todayArea}</span>
               </div>
-              <div className="overflow-x-auto">
-                <StreetTable 
+              {/* טבלה מותאמת לחגים או רגילה */}
+              {isHolidayMode ? (
+                <HolidayAdjustedStreetTable
                   list={recommended} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
@@ -330,7 +340,18 @@ export default function App() {
                   getUrgencyColor={getUrgencyColor}
                   getUrgencyLabel={getUrgencyLabel}
                 />
-              </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <StreetTable 
+                    list={recommended} 
+                    onDone={markDelivered}
+                    onStartTimer={handleStartTimer}
+                    getStreetUrgencyLevel={getStreetUrgencyLevel}
+                    getUrgencyColor={getUrgencyColor}
+                    getUrgencyLabel={getUrgencyLabel}
+                  />
+                </div>
+              )}
             </section>
 
             <section className="mb-8">
@@ -363,8 +384,9 @@ export default function App() {
               <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
                 📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
               </div>
-              <div className="overflow-x-auto">
-                <StreetTable 
+              {/* טבלה מותאמת לחגים או רגילה */}
+              {isHolidayMode ? (
+                <HolidayAdjustedStreetTable
                   list={displayStreets} 
                   onDone={markDelivered}
                   onStartTimer={handleStartTimer}
@@ -372,7 +394,18 @@ export default function App() {
                   getUrgencyColor={getUrgencyColor}
                   getUrgencyLabel={getUrgencyLabel}
                 />
-              </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <StreetTable 
+                    list={displayStreets} 
+                    onDone={markDelivered}
+                    onStartTimer={handleStartTimer}
+                    getStreetUrgencyLevel={getStreetUrgencyLevel}
+                    getUrgencyColor={getUrgencyColor}
+                    getUrgencyLabel={getUrgencyLabel}
+                  />
+                </div>
+              )}
             </section>
 
             <CompletedToday 
