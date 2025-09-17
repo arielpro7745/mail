@@ -2,7 +2,7 @@
 import type { Building, AreaId } from './domain'
 import type { Resident } from './types'
 import { nanoid } from 'nanoid'
-import { DeliveryStatus } from './domain'
+import { AptStatus } from './domain'
 
 /* ייצוא CSV כללי */
 export function exportCsv(
@@ -89,7 +89,7 @@ export function parseBuildingsCsv(csv: string, area: AreaId): Building[] {
       apartments: apartments.map(label => ({
         id: nanoid(),
         label,
-        status: DeliveryStatus.Pending,
+        status: AptStatus.Pending,
         attempts: []
       }))
     } as Building
