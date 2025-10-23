@@ -28,6 +28,7 @@ import WhatsAppManager from "./components/WhatsAppManager";
 import HolidayManager from "./components/HolidayManager";
 import HolidayModeIndicator from "./components/HolidayModeIndicator";
 import HolidayAdjustedStreetTable from "./components/HolidayAdjustedStreetTable";
+import MailSortingReminder from "./components/MailSortingReminder";
 import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
@@ -151,6 +152,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       {showFirebaseGuide && <FirebaseSetupGuide />}
+      <MailSortingReminder currentArea={todayArea} />
       <Header />
       <main className="max-w-7xl mx-auto p-4">
         <TabBar current={tab} setTab={setTab} />
