@@ -1,7 +1,7 @@
 import { Street } from "../types";
 import StreetRow from "./StreetRow";
 import { useState } from "react";
-import { Filter, SortAsc, SortDesc, Eye, EyeOff } from "lucide-react";
+import { Filter, SortAsc, SortDesc, Eye, EyeOff, AlertTriangle } from "lucide-react";
 
 export default function StreetTable({
   list,
@@ -73,7 +73,7 @@ export default function StreetTable({
   };
 
   return (
-    <div>
+    <div className="street-table-container">
       {/* כלי מיון וסינון */}
       <div className="bg-white border border-gray-200 rounded-lg p-3 mb-4 shadow-sm">
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
@@ -122,7 +122,9 @@ export default function StreetTable({
         </div>
       </div>
       
-      <table className="w-full border-collapse">
+      {/* תצוגת טבלה למסכים גדולים */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full border-collapse">
         <thead>
           <tr>
             <th 
@@ -177,7 +179,77 @@ export default function StreetTable({
             />
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
+
+      {/* תצוגת כרטיסים למובייל */}
+      <div className="md:hidden space-y-3">
+        {filteredList.map((s) => {
+          const urgencyLevel = getStreetUrgencyLevel ? getStreetUrgencyLevel(s) : 'normal';
+          const urgencyColor = getUrgencyColor ? getUrgencyColor(urgencyLevel) : 'bg-white border-gray-200';
+          const urgencyLabel = getUrgencyLabel ? getUrgencyLabel(s) : '';
+          const daysSince = s.lastDelivered ?
+            Math.floor((Date.now() - new Date(s.lastDelivered).getTime()) / (1000 * 60 * 60 * 24)) : 999;
+
+          return (
+            <div key={s.id} className={`mobile-street-card ${urgencyColor} transition-all duration-300`}>
+              <div className="mobile-street-header">
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg mb-1">{s.name}</h3>
+                  {urgencyLabel && (
+                    <span className="text-xs font-medium text-gray-600">{urgencyLabel}</span>
+                  )}
+                </div>
+                <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                  s.isBig ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {s.isBig ? 'גדול' : 'קטן'}
+                </span>
+              </div>
+
+              <div className="mobile-street-info">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">ימים מאז:</span>
+                  <span className="font-semibold">
+                    {s.lastDelivered ? `${daysSince} ימים` : 'לא חולק מעולם'}
+                  </span>
+                </div>
+                {s.averageTime && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">זמן ממוצע:</span>
+                    <span className="font-semibold">{s.averageTime} דקות</span>
+                  </div>
+                )}
+                {s.lastDelivered && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">חולק לאחרונה:</span>
+                    <span className="font-medium text-xs">
+                      {new Date(s.lastDelivered).toLocaleDateString('he-IL')}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="mobile-street-actions">
+                <button
+                  onClick={() => onDone(s.id)}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors touch-target"
+                >
+                  סמן כחולק
+                </button>
+                {onStartTimer && (
+                  <button
+                    onClick={() => onStartTimer(s)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors touch-target"
+                  >
+                    ⏱️
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
       
       {filteredList.length === 0 && showOnlyUrgent && (
         <div className="text-center py-8 text-gray-500">

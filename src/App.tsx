@@ -33,9 +33,15 @@ import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 import { AlertTriangle } from "lucide-react";
+import AIPredictions from "./components/AIPredictions";
+import WeatherAlerts from "./components/WeatherAlerts";
+import Gamification from "./components/Gamification";
+import PersonalJournal from "./components/PersonalJournal";
+import ResidentComplaints from "./components/ResidentComplaints";
+import UnknownResidents from "./components/UnknownResidents";
 
 export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced">("regular");
+  const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
@@ -471,6 +477,16 @@ export default function App() {
         {tab === "phones" && <PhoneDirectory />}
         {tab === "export" && <DataExport />}
         {tab === "whatsapp" && <WhatsAppManager />}
+        {tab === "ai" && (
+          <div className="space-y-6">
+            <WeatherAlerts />
+            <AIPredictions />
+          </div>
+        )}
+        {tab === "gamification" && <Gamification />}
+        {tab === "journal" && <PersonalJournal />}
+        {tab === "complaints" && <ResidentComplaints />}
+        {tab === "unknowns" && <UnknownResidents />}
         {tab === "advanced" && (
           <div className="space-y-6">
             <div className="text-center mb-8">
