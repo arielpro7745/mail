@@ -42,7 +42,7 @@ export function getAreaName(area: Area): string {
 }
 
 export function calculateTodayArea(referenceDate: Date = new Date()): Area {
-  const baseDate = new Date('2024-10-26');
+  const baseDate = new Date('2024-10-27');
   baseDate.setHours(0, 0, 0, 0);
 
   const currentDate = new Date(referenceDate);
@@ -50,7 +50,7 @@ export function calculateTodayArea(referenceDate: Date = new Date()): Area {
 
   const daysDiff = Math.floor((currentDate.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const areaRotation: Area[] = [45, 14, 12];
+  const areaRotation: Area[] = [14, 12, 45];
   const areaIndex = daysDiff % 3;
 
   const adjustedIndex = areaIndex < 0 ? areaIndex + 3 : areaIndex;
