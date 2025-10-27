@@ -98,12 +98,12 @@ export default function AreaScheduleIndicator() {
           <div className="flex-1">
             <h4 className="font-bold text-blue-900 mb-1">מידע על מחזור האזורים</h4>
             <p className="text-sm text-blue-800 mb-2">
-              המערכת מחשבת אוטומטית את האזור הנכון לכל יום לפי תאריך קבוע:
+              המערכת מחשבת אוטומטית את האזור הנכון לכל יום:
             </p>
             <ul className="text-sm text-blue-700 space-y-1">
-              <li>• <strong>26.10.2024</strong> אתמול - אזור 45 (כחול)</li>
-              <li>• <strong>27.10.2024</strong> היום - אזור 14 (אדום)</li>
-              <li>• <strong>28.10.2024</strong> מחר - אזור 12 (ירוק)</li>
+              <li>• <strong>{yesterday.toLocaleDateString('he-IL')}</strong> אתמול - אזור {yesterdayArea} ({getAreaName(yesterdayArea)})</li>
+              <li>• <strong>{today.toLocaleDateString('he-IL')}</strong> היום - אזור {todayArea} ({getAreaName(todayArea)})</li>
+              <li>• <strong>{tomorrow.toLocaleDateString('he-IL')}</strong> מחר - אזור {tomorrowArea} ({getAreaName(tomorrowArea)})</li>
               <li>• המחזור חוזר על עצמו: 45 → 14 → 12 → 45...</li>
             </ul>
           </div>
