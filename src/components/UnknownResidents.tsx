@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { HelpCircle, Plus, Trash2, Check, Search, Filter } from 'lucide-react';
 import { Area } from '../types';
+import { getAreaColor, getAreaName } from '../utils/areaColors';
 
 interface UnknownResident {
   id: string;
@@ -154,16 +155,25 @@ export default function UnknownResidents() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {areas.map(area => {
             const stats = getAreaStats(area);
+            const areaColor = getAreaColor(area);
+            const isSelected = selectedArea === area;
             return (
               <div
                 key={area}
-                className={`bg-white rounded-lg p-4 shadow-sm border-2 cursor-pointer transition-all ${
-                  selectedArea === area ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-200 hover:border-purple-300'
+                className={`rounded-lg p-4 shadow-sm border-2 cursor-pointer transition-all ${
+                  isSelected
+                    ? `${areaColor.bg} ${areaColor.border} ring-2 ${areaColor.ring}`
+                    : `bg-white border-gray-200 hover:${areaColor.border}`
                 }`}
                 onClick={() => setSelectedArea(area)}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-lg text-gray-800">אזור {area}</h3>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 ${areaColor.bgSolid} rounded-lg flex items-center justify-center`}>
+                      <span className="text-white font-bold text-sm">{area}</span>
+                    </div>
+                    <h3 className={`font-bold text-lg ${areaColor.text}`}>{getAreaName(area)}</h3>
+                  </div>
                   {stats.unresolved > 0 && (
                     <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       {stats.unresolved}

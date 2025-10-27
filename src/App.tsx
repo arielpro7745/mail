@@ -39,6 +39,7 @@ import Gamification from "./components/Gamification";
 import PersonalJournal from "./components/PersonalJournal";
 import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
+import AreaScheduleIndicator from "./components/AreaScheduleIndicator";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns">("regular");
@@ -167,7 +168,10 @@ export default function App() {
           <>
             {/* אינדיקטור מצב חג */}
             <HolidayModeIndicator />
-            
+
+            {/* אינדיקטור מחזור אזורים */}
+            <AreaScheduleIndicator />
+
             <AreaToggle area={todayArea} onEnd={endDay} />
 
             {/* התראה על הרחובות הוותיקים ביותר */}

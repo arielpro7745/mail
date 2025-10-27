@@ -8,6 +8,7 @@ import { optimizeRoute } from "../utils/routeOptimizer";
 import { isSameDay } from "../utils/isSameDay";
 import { shouldStreetReappear, totalDaysBetween } from "../utils/dates";
 import { useSettings } from "./useSettings";
+import { calculateTodayArea, getNextArea } from "../utils/areaColors";
 
 const COLLECTION_NAME = "streets";
 const AREA_STORAGE_KEY = "current_area_v2";
@@ -120,27 +121,24 @@ export function useDistribution() {
     }
   };
 
-  // Load current area
+  // Load current area - מחשב אוטומטית לפי תאריך
   const loadCurrentArea = async () => {
+    // חישוב האזור הנכון לפי התאריך
+    const calculatedArea = calculateTodayArea();
+    console.log(`📅 אזור מחושב לפי תאריך: ${calculatedArea}`);
+
+    setTodayArea(calculatedArea);
+    saveCurrentAreaToLocalStorage(calculatedArea);
+
+    // שמור ב-Firebase
     try {
-      // נסה לסנכרן עם Firebase
-      const areaDoc = await getDocs(collection(db, "settings"));
-      const areaData = areaDoc.docs.find(doc => doc.id === "currentArea");
-      if (areaData) {
-        const firebaseArea = areaData.data().area as Area;
-        setTodayArea(firebaseArea);
-        saveCurrentAreaToLocalStorage(firebaseArea);
-      } else {
-        // אם אין ב-Firebase, טען מקומית
-        const localArea = loadCurrentAreaFromLocalStorage();
-        setTodayArea(localArea);
-        await saveCurrentArea(localArea);
-      }
+      await setDoc(doc(db, "settings", "currentArea"), {
+        area: calculatedArea,
+        lastCalculated: new Date().toISOString()
+      });
+      console.log("✅ אזור נשמר ב-Firebase");
     } catch (error) {
-      console.error("Error loading current area:", error);
-      // אם יש שגיאה, טען מקומית
-      const localArea = loadCurrentAreaFromLocalStorage();
-      setTodayArea(localArea);
+      console.error("Error saving current area:", error);
     }
   };
 
@@ -529,8 +527,8 @@ export function useDistribution() {
   };
 
   const endDay = async () => {
-    const newArea: Area = todayArea === 12 ? 14 : todayArea === 14 ? 45 : 12;
-    
+    const newArea = getNextArea(todayArea);
+
     setTodayArea(newArea);
     saveCurrentAreaToLocalStorage(newArea);
     await saveCurrentArea(newArea);
