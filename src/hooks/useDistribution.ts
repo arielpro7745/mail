@@ -16,7 +16,7 @@ const STREETS_STORAGE_KEY = "streets_data_v2";
 
 export function useDistribution() {
   const [data, setData] = useState<Street[]>([]);
-  const [todayArea, setTodayArea] = useState<Area>(12);
+  const [todayArea, setTodayArea] = useState<Area>(() => calculateTodayArea());
   const [loading, setLoading] = useState(true);
   const { settings } = useSettings();
 
