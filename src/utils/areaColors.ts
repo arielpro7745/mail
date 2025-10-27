@@ -42,7 +42,7 @@ export function getAreaName(area: Area): string {
 }
 
 export function calculateTodayArea(referenceDate: Date = new Date()): Area {
-  const baseDate = new Date('2024-10-26');
+  const baseDate = new Date('2025-10-26');
   baseDate.setHours(0, 0, 0, 0);
 
   const currentDate = new Date(referenceDate);
