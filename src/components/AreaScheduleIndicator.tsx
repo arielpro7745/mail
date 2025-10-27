@@ -101,10 +101,10 @@ export default function AreaScheduleIndicator() {
               המערכת מחשבת אוטומטית את האזור הנכון לכל יום לפי תאריך קבוע:
             </p>
             <ul className="text-sm text-blue-700 space-y-1">
-              <li>• <strong>26.10.2024</strong> היה אזור 45 (כחול)</li>
+              <li>• <strong>26.10.2024</strong> אתמול - אזור 45 (כחול)</li>
               <li>• <strong>27.10.2024</strong> היום - אזור 14 (אדום)</li>
               <li>• <strong>28.10.2024</strong> מחר - אזור 12 (ירוק)</li>
-              <li>• המחזור חוזר על עצמו: 14 → 12 → 45 → 14...</li>
+              <li>• המחזור חוזר על עצמו: 45 → 14 → 12 → 45...</li>
             </ul>
           </div>
         </div>

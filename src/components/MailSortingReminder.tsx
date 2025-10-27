@@ -16,11 +16,11 @@ interface ColorInfo {
 const colorMap: Record<AreaNumber, ColorInfo> = {
   45: {
     area: 45,
-    color: 'green',
-    hebrewColor: 'ירוק',
-    bgClass: 'bg-green-50',
-    textClass: 'text-green-700',
-    borderClass: 'border-green-300',
+    color: 'blue',
+    hebrewColor: 'כחול',
+    bgClass: 'bg-blue-50',
+    textClass: 'text-blue-700',
+    borderClass: 'border-blue-300',
   },
   14: {
     area: 14,
@@ -32,11 +32,11 @@ const colorMap: Record<AreaNumber, ColorInfo> = {
   },
   12: {
     area: 12,
-    color: 'blue',
-    hebrewColor: 'כחול',
-    bgClass: 'bg-blue-50',
-    textClass: 'text-blue-700',
-    borderClass: 'border-blue-300',
+    color: 'green',
+    hebrewColor: 'ירוק',
+    bgClass: 'bg-green-50',
+    textClass: 'text-green-700',
+    borderClass: 'border-green-300',
   },
 };
 
@@ -138,7 +138,7 @@ export default function MailSortingReminder({ currentArea }: MailSortingReminder
 
           <div className="bg-gray-50 rounded-lg p-3">
             <p className="text-xs text-gray-600 text-center">
-              <strong>סדר המיון:</strong> ירוק (45) → אדום (14) → כחול (12) → ירוק...
+              <strong>סדר המיון:</strong> כחול (45) → אדום (14) → ירוק (12) → כחול...
             </p>
           </div>
         </div>
