@@ -41,6 +41,11 @@ export function getAreaName(area: Area): string {
   return `אזור ${area} (${AREA_COLORS[area].name})`;
 }
 
+export function isWorkingDay(date: Date = new Date()): boolean {
+  const dayOfWeek = date.getDay();
+  return dayOfWeek !== 5 && dayOfWeek !== 6;
+}
+
 export function calculateTodayArea(referenceDate: Date = new Date()): Area {
   const baseDate = new Date('2025-10-26');
   baseDate.setHours(0, 0, 0, 0);
@@ -48,14 +53,21 @@ export function calculateTodayArea(referenceDate: Date = new Date()): Area {
   const currentDate = new Date(referenceDate);
   currentDate.setHours(0, 0, 0, 0);
 
-  const daysDiff = Math.floor((currentDate.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+  let workingDaysCount = 0;
+  const tempDate = new Date(baseDate);
+
+  while (tempDate < currentDate) {
+    const dayOfWeek = tempDate.getDay();
+    if (dayOfWeek !== 5 && dayOfWeek !== 6) {
+      workingDaysCount++;
+    }
+    tempDate.setDate(tempDate.getDate() + 1);
+  }
 
   const areaRotation: Area[] = [45, 14, 12];
-  const areaIndex = daysDiff % 3;
+  const areaIndex = workingDaysCount % 3;
 
-  const adjustedIndex = areaIndex < 0 ? areaIndex + 3 : areaIndex;
-
-  return areaRotation[adjustedIndex];
+  return areaRotation[areaIndex];
 }
 
 export function getAreaForDate(date: Date): Area {

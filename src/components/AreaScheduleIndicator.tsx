@@ -1,5 +1,5 @@
-import { Calendar, ChevronRight } from 'lucide-react';
-import { getAreaColor, getAreaName, calculateTodayArea } from '../utils/areaColors';
+import { Calendar, ChevronRight, Moon } from 'lucide-react';
+import { getAreaColor, getAreaName, calculateTodayArea, isWorkingDay } from '../utils/areaColors';
 import { Area } from '../types';
 
 export default function AreaScheduleIndicator() {
@@ -13,10 +13,14 @@ export default function AreaScheduleIndicator() {
   const todayArea = calculateTodayArea(today);
   const tomorrowArea = calculateTodayArea(tomorrow);
 
-  const areas: { date: Date; area: Area; label: string }[] = [
-    { date: yesterday, area: yesterdayArea, label: 'אתמול' },
-    { date: today, area: todayArea, label: 'היום' },
-    { date: tomorrow, area: tomorrowArea, label: 'מחר' }
+  const isYesterdayWorking = isWorkingDay(yesterday);
+  const isTodayWorking = isWorkingDay(today);
+  const isTomorrowWorking = isWorkingDay(tomorrow);
+
+  const areas: { date: Date; area: Area; label: string; isWorking: boolean }[] = [
+    { date: yesterday, area: yesterdayArea, label: 'אתמול', isWorking: isYesterdayWorking },
+    { date: today, area: todayArea, label: 'היום', isWorking: isTodayWorking },
+    { date: tomorrow, area: tomorrowArea, label: 'מחר', isWorking: isTomorrowWorking }
   ];
 
   return (
@@ -27,7 +31,7 @@ export default function AreaScheduleIndicator() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {areas.map(({ date, area, label }, idx) => {
+        {areas.map(({ date, area, label, isWorking }, idx) => {
           const areaColor = getAreaColor(area);
           const isToday = idx === 1;
 
@@ -35,7 +39,9 @@ export default function AreaScheduleIndicator() {
             <div key={idx} className="relative">
               <div
                 className={`rounded-lg p-4 border-2 transition-all duration-300 ${
-                  isToday
+                  !isWorking
+                    ? 'bg-gray-100 border-gray-400 opacity-60'
+                    : isToday
                     ? `${areaColor.bg} ${areaColor.border} ring-4 ${areaColor.ring} ring-opacity-30`
                     : `bg-gray-50 border-gray-300`
                 }`}
@@ -43,12 +49,18 @@ export default function AreaScheduleIndicator() {
                 <div className="flex items-center justify-between mb-2">
                   <span
                     className={`text-sm font-bold ${
-                      isToday ? areaColor.text : 'text-gray-500'
+                      !isWorking ? 'text-gray-600' : isToday ? areaColor.text : 'text-gray-500'
                     }`}
                   >
                     {label}
                   </span>
-                  {isToday && (
+                  {!isWorking && (
+                    <span className="bg-gray-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                      <Moon size={12} />
+                      סופ"ש
+                    </span>
+                  )}
+                  {isToday && isWorking && (
                     <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
                       פעיל
                     </span>
@@ -58,19 +70,23 @@ export default function AreaScheduleIndicator() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-12 h-12 ${
-                      isToday ? areaColor.bgSolid : 'bg-gray-400'
+                      !isWorking ? 'bg-gray-500' : isToday ? areaColor.bgSolid : 'bg-gray-400'
                     } rounded-xl flex items-center justify-center shadow-md`}
                   >
-                    <span className="text-xl font-bold text-white">{area}</span>
+                    {!isWorking ? (
+                      <Moon className="text-white" size={24} />
+                    ) : (
+                      <span className="text-xl font-bold text-white">{area}</span>
+                    )}
                   </div>
 
                   <div>
                     <div
                       className={`font-bold text-lg ${
-                        isToday ? areaColor.text : 'text-gray-600'
+                        !isWorking ? 'text-gray-600' : isToday ? areaColor.text : 'text-gray-600'
                       }`}
                     >
-                      {getAreaName(area)}
+                      {!isWorking ? 'יום מנוחה' : getAreaName(area)}
                     </div>
                     <div className="text-xs text-gray-500">
                       {date.toLocaleDateString('he-IL', {

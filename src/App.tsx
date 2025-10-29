@@ -40,6 +40,7 @@ import PersonalJournal from "./components/PersonalJournal";
 import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
 import AreaScheduleIndicator from "./components/AreaScheduleIndicator";
+import DailyTaskGenerator from "./components/DailyTaskGenerator";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns">("regular");
@@ -159,6 +160,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       {showFirebaseGuide && <FirebaseSetupGuide />}
+      <DailyTaskGenerator />
       <MailSortingReminder currentArea={todayArea} />
       <Header />
       <main className="max-w-7xl mx-auto p-4">
