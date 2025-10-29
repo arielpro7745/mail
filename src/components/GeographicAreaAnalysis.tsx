@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Map, Navigation, TrendingUp, Clock, MapPin, AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { Map, Navigation, TrendingUp, Clock, MapPin, AlertCircle, CheckCircle2, Info, UserCheck } from "lucide-react";
 import { streets } from "../data/streets";
 import { getAreaColor } from "../utils/areaColors";
 
@@ -30,131 +30,133 @@ export default function GeographicAreaAnalysis() {
     const plans: AreaPlan[] = [];
 
     // =====================================================
-    // אזור 12 - ליבת כפר גנים א' (רחוב התשעים ושלוש ובסביבתו)
+    // אזור 12 - לפי הידע המקומי המדויק!
+    // קו רציף: פנקס זוגי → התשעים ושלוש אי-זוגי → הכרם → המשך → התשעים ושלוש זוגי → פנקס אי-זוגי
     // =====================================================
     const area12Routes: OptimizedRoute[] = [
-      { order: 1, streetId: "ninety-three-42-2", streetName: "התשעים ושלוש 42‑2 (זוגי)", reasoning: "התחלה ברחוב הראשי - צד זוגי (בתים גבוהים)", estimatedTime: 12, cluster: "התשעים ושלוש" },
-      { order: 2, streetId: "ninety-three-1-11", streetName: "התשעים ושלוש 1‑11 (אי‑זוגי)", reasoning: "חציה לצד השני - קטע תחתון", estimatedTime: 12, cluster: "התשעים ושלוש" },
-      { order: 3, streetId: "ninety-three-13-21", streetName: "התשעים ושלוש 13‑21 (אי‑זוגי)", reasoning: "המשך אותו צד - קטע עליון", estimatedTime: 12, cluster: "התשעים ושלוש" },
-      { order: 4, streetId: "chafetz-mordechai", streetName: "חפץ מרדכי", reasoning: "רחוב מקביל קרוב (מחקר: באזור התשעים ושלוש)", estimatedTime: 8, cluster: "רחובות מקבילים" },
-      { order: 5, streetId: "haachim-raab", streetName: "האחים ראב", reasoning: "רחוב קטן סמוך (משפחת היסטורית מפתח תקווה)", estimatedTime: 8, cluster: "רחובות מקבילים" },
-      { order: 6, streetId: "david-zvi-pinkas-24-2", streetName: "דוד צבי פנקס 24‑2 (זוגי)", reasoning: "מעבר לרחוב מרכזי נוסף - צד זוגי", estimatedTime: 12, cluster: "דוד צבי פנקס" },
-      { order: 7, streetId: "david-zvi-pinkas-1-21", streetName: "דוד צבי פנקס 1‑21 (אי‑זוגי)", reasoning: "צד שני של דוד צבי פנקס", estimatedTime: 12, cluster: "דוד צבי פנקס" },
-      { order: 8, streetId: "hakerem", streetName: "הכרם", reasoning: "כניסה לאשכול הרחובות הקטנים", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 9, streetId: "harav-kook", streetName: "הרב קוק", reasoning: "רחוב סמוך באזור (170מ' מזכרון משה)", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 10, streetId: "zichron-moshe", streetName: "זכרון משה", reasoning: "רחוב סמוך (170מ' מהרב קוק)", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 11, streetId: "anna-frank", streetName: "אנה פרנק", reasoning: "רחוב בינוני באזור", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 12, streetId: "mendelson", streetName: "מנדלסון", reasoning: "רחוב סמוך (מוזכר ליד הרב קוק וזכרון משה)", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 13, streetId: "chaim-cohen", streetName: "חיים כהן", reasoning: "רחוב בינוני באזור", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 14, streetId: "sweden", streetName: "שבדיה", reasoning: "סיום - רחוב באזור כפר גנים", estimatedTime: 10, cluster: "רחובות קטנים" },
+      { order: 1, streetId: "david-zvi-pinkas-24-2", streetName: "דוד צבי פנקס 24‑2 (זוגי)", reasoning: "נקודת התחלה - צד זוגי של פנקס", estimatedTime: 12, cluster: "קו ראשי A" },
+      { order: 2, streetId: "ninety-three-1-11", streetName: "התשעים ושלוש 1‑11 (אי‑זוגי)", reasoning: "מעבר לתשעים ושלוש אי-זוגי (קרוב לפנקס!)", estimatedTime: 12, cluster: "קו ראשי A" },
+      { order: 3, streetId: "ninety-three-13-21", streetName: "התשעים ושלוש 13‑21 (אי‑זוגי)", reasoning: "המשך אותו צד - קטע עליון", estimatedTime: 12, cluster: "קו ראשי A" },
+      { order: 4, streetId: "hakerem", streetName: "הכרם", reasoning: "כניסה להכרם (קרוב לפנקס ולתשעים ושלוש)", estimatedTime: 10, cluster: "קו ראשי A" },
+      { order: 5, streetId: "harav-kook", streetName: "הרב קוק", reasoning: "המשך באזור - רב קוק", estimatedTime: 10, cluster: "אשכול B" },
+      { order: 6, streetId: "zichron-moshe", streetName: "זכרון משה", reasoning: "זכרון משה - באותו אזור", estimatedTime: 10, cluster: "אשכול B" },
+      { order: 7, streetId: "chafetz-mordechai", streetName: "חפץ מרדכי", reasoning: "חפץ מרדכי - רחוב קטן", estimatedTime: 8, cluster: "אשכול B" },
+      { order: 8, streetId: "haachim-raab", streetName: "האחים ראב", reasoning: "האחים ראב - רחוב קטן", estimatedTime: 8, cluster: "אשכול B" },
+      { order: 9, streetId: "anna-frank", streetName: "אנה פרנק", reasoning: "אנה פרנק - באזור", estimatedTime: 10, cluster: "אשכול B" },
+      { order: 10, streetId: "mendelson", streetName: "מנדלסון", reasoning: "מנדלסון - רחוב סמוך", estimatedTime: 10, cluster: "אשכול B" },
+      { order: 11, streetId: "chaim-cohen", streetName: "חיים כהן", reasoning: "חיים כהן (קרוב לשבדיה!)", estimatedTime: 10, cluster: "אשכול C" },
+      { order: 12, streetId: "sweden", streetName: "שבדיה", reasoning: "שבדיה (קרוב לחיים כהן ולפנקס!)", estimatedTime: 10, cluster: "אשכול C" },
+      { order: 13, streetId: "ninety-three-42-2", streetName: "התשעים ושלוש 42‑2 (זוגי)", reasoning: "חזרה לתשעים ושלוש - צד זוגי", estimatedTime: 12, cluster: "קו ראשי A חזרה" },
+      { order: 14, streetId: "david-zvi-pinkas-1-21", streetName: "דוד צבי פנקס 1‑21 (אי‑זוגי)", reasoning: "סיום בפנקס אי-זוגי - קו רציף שלם!", estimatedTime: 12, cluster: "קו ראשי A חזרה" },
     ];
 
     plans.push({
       area: 12,
-      location: "כפר גנים א' - אזור התשעים ושלוש",
+      location: "כפר גנים א' - קו התשעים ושלוש-פנקס",
       totalTime: area12Routes.reduce((sum, r) => sum + r.estimatedTime, 0),
       routes: area12Routes,
       insights: [
-        "מיקום: ליבת שכונת כפר גנים א' (הפסטורלית) בדרום-מערב פתח תקווה",
-        "רחוב התשעים ושלוש = רחוב ראשי עם 34 בתים",
-        "דוד צבי פנקס = רחוב מרכזי נוסף באזור",
-        "12 רחובות קטנים נוספים סביב 2 הרחובות הראשיים"
+        "מסלול מבוסס על ידע מקומי מדויק מהשטח!",
+        "קו רציף: פנקס זוגי → תשעים ושלוש (שני הצדדים) → הכרם → ... → חזרה דרך תשעים ושלוש זוגי → פנקס אי-זוגי",
+        "שבדיה קרוב לחיים כהן ולפנקס",
+        "הכרם, תשעים ושלוש ופנקס יחסית קרובים"
       ],
       improvements: [
-        "✅ מסלול מאורגן: רחובות ראשיים (1-7) ← רחובות קטנים (8-14)",
-        "✅ זמן סביר: 2:26 שעות",
-        "✅ אזור מרוכז גיאוגרפית - מינימום הליכה"
+        "✅ מסלול אופטימלי: קו אחד שלם ללא חזרות מיותרות",
+        "✅ זמן: 2:26 שעות",
+        "✅ מבוסס על הידע שלך מהשטח"
       ],
       geographicNotes: [
-        "💡 התשעים ושלוש ודוד צבי פנקס הם 2 הצירים המרכזיים",
-        "💡 כל הרחובות הקטנים קרובים זה לזה (מחקר: 170 מטר ביניהם)",
-        "💡 זהו אזור מגורים ותיק ושקט"
+        "💡 הסדר נבנה לפי הקרבה האמיתית שאתה מכיר",
+        "💡 פנקס, תשעים ושלוש והכרם הם הציר המרכזי",
+        "💡 שבדיה וחיים כהן באשכול נפרד אבל קרוב"
       ]
     });
 
     // =====================================================
-    // אזור 14 - גבול כפר גנים א' (רוטשילד + קק"ל + הדף היומי)
+    // אזור 14 - לפי הידע המקומי המדויק!
+    // הדף היומי = רוטשילד 110/112/114
+    // קק"ל = פנייה מרוטשילד 143
+    // גד מכנס = צד שני של רוטשילד 182
     // =====================================================
     const area14Routes: OptimizedRoute[] = [
-      { order: 1, streetId: "rot-110‑132", streetName: "רוטשילד 110‑132", reasoning: "פתיחה ברוטשילד (גבול צפוני של כפר גנים א')", estimatedTime: 12, cluster: "רוטשילד" },
-      { order: 2, streetId: "rot-134‑150", streetName: "רוטשילד 134‑150", reasoning: "המשך רוטשילד - קטע אמצעי", estimatedTime: 12, cluster: "רוטשילד" },
-      { order: 3, streetId: "rot-152‑182", streetName: "רוטשילד 152‑182", reasoning: "רוטשילד עליון עד מרכז אורון (צומת גד מכנס) - גדול!", estimatedTime: 20, cluster: "רוטשילד" },
-      { order: 4, streetId: "gad-machnes-4", streetName: "גד מכנס 4", reasoning: "סטייה קצרה לצומת - גד מכנס/רוטשילד (מרכז אורון)", estimatedTime: 8, cluster: "רוטשילד" },
-      { order: 5, streetId: "rot-179‑143", streetName: "רוטשילד 179‑143", reasoning: "חזרה לרוטשילד - צד שני למטה", estimatedTime: 15, cluster: "רוטשילד" },
-      { order: 6, streetId: "rot-141‑109", streetName: "רוטשילד 141‑109", reasoning: "המשך רוטשילד צד שני - חזרה להתחלה", estimatedTime: 12, cluster: "רוטשילד" },
-      { order: 7, streetId: "kkl-even", streetName: "קק\"ל 28‑34 (זוגי)", reasoning: "מעבר לקק\"ל (יש תחנה 'רוטשילד/קק\"ל' - קרובים!)", estimatedTime: 10, cluster: "קק\"ל" },
-      { order: 8, streetId: "kkl-odd", streetName: "קק\"ל 21‑25 (אי‑זוגי)", reasoning: "צד שני של קק\"ל", estimatedTime: 10, cluster: "קק\"ל" },
-      { order: 9, streetId: "d-hayomi", streetName: "הדף היומי", reasoning: "סיום - רחוב קטן באזור רוטשילד", estimatedTime: 10, cluster: "רחובות צדדיים" },
+      { order: 1, streetId: "d-hayomi", streetName: "הדף היומי", reasoning: "התחלה בהדף היומי (=רוטשילד 110/112/114!)", estimatedTime: 10, cluster: "התחלה" },
+      { order: 2, streetId: "rot-110‑132", streetName: "רוטשילד 110‑132", reasoning: "המשך רוטשילד מ-110 עד 132", estimatedTime: 12, cluster: "רוטשילד עולה" },
+      { order: 3, streetId: "rot-134‑150", streetName: "רוטשילד 134‑150", reasoning: "המשך רוטשילד - קטע אמצעי", estimatedTime: 12, cluster: "רוטשילד עולה" },
+      { order: 4, streetId: "rot-152‑182", streetName: "רוטשילד 152‑182", reasoning: "המשך עד 182 (גדול!)", estimatedTime: 20, cluster: "רוטשילד עולה" },
+      { order: 5, streetId: "gad-machnes-4", streetName: "גד מכנס 4", reasoning: "גד מכנס 4 = הצד השני של רוטשילד 182!", estimatedTime: 8, cluster: "סיום צד A" },
+      { order: 6, streetId: "rot-179‑143", streetName: "רוטשילד 179‑143", reasoning: "חזרה ברוטשילד צד שני - 179 עד 143", estimatedTime: 15, cluster: "רוטשילד יורד" },
+      { order: 7, streetId: "kkl-even", streetName: "קק\"ל 28‑34 (זוגי)", reasoning: "פנייה לקק\"ל (יוצא מרוטשילד 143!)", estimatedTime: 10, cluster: "פנייה לקק\"ל" },
+      { order: 8, streetId: "kkl-odd", streetName: "קק\"ל 21‑25 (אי‑זוגי)", reasoning: "צד שני של קק\"ל", estimatedTime: 10, cluster: "פנייה לקק\"ל" },
+      { order: 9, streetId: "rot-141‑109", streetName: "רוטשילד 141‑109", reasoning: "חזרה לרוטשילד - סיום מ-141 עד 109", estimatedTime: 12, cluster: "רוטשילד יורד" },
     ];
 
     plans.push({
       area: 14,
-      location: "גבול כפר גנים א' - רחוב רוטשילד",
+      location: "כפר גנים א' - ציר רוטשילד",
       totalTime: area14Routes.reduce((sum, r) => sum + r.estimatedTime, 0),
       routes: area14Routes,
       insights: [
-        "מיקום: רוטשילד = גבול צפוני של כפר גנים א', עורק מרכזי",
-        "מרכז אורון = ציון דרך (צומת רוטשילד/גד מכנס)",
-        "קק\"ל = רחוב קרוב לרוטשילד (תחנת אוטובוס משותפת)",
-        "רוטשילד הוא רחוב היסטורי - על שם הברון רוטשילד"
+        "מסלול מבוסס על ידע מקומי מדויק מהשטח!",
+        "הדף היומי = רוטשילד 110, 112, 114 - התחלה ממנו",
+        "גד מכנס 4 = הצד השני של רוטשילד 182",
+        "קק\"ל = פנייה בין רוטשילד 143 ל-141"
       ],
       improvements: [
-        "⚠️ אזור קטן: 9 רחובות בלבד, 1:49 שעות",
-        "💡 אופציה: העבר קק\"ל לאזור 45 (קרובה יותר לויצמן)",
-        "✅ מסלול יעיל: רוטשילד מלא ← קק\"ל ← הדף היומי"
+        "✅ מסלול לוגי: עולים ברוטשילד → גד מכנס → יורדים ברוטשילד → פנייה לקק\"ל → סיום רוטשילד",
+        "✅ זמן: 1:49 שעות",
+        "✅ ללא חזרות מיותרות - הכל בזרימה אחת"
       ],
       geographicNotes: [
-        "💡 רוטשילד = עורק ראשי מערב-מזרח",
-        "💡 מרכז אורון = נקודת ציון מרכזית בצומת",
-        "💡 אזור זה שונה מאזור 12 - זה הגבול הצפוני של כפר גנים"
+        "💡 הדף היומי זה ממש ההתחלה של רוטשילד",
+        "💡 קק\"ל זו פנייה באמצע הדרך (בין 143 ל-141)",
+        "💡 גד מכנס 4 זה בדיוק בנקודת הסיבוב ב-182"
       ]
     });
 
     // =====================================================
-    // אזור 45 - מרכז כפר גנים (ויצמן, יטקובסקי, ועוד)
+    // אזור 45 - צריך לבדוק אם יש לך ידע נוסף כאן
     // =====================================================
     const area45Routes: OptimizedRoute[] = [
-      { order: 1, streetId: "weiz-even", streetName: "ויצמן 2‑34 (זוגי)", reasoning: "התחלה ברחוב ויצמן - עורק מרכזי בכפר גנים (גדול!)", estimatedTime: 20, cluster: "ויצמן" },
+      { order: 1, streetId: "weiz-even", streetName: "ויצמן 2‑34 (זוגי)", reasoning: "התחלה בויצמן - רחוב מרכזי (גדול!)", estimatedTime: 20, cluster: "ויצמן" },
       { order: 2, streetId: "weiz-odd", streetName: "ויצמן 35‑1 (אי‑זוגי)", reasoning: "צד שני של ויצמן (גדול!)", estimatedTime: 20, cluster: "ויצמן" },
-      { order: 3, streetId: "yatk-32‑42", streetName: "אח׳ יטקובסקי 32‑42 (זוגי)", reasoning: "מעבר ליטקובסקי - רחוב מקביל לויצמן", estimatedTime: 12, cluster: "יטקובסקי" },
+      { order: 3, streetId: "yatk-32‑42", streetName: "אח׳ יטקובסקי 32‑42 (זוגי)", reasoning: "מעבר ליטקובסקי - רחוב מקביל", estimatedTime: 12, cluster: "יטקובסקי" },
       { order: 4, streetId: "yatk-37‑25", streetName: "אח׳ יטקובסקי 37‑25 (אי‑זוגי)", reasoning: "צד שני של יטקובסקי", estimatedTime: 12, cluster: "יטקובסקי" },
-      { order: 5, streetId: "dagel-even", streetName: "דגל ראובן 18‑54 (זוגי)", reasoning: "דגל ראובן - רחוב מקביל נוסף", estimatedTime: 12, cluster: "רחובות מקבילים" },
+      { order: 5, streetId: "dagel-even", streetName: "דגל ראובן 18‑54 (זוגי)", reasoning: "דגל ראובן - רחוב מקביל", estimatedTime: 12, cluster: "רחובות מקבילים" },
       { order: 6, streetId: "dagel-odd", streetName: "דגל ראובן 63‑23 (אי‑זוגי)", reasoning: "צד שני של דגל ראובן", estimatedTime: 12, cluster: "רחובות מקבילים" },
-      { order: 7, streetId: "heib-even", streetName: "היבנר 12‑74 (זוגי)", reasoning: "היבנר - רחוב מקביל נוסף", estimatedTime: 12, cluster: "רחובות מקבילים" },
+      { order: 7, streetId: "heib-even", streetName: "היבנר 12‑74 (זוגי)", reasoning: "היבנר - רחוב מקביל", estimatedTime: 12, cluster: "רחובות מקבילים" },
       { order: 8, streetId: "heib-odd", streetName: "היבנר 55‑7 (אי‑זוגי)", reasoning: "צד שני של היבנר", estimatedTime: 12, cluster: "רחובות מקבילים" },
       { order: 9, streetId: "bertonov", streetName: "ברטונוב (כל הרחוב)", reasoning: "ברטונוב - רחוב גדול! תכנן הפסקה", estimatedTime: 20, cluster: "ברטונוב" },
-      { order: 10, streetId: "martin-buber", streetName: "מרטין בובר", reasoning: "מעבר לרחובות הקטנים - מרטין בובר", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 11, streetId: "partisans", streetName: "הפרטיזנים", reasoning: "רחוב קטן באזור", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 12, streetId: "mirkin", streetName: "מירקין", reasoning: "מירקין (ליד ויצמן לפי המחקר)", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 13, streetId: "lisin", streetName: "ליסין", reasoning: "רחוב קטן באזור", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 14, streetId: "senerov", streetName: "סנרוב", reasoning: "רחוב קטן באזור", estimatedTime: 10, cluster: "רחובות קטנים" },
-      { order: 15, streetId: "stern", streetName: "שטרן", reasoning: "סיום - רחוב קטן", estimatedTime: 10, cluster: "רחובות קטנים" },
+      { order: 10, streetId: "martin-buber", streetName: "מרטין בובר", reasoning: "מעבר לרחובות קטנים - מרטין בובר", estimatedTime: 10, cluster: "רחובות קטנים" },
+      { order: 11, streetId: "partisans", streetName: "הפרטיזנים", reasoning: "הפרטיזנים - רחוב קטן", estimatedTime: 10, cluster: "רחובות קטנים" },
+      { order: 12, streetId: "mirkin", streetName: "מירקין", reasoning: "מירקין - רחוב קטן", estimatedTime: 10, cluster: "רחובות קטנים" },
+      { order: 13, streetId: "lisin", streetName: "ליסין", reasoning: "ליסין - רחוב קטן", estimatedTime: 10, cluster: "רחובות קטנים" },
+      { order: 14, streetId: "senerov", streetName: "סנרוב", reasoning: "סנרוב - רחוב קטן", estimatedTime: 10, cluster: "רחובות קטנים" },
+      { order: 15, streetId: "stern", streetName: "שטרן", reasoning: "סיום - שטרן", estimatedTime: 10, cluster: "רחובות קטנים" },
     ];
 
     plans.push({
       area: 45,
-      location: "מרכז כפר גנים - אזור ויצמן ויטקובסקי",
+      location: "כפר גנים ב'+ג' - אזור ויצמן ויטקובסקי",
       totalTime: area45Routes.reduce((sum, r) => sum + r.estimatedTime, 0),
       routes: area45Routes,
       insights: [
-        "מיקום: מרכז שכונת כפר גנים (כפר גנים ב' וג')",
-        "3 עורקים מרכזיים: ויצמן (38 בניינים!), יטקובסקי (34 בניינים!), ברטונוב",
-        "רחובות מקבילים: דגל ראובן, היבנר",
-        "אשכול של 6 רחובות קטנים: מרטין בובר, הפרטיזנים, מירקין, ליסין, סנרוב, שטרן"
+        "אזור גדול עם רחובות מקבילים: ויצמן, יטקובסקי, דגל ראובן, היבנר",
+        "3 רחובות גדולים: ויצמן, יטקובסקי (באמצע), ברטונוב",
+        "6 רחובות קטנים בסוף: מרטין בובר עד שטרן",
+        "אם יש לך ידע נוסף על הסדר - ספר לי!"
       ],
       improvements: [
-        "⚠️ אזור כבד מאוד! 15 רחובות, 3:02 שעות",
-        "💡 אופציה 1: קבל את קק\"ל מאזור 14 (רחובות קרובים)",
-        "💡 אופציה 2: פצל ל-2 ימים:",
-        "  • יום א': ויצמן + יטקובסקי + דגל ראובן (1:36 שעות)",
-        "  • יום ב': היבנר + ברטונוב + 6 הקטנים (1:26 שעות)",
-        "✅ מסלול לוגי: עורקים ראשיים ← מקבילים ← קטנים"
+        "⚠️ אזור כבד! 15 רחובות, 3:02 שעות",
+        "💡 אפשר לפצל ל-2 ימים:",
+        "  • יום א': ויצמן + יטקובסקי + דגל ראובן",
+        "  • יום ב': היבנר + ברטונוב + 6 קטנים",
+        "✅ הסדר הנוכחי לוגי אבל נשמח לידע שלך!"
       ],
       geographicNotes: [
-        "💡 כפר גנים ב' נבנתה בשנות ה-80",
-        "💡 כפר גנים ג' נבנתה בסוף שנות ה-2000",
-        "💡 ויצמן ויטקובסקי הם עורקים מרכזיים צפון-דרום",
-        "💡 זהו האזור העמוס ביותר - שקול פיצול!"
+        "💡 האם הרחובות הקטנים קרובים זה לזה?",
+        "💡 האם יש סדר ספציפי שאתה עושה?",
+        "💡 ספר לנו ונעדכן!"
       ]
     });
 
@@ -164,66 +166,58 @@ export default function GeographicAreaAnalysis() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl shadow-xl p-6 text-white">
+      <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-xl shadow-xl p-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-              <Map size={32} />
+              <UserCheck size={32} />
             </div>
             <div>
-              <h2 className="text-3xl font-bold">ניתוח גיאוגרפי מבוסס מחקר מעמיק</h2>
-              <p className="text-blue-100 mt-1">מיפוי מלא של שכונת כפר גנים, פתח תקווה</p>
+              <h2 className="text-3xl font-bold">ניתוח מבוסס על הידע המקומי שלך!</h2>
+              <p className="text-green-100 mt-1">בנוי לפי המידע המדויק שסיפרת - מהשטח לשטח</p>
             </div>
           </div>
 
           <button
             onClick={analyzeGeographically}
-            className="bg-white hover:bg-blue-50 text-blue-600 px-6 py-3 rounded-lg font-bold shadow-lg transition-all flex items-center gap-2"
+            className="bg-white hover:bg-green-50 text-green-600 px-6 py-3 rounded-lg font-bold shadow-lg transition-all flex items-center gap-2"
           >
             <TrendingUp size={20} />
             הצג ניתוח
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <div className="text-2xl font-bold mb-1">כפר גנים א'</div>
-            <div className="text-sm text-blue-100">אזור 12: התשעים ושלוש</div>
-            <div className="text-sm text-blue-100">אזור 14: רוטשילד (גבול)</div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <div className="text-2xl font-bold mb-1">כפר גנים ב'+ג'</div>
-            <div className="text-sm text-blue-100">אזור 45: ויצמן ויטקובסקי</div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <div className="text-2xl font-bold mb-1">38 רחובות</div>
-            <div className="text-sm text-blue-100">סה"כ 7:17 שעות</div>
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mt-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 size={20} className="flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <div className="font-bold mb-2">המידע שלך שולב:</div>
+              <ul className="space-y-1">
+                <li>✓ הדף היומי = רוטשילד 110/112/114</li>
+                <li>✓ גד מכנס 4 = הצד השני של רוטשילד 182</li>
+                <li>✓ קק"ל = פנייה מרוטשילד 143</li>
+                <li>✓ שבדיה קרוב לחיים כהן</li>
+                <li>✓ קו רציף: פנקס זוגי → תשעים ושלוש → הכרם → ... → תשעים ושלוש זוגי → פנקס אי-זוגי</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
 
       {showAnalysis && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl shadow-lg p-6 border-2 border-orange-300">
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl shadow-lg p-6 border-2 border-blue-300">
           <div className="flex items-start gap-4">
-            <Info className="text-orange-600 flex-shrink-0" size={32} />
+            <Info className="text-blue-600 flex-shrink-0" size={32} />
             <div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-3">תובנות מהמחקר:</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-3">העדכונים שעשיתי:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div className="bg-white rounded-lg p-3 border-2 border-orange-200">
-                  <strong className="text-orange-800">📍 כל 3 האזורים הם באותה שכונה!</strong>
-                  <p className="text-gray-700 mt-1">כפר גנים = שכונה גדולה בדרום-מערב פתח תקווה</p>
+                <div className="bg-white rounded-lg p-3 border-2 border-blue-200">
+                  <strong className="text-blue-800">אזור 14 - עכשיו מדויק!</strong>
+                  <p className="text-gray-700 mt-1">מתחילים בהדף היומי (110), עולים ברוטשילד, מגיעים לגד מכנס (182), יורדים, פונים לקק"ל (143), וחוזרים</p>
                 </div>
-                <div className="bg-white rounded-lg p-3 border-2 border-orange-200">
-                  <strong className="text-orange-800">🏛️ התשעים ושלוש = רחוב פסטורלי</strong>
-                  <p className="text-gray-700 mt-1">34 בתים בליבת כפר גנים א' (השכונה הוותיקה)</p>
-                </div>
-                <div className="bg-white rounded-lg p-3 border-2 border-orange-200">
-                  <strong className="text-orange-800">🛣️ רוטשילד = גבול צפוני</strong>
-                  <p className="text-gray-700 mt-1">עורק מרכזי על שם הברון, מרכז אורון בצומת</p>
-                </div>
-                <div className="bg-white rounded-lg p-3 border-2 border-orange-200">
-                  <strong className="text-orange-800">🏙️ ויצמן = מרכז השכונה</strong>
-                  <p className="text-gray-700 mt-1">38 בניינים! עורק ראשי בכפר גנים ב'+ג'</p>
+                <div className="bg-white rounded-lg p-3 border-2 border-blue-200">
+                  <strong className="text-blue-800">אזור 12 - קו רציף!</strong>
+                  <p className="text-gray-700 mt-1">פנקס זוגי → תשעים ושלוש אי-זוגי → הכרם → שאר הרחובות → תשעים ושלוש זוגי → פנקס אי-זוגי</p>
                 </div>
               </div>
             </div>
@@ -250,7 +244,7 @@ export default function GeographicAreaAnalysis() {
                 </div>
               </div>
 
-              <div className="text-left bg-gradient-to-br from-blue-50 to-cyan-50 p-4 rounded-xl border-2 border-blue-200">
+              <div className="text-left bg-gradient-to-br from-green-50 to-teal-50 p-4 rounded-xl border-2 border-green-200">
                 <div className="text-sm text-gray-600 mb-1">זמן משוער</div>
                 <div className="text-3xl font-bold text-gray-800">
                   {hours}:{minutes.toString().padStart(2, '0')}
@@ -262,7 +256,7 @@ export default function GeographicAreaAnalysis() {
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                 <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
                   <Navigation size={18} />
-                  תובנות גיאוגרפיות:
+                  תובנות מהשטח:
                 </h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   {plan.insights.map((insight, idx) => (
@@ -274,7 +268,7 @@ export default function GeographicAreaAnalysis() {
               <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
                 <h4 className="font-bold text-green-800 mb-2 flex items-center gap-2">
                   <TrendingUp size={18} />
-                  שיפורים והמלצות:
+                  היתרונות:
                 </h4>
                 <ul className="text-sm text-green-700 space-y-1">
                   {plan.improvements.map((improvement, idx) => (
@@ -286,7 +280,7 @@ export default function GeographicAreaAnalysis() {
               <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
                 <h4 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
                   <Info size={18} />
-                  הערות גיאוגרפיות:
+                  הערות נוספות:
                 </h4>
                 <ul className="text-sm text-purple-700 space-y-1">
                   {plan.geographicNotes.map((note, idx) => (
@@ -299,7 +293,7 @@ export default function GeographicAreaAnalysis() {
             <div className="mb-4">
               <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <Navigation size={22} />
-                מסלול אופטימלי מומלץ:
+                המסלול המומלץ שלך:
               </h4>
 
               <div className="space-y-3">
@@ -334,7 +328,7 @@ export default function GeographicAreaAnalysis() {
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 flex items-center gap-2">
-                            <span className="text-blue-500">→</span>
+                            <span className="text-green-500">→</span>
                             {route.reasoning}
                           </p>
                         </div>
@@ -357,40 +351,19 @@ export default function GeographicAreaAnalysis() {
       })}
 
       {showAnalysis && (
-        <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl shadow-lg p-6 border-2 border-red-300">
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl shadow-lg p-6 border-2 border-amber-300">
           <div className="flex items-start gap-4">
-            <AlertCircle className="text-red-600 flex-shrink-0" size={32} />
-            <div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">המלצות אסטרטגיות לאופטימיזציה:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg p-4 border-2 border-red-200">
-                  <h4 className="font-bold text-red-800 mb-2">1. פיצול אזור 45 (הכבד ביותר)</h4>
-                  <p className="text-sm text-gray-700 mb-2">
-                    3:02 שעות זה יותר מדי! פצל ל-2 ימים:
-                  </p>
-                  <ul className="text-xs text-gray-600 space-y-1">
-                    <li>• יום א': ויצמן + יטקובסקי + דגל ראובן</li>
-                    <li>• יום ב': היבנר + ברטונוב + 6 קטנים</li>
-                  </ul>
-                </div>
-                <div className="bg-white rounded-lg p-4 border-2 border-red-200">
-                  <h4 className="font-bold text-red-800 mb-2">2. העבר קק"ל לאזור 45</h4>
-                  <p className="text-sm text-gray-700">
-                    קק"ל קרובה יותר לויצמן מאשר לרוטשילד. זה יאזן את העומס: אזור 14 יקטן ל-1:39, אזור 45 יגדל רק מעט.
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border-2 border-red-200">
-                  <h4 className="font-bold text-red-800 mb-2">3. התחל תמיד מהרחובות הגדולים</h4>
-                  <p className="text-sm text-gray-700">
-                    ויצמן, ברטונוב, רוטשילד - עשה אותם כשאתה טרי ובכוחות. הרחובות הקטנים יותר קלים.
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border-2 border-red-200">
-                  <h4 className="font-bold text-red-800 mb-2">4. תכנן הפסקות</h4>
-                  <p className="text-sm text-gray-700">
-                    אחרי ויצמן (2 צדדים = 40 דק'), אחרי רוטשילד 152-182 (20 דק'), אחרי ברטונוב (20 דק').
-                  </p>
-                </div>
+            <AlertCircle className="text-amber-600 flex-shrink-0" size={32} />
+            <div className="w-full">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">רוצה לשפר עוד יותר?</h3>
+              <div className="bg-white rounded-lg p-4 border-2 border-amber-200">
+                <p className="text-gray-700 mb-3">
+                  <strong>אזור 45:</strong> אם יש לך ידע נוסף על הקרבה בין הרחובות באזור ויצמן-יטקובסקי (הרחובות הקטנים, ברטונוב וכו'),
+                  שתף אותי ואעדכן את המסלול להיות עוד יותר מדויק!
+                </p>
+                <p className="text-sm text-gray-600">
+                  למשל: איזה רחובות קרובים זה לזה? יש סדר ספציפי שאתה עושה? ספר לי ואני אבנה מסלול מושלם.
+                </p>
               </div>
             </div>
           </div>
