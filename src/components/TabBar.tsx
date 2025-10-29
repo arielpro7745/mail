@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CheckSquare, FileText, Phone, Settings, Brain, Trophy, BookOpen, MessageSquare, HelpCircle } from "lucide-react";
+import { BarChart3, Building2, CheckSquare, FileText, Phone, Settings, Brain, Trophy, BookOpen, MessageSquare, HelpCircle, Package } from "lucide-react";
 import { MessageCircle, Calendar } from "lucide-react";
 
 interface Props{current:string;setTab:(t:string)=>void;}
@@ -6,6 +6,7 @@ interface Props{current:string;setTab:(t:string)=>void;}
 export default function TabBar({current,setTab}:Props){
   const tabs=[
     {id:"regular",label:"חלוקה רגילה", icon: CheckSquare},
+    {id:"sorting",label:"מיון וחלוקה", icon: Package},
     {id:"buildings",label:"בניינים", icon: Building2},
     {id:"holidays",label:"חגים", icon: Calendar},
     {id:"tasks",label:"משימות", icon: CheckSquare},

@@ -41,9 +41,10 @@ import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
 import AreaScheduleIndicator from "./components/AreaScheduleIndicator";
 import DailyTaskGenerator from "./components/DailyTaskGenerator";
+import AreaSortingManager from "./components/AreaSortingManager";
 
 export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns">("regular");
+  const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
@@ -489,6 +490,7 @@ export default function App() {
             <AIPredictions />
           </div>
         )}
+        {tab === "sorting" && <AreaSortingManager />}
         {tab === "gamification" && <Gamification />}
         {tab === "journal" && <PersonalJournal />}
         {tab === "complaints" && <ResidentComplaints />}
