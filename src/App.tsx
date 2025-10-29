@@ -45,6 +45,7 @@ import AreaSortingManager from "./components/AreaSortingManager";
 import SmartAreaReorganizer from "./components/SmartAreaReorganizer";
 import IntelligentAreaOptimizer from "./components/IntelligentAreaOptimizer";
 import ManualAreaOrganizer from "./components/ManualAreaOrganizer";
+import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
@@ -495,7 +496,7 @@ export default function App() {
         )}
         {tab === "sorting" && (
           <div className="space-y-6">
-            <ManualAreaOrganizer />
+            <GeographicAreaAnalysis />
           </div>
         )}
         {tab === "gamification" && <Gamification />}
