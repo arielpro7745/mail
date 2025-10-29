@@ -42,6 +42,7 @@ import UnknownResidents from "./components/UnknownResidents";
 import AreaScheduleIndicator from "./components/AreaScheduleIndicator";
 import DailyTaskGenerator from "./components/DailyTaskGenerator";
 import AreaSortingManager from "./components/AreaSortingManager";
+import SmartAreaReorganizer from "./components/SmartAreaReorganizer";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
@@ -490,7 +491,12 @@ export default function App() {
             <AIPredictions />
           </div>
         )}
-        {tab === "sorting" && <AreaSortingManager />}
+        {tab === "sorting" && (
+          <div className="space-y-6">
+            <SmartAreaReorganizer />
+            <AreaSortingManager />
+          </div>
+        )}
         {tab === "gamification" && <Gamification />}
         {tab === "journal" && <PersonalJournal />}
         {tab === "complaints" && <ResidentComplaints />}
