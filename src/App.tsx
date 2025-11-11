@@ -46,8 +46,7 @@ import SmartAreaReorganizer from "./components/SmartAreaReorganizer";
 import IntelligentAreaOptimizer from "./components/IntelligentAreaOptimizer";
 import ManualAreaOrganizer from "./components/ManualAreaOrganizer";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
-import DailyWorkTimer from "./components/DailyWorkTimer";
-import DailyMailBagsTracker from "./components/DailyMailBagsTracker";
+import DailyWorkTracker from "./components/DailyWorkTracker";
 import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
 
 export default function App() {
@@ -182,14 +181,9 @@ export default function App() {
             {/* אינדיקטור מחזור אזורים */}
             <AreaScheduleIndicator />
 
-            {/* טיימר יומי לחלוקה */}
+            {/* מעקב עבודה יומי - טיימר או תיקים */}
             <div className="mb-6">
-              <DailyWorkTimer />
-            </div>
-
-            {/* מעקב תיקי חלוקה */}
-            <div className="mb-6">
-              <DailyMailBagsTracker />
+              <DailyWorkTracker />
             </div>
 
             {/* חלוקת עלונים יומית */}
