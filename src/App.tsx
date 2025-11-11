@@ -46,6 +46,7 @@ import SmartAreaReorganizer from "./components/SmartAreaReorganizer";
 import IntelligentAreaOptimizer from "./components/IntelligentAreaOptimizer";
 import ManualAreaOrganizer from "./components/ManualAreaOrganizer";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
+import DailyWorkTimer from "./components/DailyWorkTimer";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
@@ -178,6 +179,11 @@ export default function App() {
 
             {/* אינדיקטור מחזור אזורים */}
             <AreaScheduleIndicator />
+
+            {/* טיימר יומי לחלוקה */}
+            <div className="mb-6">
+              <DailyWorkTimer />
+            </div>
 
             <AreaToggle area={todayArea} onEnd={endDay} />
 
