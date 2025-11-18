@@ -48,6 +48,7 @@ import ManualAreaOrganizer from "./components/ManualAreaOrganizer";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 import DailyWorkTracker from "./components/DailyWorkTracker";
 import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
+import DailySuccessTasks from "./components/DailySuccessTasks";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
@@ -180,6 +181,11 @@ export default function App() {
 
             {/* אינדיקטור מחזור אזורים */}
             <AreaScheduleIndicator />
+
+            {/* משימות יומיות להצלחה */}
+            <div className="mb-6">
+              <DailySuccessTasks />
+            </div>
 
             {/* מעקב עבודה יומי - טיימר או תיקים */}
             <div className="mb-6">
