@@ -23,52 +23,44 @@ const DEFAULT_TASKS: Omit<Task, "completed" | "completedAt">[] = [
     importance: "critical"
   },
   {
-    id: "sort-mail",
-    title: "מיון דואר לפי אזורים",
-    description: "סדר את הדואר לפי אזורי חלוקה לפני יציאה",
+    id: "prepare-bags",
+    title: "הכנת שקים לאזור מחר",
+    description: "סדר את כל השקים לאזור שיצא לחלוקה מחר",
     icon: "briefcase",
     category: "morning",
     importance: "critical"
   },
   {
-    id: "check-flyers",
-    title: "בדיקת עלונים והכנתם",
-    description: "וודא שיש מספיק עלונים ושהם מוכנים לחלוקה",
-    icon: "file",
-    category: "morning",
-    importance: "high"
-  },
-  {
-    id: "route-check",
-    title: "סקירת מסלול היום",
-    description: "עבור על הרחובות והמסלול המתוכנן להיום",
+    id: "check-delivery-area",
+    title: "בדיקת שקי החלוקה להיום",
+    description: "וודא שכל השקים לאזור היום מוכנים ומסודרים",
     icon: "target",
     category: "morning",
-    importance: "high"
+    importance: "critical"
   },
 
-  // עבודה - קריטי
+  // עבודה - הכנה וחלוקה
   {
-    id: "start-work",
-    title: "התחלת חלוקה לפי תוכנית",
-    description: "עבוד לפי המסלול המתוכנן ללא דילוגים",
+    id: "complete-preparation",
+    title: "השלמת הכנת כל השקים",
+    description: "סיים להכין את כל השקים לאזור מחר",
+    icon: "briefcase",
+    category: "work",
+    importance: "critical"
+  },
+  {
+    id: "start-delivery",
+    title: "התחלת חלוקת אזור היום",
+    description: "צא לחלוקה עם השקים שהוכנו אתמול",
     icon: "zap",
     category: "work",
     importance: "critical"
   },
   {
-    id: "time-tracking",
-    title: "עקוב אחרי זמן/תיקים",
-    description: "הפעל טיימר או עקוב אחרי מספר התיקים",
+    id: "track-bags",
+    title: "מעקב אחרי שקי חלוקה",
+    description: "עקוב אחרי מספר השקים שחילקת",
     icon: "clock",
-    category: "work",
-    importance: "critical"
-  },
-  {
-    id: "deliver-flyers",
-    title: "חלוקת עלונים",
-    description: "חלק עלונים בכל בניין לפי הנדרש",
-    icon: "file",
     category: "work",
     importance: "high"
   },
@@ -83,36 +75,44 @@ const DEFAULT_TASKS: Omit<Task, "completed" | "completedAt">[] = [
     importance: "high"
   },
   {
-    id: "mark-streets",
-    title: "סימון רחובות שהושלמו",
-    description: "סמן רחובות מיד אחרי סיום לעקוב אחרי התקדמות",
-    icon: "briefcase",
+    id: "bag-labeling",
+    title: "תיוג שקים נכון",
+    description: "כל שק חייב להיות מסומן עם אזור ורחוב",
+    icon: "target",
     category: "quality",
-    importance: "normal"
+    importance: "high"
   },
   {
     id: "note-problems",
     title: "תיעוד בעיות/שינויים",
     description: "רשום תושבים חדשים, בעיות, או שינויים",
-    icon: "target",
+    icon: "file",
     category: "quality",
     importance: "normal"
   },
 
   // סיום יום - חשוב
   {
-    id: "complete-area",
-    title: "סיום אזור מלא",
-    description: "סיים את כל האזור המתוכנן להיום",
+    id: "complete-delivery",
+    title: "סיום חלוקת אזור היום",
+    description: "חלק את כל השקים של האזור להיום",
     icon: "trophy",
+    category: "end",
+    importance: "critical"
+  },
+  {
+    id: "verify-preparation",
+    title: "וידוא הכנה לאזור מחר",
+    description: "בדוק שכל השקים מוכנים ומסודרים למחר",
+    icon: "briefcase",
     category: "end",
     importance: "critical"
   },
   {
     id: "update-system",
     title: "עדכון מערכת בסוף יום",
-    description: "עדכן את כל הרחובות והמשימות במערכת",
-    icon: "briefcase",
+    description: "עדכן הכנה וחלוקה במערכת",
+    icon: "star",
     category: "end",
     importance: "high"
   },
@@ -193,7 +193,7 @@ export default function DailySuccessTasks() {
   const getCategoryName = (category: string) => {
     const names: Record<string, string> = {
       morning: "🌅 הכנת בוקר",
-      work: "💪 ביצוע עבודה",
+      work: "📦🚚 הכנה וחלוקה",
       quality: "⭐ איכות ומעקב",
       end: "🏁 סיום יום"
     };
@@ -350,7 +350,8 @@ export default function DailySuccessTasks() {
         <ul className="text-xs text-blue-700 space-y-1">
           <li>• <strong>משימות קריטיות</strong> (אדום) - חובה לבצע בכל יום!</li>
           <li>• <strong>הגעה מוקדמת</strong> - נותנת לך יתרון וזמן להתארגן</li>
-          <li>• <strong>מיון נכון</strong> - חוסך זמן רב במהלך החלוקה</li>
+          <li>• <strong>הכנת שקים</strong> - סדר היום לאזור מחר חוסך זמן</li>
+          <li>• <strong>תיוג נכון</strong> - כל שק מסומן = אפס טעויות</li>
           <li>• <strong>עדכון שוטף</strong> - מונע טעויות ושכחות</li>
           <li>• סמן משימות מיד כשמסיים אותן</li>
         </ul>

@@ -49,6 +49,7 @@ import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 import DailyWorkTracker from "./components/DailyWorkTracker";
 import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
 import DailySuccessTasks from "./components/DailySuccessTasks";
+import DualAreaWorkflow from "./components/DualAreaWorkflow";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
@@ -182,19 +183,14 @@ export default function App() {
             {/* אינדיקטור מחזור אזורים */}
             <AreaScheduleIndicator />
 
+            {/* תהליך עבודה יומי - הכנה וחלוקה */}
+            <div className="mb-6">
+              <DualAreaWorkflow />
+            </div>
+
             {/* משימות יומיות להצלחה */}
             <div className="mb-6">
               <DailySuccessTasks />
-            </div>
-
-            {/* מעקב עבודה יומי - טיימר או תיקים */}
-            <div className="mb-6">
-              <DailyWorkTracker />
-            </div>
-
-            {/* חלוקת עלונים יומית */}
-            <div className="mb-6">
-              <DailyFlyersDistribution />
             </div>
 
             <AreaToggle area={todayArea} onEnd={endDay} />
