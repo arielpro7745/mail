@@ -197,11 +197,6 @@ export default function App() {
             {/* אינדיקטור מחזור אזורים */}
             <AreaScheduleIndicator />
 
-            {/* סיכום לא ידועים לפי רחובות באזור הנוכחי */}
-            <UnknownResidentsSummary currentArea={todayArea} />
-
-            {/* ארגון אזור למחר עם מחזוריות */}
-            <NextDayAreaPrep />
 
             {/* תהליך עבודה יומי - הכנה וחלוקה */}
             <div className="mb-6">
