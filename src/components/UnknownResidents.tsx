@@ -8,6 +8,7 @@ interface UnknownResident {
   name: string;
   building: string;
   apartment: string;
+  street: string;
   area: Area;
   notes: string;
   dateAdded: string;
@@ -29,9 +30,11 @@ export default function UnknownResidents() {
     name: '',
     building: '',
     apartment: '',
+    street: '',
     area: 12 as Area,
     notes: ''
   });
+  const [groupByStreet, setGroupByStreet] = useState(true);
 
   useEffect(() => {
     loadUnknowns();
@@ -65,6 +68,7 @@ export default function UnknownResidents() {
       name: formData.name,
       building: formData.building,
       apartment: formData.apartment,
+      street: formData.street,
       area: formData.area,
       notes: formData.notes,
       dateAdded: new Date().toISOString(),
@@ -81,6 +85,7 @@ export default function UnknownResidents() {
       name: '',
       building: '',
       apartment: '',
+      street: '',
       area: 12,
       notes: ''
     });
@@ -116,9 +121,22 @@ export default function UnknownResidents() {
     const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          u.building.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          u.apartment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (u.street || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          u.notes.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesArea && matchesResolved && matchesSearch;
   });
+
+  // קיבוץ לפי רחובות
+  const groupedByStreet = filteredUnknowns.reduce((acc, u) => {
+    const street = u.street || 'ללא רחוב';
+    if (!acc[street]) {
+      acc[street] = [];
+    }
+    acc[street].push(u);
+    return acc;
+  }, {} as Record<string, UnknownResident[]>);
+
+  const streetNames = Object.keys(groupedByStreet).sort();
 
   const getAreaStats = (area: Area) => {
     const areaUnknowns = unknowns.filter(u => u.area === area);
@@ -211,13 +229,25 @@ export default function UnknownResidents() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">רחוב</label>
+                  <input
+                    type="text"
+                    value={formData.street}
+                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="שם הרחוב"
+                    required
+                  />
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">בניין</label>
                   <input
                     type="text"
                     value={formData.building}
                     onChange={(e) => setFormData({ ...formData, building: e.target.value })}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="כתובת הבניין"
+                    placeholder="מספר בניין"
                     required
                   />
                 </div>
@@ -315,6 +345,17 @@ export default function UnknownResidents() {
             >
               {showResolved ? 'הסתר פתורים' : 'הצג פתורים'}
             </button>
+
+            <button
+              onClick={() => setGroupByStreet(!groupByStreet)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                groupByStreet
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {groupByStreet ? 'קיבוץ לפי רחובות' : 'רשימה רגילה'}
+            </button>
           </div>
         </div>
 
@@ -329,7 +370,84 @@ export default function UnknownResidents() {
                   : `כל הדיירים באזור ${selectedArea} זוהו בהצלחה!`}
               </p>
             </div>
+          ) : groupByStreet ? (
+            // תצוגה מקובצת לפי רחובות
+            streetNames.map((streetName) => (
+              <div key={streetName} className="bg-white rounded-xl shadow-md border-2 border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-3 text-white">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-lg flex items-center gap-2">
+                      <span>🛣️</span>
+                      {streetName}
+                    </h3>
+                    <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-bold">
+                      {groupedByStreet[streetName].length} דיירים
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 space-y-3">
+                  {groupedByStreet[streetName].map((unknown) => (
+                    <div
+                      key={unknown.id}
+                      className={`rounded-lg p-4 border-2 transition-all duration-300 hover:shadow-md ${
+                        unknown.resolved
+                          ? 'bg-green-50 border-green-300'
+                          : 'bg-yellow-50 border-yellow-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-2xl">{unknown.resolved ? '✅' : '❓'}</span>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-800">
+                                {unknown.name}
+                                {unknown.resolved && unknown.actualName && (
+                                  <span className="text-green-600 text-base mr-2">
+                                    → {unknown.actualName}
+                                  </span>
+                                )}
+                              </h4>
+                              <div className="text-sm text-gray-700 space-y-0.5">
+                                <div>🏠 בניין {unknown.building}, דירה {unknown.apartment}</div>
+                                <div>🗺️ אזור {unknown.area}</div>
+                              </div>
+                            </div>
+                          </div>
+                          {unknown.notes && (
+                            <div className="bg-white bg-opacity-50 rounded-lg p-2 mt-2">
+                              <p className="text-xs text-gray-600">
+                                <strong>הערות:</strong> {unknown.notes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {!unknown.resolved && (
+                            <button
+                              onClick={() => handleResolve(unknown.id)}
+                              className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                              title="סמן כזוהה"
+                            >
+                              <Check size={18} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(unknown.id)}
+                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            title="מחק"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
           ) : (
+            // תצוגה רגילה
             filteredUnknowns.map((unknown) => (
               <div
                 key={unknown.id}
@@ -353,7 +471,8 @@ export default function UnknownResidents() {
                           )}
                         </h3>
                         <div className="text-sm text-gray-700 space-y-0.5">
-                          <div>📍 {unknown.building}, דירה {unknown.apartment}</div>
+                          {unknown.street && <div>🛣️ {unknown.street}</div>}
+                          <div>📍 בניין {unknown.building}, דירה {unknown.apartment}</div>
                           <div>🗺️ אזור {unknown.area}</div>
                           <div>📅 נוסף ב-{new Date(unknown.dateAdded).toLocaleDateString('he-IL')}</div>
                           {unknown.resolved && unknown.resolvedDate && (
