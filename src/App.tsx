@@ -50,8 +50,7 @@ import DailyWorkTracker from "./components/DailyWorkTracker";
 import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
 import DailySuccessTasks from "./components/DailySuccessTasks";
 import DualAreaWorkflow from "./components/DualAreaWorkflow";
-import UnknownResidentsSummary from "./components/UnknownResidentsSummary";
-import NextDayAreaPrep from "./components/NextDayAreaPrep";
+
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
