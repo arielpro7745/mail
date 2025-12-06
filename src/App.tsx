@@ -50,8 +50,9 @@ import DailyWorkTracker from "./components/DailyWorkTracker";
 import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
 import DailySuccessTasks from "./components/DailySuccessTasks";
 import DualAreaWorkflow from "./components/DualAreaWorkflow";
-import UnknownResidentsSummary from "./components/UnknownResidentsSummary";
-import NextDayAreaPrep from "./components/NextDayAreaPrep";
+// TODO: Create these files if they don't exist
+// import UnknownResidentsSummary from "./components/UnknownResidentsSummary";
+// import NextDayAreaPrep from "./components/NextDayAreaPrep";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
@@ -197,12 +198,6 @@ export default function App() {
 
             {/* אינדיקטור מחזור אזורים */}
             <AreaScheduleIndicator />
-
-            {/* סיכום לא ידועים לפי רחובות באזור הנוכחי */}
-            <UnknownResidentsSummary currentArea={todayArea} />
-
-            {/* ארגון אזור למחר עם מחזוריות */}
-            <NextDayAreaPrep />
 
             {/* תהליך עבודה יומי - הכנה וחלוקה */}
             <div className="mb-6">
