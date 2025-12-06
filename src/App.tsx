@@ -50,6 +50,8 @@ import DailyWorkTracker from "./components/DailyWorkTracker";
 import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
 import DailySuccessTasks from "./components/DailySuccessTasks";
 import DualAreaWorkflow from "./components/DualAreaWorkflow";
+import UnknownResidentsSummary from "./components/UnknownResidentsSummary";
+import NextDayAreaPrep from "./components/NextDayAreaPrep";
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
@@ -85,6 +87,19 @@ export default function App() {
 
   // Initialize notifications
   useNotifications();
+
+  // Listen for navigation events from child components
+  useEffect(() => {
+    const handleNavigate = (e: CustomEvent) => {
+      if (e.detail === 'unknowns') {
+        setTab('unknowns');
+      }
+    };
+    window.addEventListener('navigate-to-tab', handleNavigate as EventListener);
+    return () => {
+      window.removeEventListener('navigate-to-tab', handleNavigate as EventListener);
+    };
+  }, []);
 
   // Check for Firebase permission errors
   useEffect(() => {
@@ -183,14 +198,15 @@ export default function App() {
             {/* אינדיקטור מחזור אזורים */}
             <AreaScheduleIndicator />
 
+            {/* סיכום לא ידועים לפי רחובות באזור הנוכחי */}
+            <UnknownResidentsSummary currentArea={todayArea} />
+
+            {/* ארגון אזור למחר עם מחזוריות */}
+            <NextDayAreaPrep />
+
             {/* תהליך עבודה יומי - הכנה וחלוקה */}
             <div className="mb-6">
               <DualAreaWorkflow />
-            </div>
-
-            {/* משימות יומיות להצלחה */}
-            <div className="mb-6">
-              <DailySuccessTasks />
             </div>
 
             <AreaToggle area={todayArea} onEnd={endDay} />
