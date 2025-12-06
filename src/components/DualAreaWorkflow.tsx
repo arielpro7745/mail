@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Package, Truck, CheckCircle2, Clock, TrendingUp, Target } from "lucide-react";
+import { getTodayAreaSchedule, getDailyTracking, saveDailyTracking } from "../utils/areaRotation";
 
 type AreaTask = {
   area: string;
@@ -12,8 +13,8 @@ type AreaTask = {
 };
 
 export default function DualAreaWorkflow() {
-  const [preparationArea, setPreparationArea] = useState("");
-  const [deliveryArea, setDeliveryArea] = useState("");
+  const [preparationArea, setPreparationArea] = useState<number>(14);
+  const [deliveryArea, setDeliveryArea] = useState<number>(12);
 
   const [preparationBags, setPreparationBags] = useState(0);
   const [preparationCompleted, setPreparationCompleted] = useState(false);
@@ -24,48 +25,37 @@ export default function DualAreaWorkflow() {
   const [deliveryStartTime, setDeliveryStartTime] = useState<string>("");
   const [deliveryEndTime, setDeliveryEndTime] = useState<string>("");
 
+  const [loading, setLoading] = useState(true);
+
   const today = new Date().toDateString();
 
-  // טען נתונים מ-localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("dualAreaWorkflow");
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
+    const schedule = getTodayAreaSchedule();
+    setDeliveryArea(schedule.delivery);
+    setPreparationArea(schedule.preparation);
 
-        if (data.date === today) {
-          setPreparationArea(data.preparationArea || "");
-          setDeliveryArea(data.deliveryArea || "");
-          setPreparationBags(data.preparationBags || 0);
-          setPreparationCompleted(data.preparationCompleted || false);
-          setDeliveryBags(data.deliveryBags || 0);
-          setDeliveryStarted(data.deliveryStarted || false);
-          setDeliveryCompleted(data.deliveryCompleted || false);
-          setDeliveryStartTime(data.deliveryStartTime || "");
-          setDeliveryEndTime(data.deliveryEndTime || "");
-        }
-      } catch (e) {
-        console.error("Error loading workflow:", e);
+    const loadTracking = async () => {
+      const { data, error } = await getDailyTracking();
+      if (data && !error) {
+        setDeliveryBags(data.delivery_bags_count || 0);
+        setDeliveryStarted(!!data.delivery_started_at);
+        setDeliveryCompleted(data.delivery_completed || false);
+        setDeliveryStartTime(data.delivery_started_at || "");
+        setDeliveryEndTime(data.delivery_ended_at || "");
+        setPreparationBags(data.preparation_bags_count || 0);
+        setPreparationCompleted(data.preparation_completed || false);
       }
-    }
+      setLoading(false);
+    };
+
+    loadTracking();
   }, [today]);
 
-  // שמור נתונים ב-localStorage
   useEffect(() => {
-    const data = {
-      date: today,
-      preparationArea,
-      deliveryArea,
-      preparationBags,
-      preparationCompleted,
-      deliveryBags,
-      deliveryStarted,
-      deliveryCompleted,
-      deliveryStartTime,
-      deliveryEndTime,
-    };
-    localStorage.setItem("dualAreaWorkflow", JSON.stringify(data));
-  }, [today, preparationArea, deliveryArea, preparationBags, preparationCompleted, deliveryBags, deliveryStarted, deliveryCompleted, deliveryStartTime, deliveryEndTime]);
+    if (!loading) {
+      saveDailyTracking(deliveryBags, deliveryStartTime, deliveryEndTime, preparationBags);
+    }
+  }, [deliveryBags, deliveryStartTime, deliveryEndTime, preparationBags, loading]);
 
   const incrementPreparationBags = () => {
     setPreparationBags(prev => prev + 1);
@@ -103,6 +93,17 @@ export default function DualAreaWorkflow() {
 
   const bothCompleted = preparationCompleted && deliveryCompleted;
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl shadow-lg p-6 text-white text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-3"></div>
+          <p className="text-lg">טוען את תכנית העבודה...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* כותרת ראשית */}
@@ -113,6 +114,7 @@ export default function DualAreaWorkflow() {
         </div>
         <h2 className="text-3xl font-bold mb-1">תהליך עבודה יומי</h2>
         <p className="text-blue-100">הכנת שקים לאזור מחר + חלוקת אזור היום</p>
+        <p className="text-xs text-blue-200 mt-2">✓ נבחרים אוטומטית לפי רוטציית עבודה</p>
       </div>
 
       {bothCompleted && (
@@ -138,15 +140,13 @@ export default function DualAreaWorkflow() {
 
           {/* בחירת אזור להכנה */}
           <div className="mb-4">
-            <label className="block text-sm font-bold text-gray-700 mb-2">איזה אזור מכינים היום?</label>
-            <input
-              type="text"
-              value={preparationArea}
-              onChange={(e) => setPreparationArea(e.target.value)}
-              placeholder="לדוגמה: 12, 45, 3"
-              disabled={preparationCompleted}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-bold text-xl text-center disabled:bg-gray-100"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-bold text-gray-700">אזור להכנה</label>
+              <span className="text-xs text-orange-600 font-bold">✓ אוטומטי</span>
+            </div>
+            <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-bold text-xl text-center bg-orange-50">
+              אזור {preparationArea}
+            </div>
           </div>
 
           {/* ספירת שקים */}
@@ -221,15 +221,13 @@ export default function DualAreaWorkflow() {
 
           {/* בחירת אזור לחלוקה */}
           <div className="mb-4">
-            <label className="block text-sm font-bold text-gray-700 mb-2">איזה אזור מחלקים היום?</label>
-            <input
-              type="text"
-              value={deliveryArea}
-              onChange={(e) => setDeliveryArea(e.target.value)}
-              placeholder="לדוגמה: 14, 12, 8"
-              disabled={deliveryStarted}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-bold text-xl text-center disabled:bg-gray-100"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-bold text-gray-700">אזור לחלוקה</label>
+              <span className="text-xs text-blue-600 font-bold">✓ אוטומטי</span>
+            </div>
+            <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-bold text-xl text-center bg-blue-50">
+              אזור {deliveryArea}
+            </div>
           </div>
 
           {/* התחלת חלוקה */}
