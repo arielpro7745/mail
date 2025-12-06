@@ -1,0 +1,138 @@
+import { useState, useEffect } from 'react';
+import { HelpCircle, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { Area } from '../types';
+import { getAreaColor } from '../utils/areaColors';
+
+interface UnknownResident {
+  id: string;
+  name: string;
+  building: string;
+  apartment: string;
+  street: string;
+  area: Area;
+  notes: string;
+  dateAdded: string;
+  resolved: boolean;
+}
+
+const UNKNOWN_STORAGE_KEY = 'unknown_residents';
+
+interface Props {
+  currentArea: Area;
+}
+
+export default function UnknownResidentsSummary({ currentArea }: Props) {
+  const [unknowns, setUnknowns] = useState<UnknownResident[]>([]);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    loadUnknowns();
+  }, []);
+
+  const loadUnknowns = () => {
+    try {
+      const saved = localStorage.getItem(UNKNOWN_STORAGE_KEY);
+      if (saved) {
+        setUnknowns(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('Error loading unknowns:', error);
+    }
+  };
+
+  // סינון לאזור הנוכחי בלבד ורק לא פתורים
+  const areaUnknowns = unknowns.filter(u => u.area === currentArea && !u.resolved);
+
+  // קיבוץ לפי רחובות
+  const groupedByStreet = areaUnknowns.reduce((acc, u) => {
+    const street = u.street || 'ללא רחוב';
+    if (!acc[street]) {
+      acc[street] = [];
+    }
+    acc[street].push(u);
+    return acc;
+  }, {} as Record<string, UnknownResident[]>);
+
+  const streetNames = Object.keys(groupedByStreet).sort();
+  const areaColor = getAreaColor(currentArea);
+
+  if (areaUnknowns.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl shadow-md border-2 border-purple-200 mb-6">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full px-4 py-3 flex items-center justify-between"
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-br from-purple-500 to-blue-600 p-2 rounded-lg">
+            <HelpCircle className="text-white" size={20} />
+          </div>
+          <div className="text-right">
+            <h3 className="font-bold text-gray-800">לא ידועים באזור {currentArea}</h3>
+            <p className="text-sm text-gray-600">
+              {areaUnknowns.length} דיירים ב-{streetNames.length} רחובות
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
+            {areaUnknowns.length}
+          </span>
+          {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3">
+          {streetNames.map((streetName) => (
+            <div key={streetName} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className={`${areaColor.bgSolid} px-3 py-2 text-white flex items-center justify-between`}>
+                <div className="flex items-center gap-2">
+                  <MapPin size={16} />
+                  <span className="font-bold">{streetName}</span>
+                </div>
+                <span className="bg-white bg-opacity-20 px-2 py-0.5 rounded-full text-xs font-bold">
+                  {groupedByStreet[streetName].length}
+                </span>
+              </div>
+              <div className="p-2 space-y-1">
+                {groupedByStreet[streetName].map((unknown) => (
+                  <div
+                    key={unknown.id}
+                    className="flex items-center justify-between bg-yellow-50 rounded px-3 py-2 text-sm"
+                  >
+                    <div>
+                      <span className="font-medium text-gray-800">{unknown.name}</span>
+                      <span className="text-gray-500 mr-2">
+                        - בניין {unknown.building}, דירה {unknown.apartment}
+                      </span>
+                    </div>
+                    <span className="text-yellow-600">❓</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div className="text-center pt-2">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                // Navigate to unknowns tab - this will be handled by parent
+                const event = new CustomEvent('navigate-to-tab', { detail: 'unknowns' });
+                window.dispatchEvent(event);
+              }}
+              className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+            >
+              צפה בכל הלא ידועים ועדכן →
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
