@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   BarChart3, Building2, CheckSquare, FileText, Phone, Settings, Brain,
   Trophy, BookOpen, MessageSquare, HelpCircle, Package, MessageCircle,
-  Calendar, ChevronDown, ChevronUp, Users
+  Calendar, ChevronDown, ChevronUp
 } from "lucide-react";
 
 interface Props {
@@ -17,7 +17,6 @@ export default function TabBar({ current, setTab }: Props) {
     { id: "regular", label: "חלוקה", icon: CheckSquare, color: "indigo" },
     { id: "sorting", label: "מיון", icon: Package, color: "violet" },
     { id: "buildings", label: "בניינים", icon: Building2, color: "blue" },
-    { id: "residents", label: "דיירים", icon: Users, color: "teal" },
     { id: "unknowns", label: "לא יודעים", icon: HelpCircle, color: "purple" },
     { id: "tasks", label: "משימות", icon: CheckSquare, color: "emerald" },
     { id: "reports", label: "דוחות", icon: BarChart3, color: "cyan" },
@@ -52,7 +51,6 @@ export default function TabBar({ current, setTab }: Props) {
         red: "bg-red-500 text-white shadow-red-500/30",
         gray: "bg-gray-500 text-white shadow-gray-500/30",
         zinc: "bg-zinc-500 text-white shadow-zinc-500/30",
-        teal: "bg-teal-500 text-white shadow-teal-500/30",
       };
       return colors[color] || colors.indigo;
     }
