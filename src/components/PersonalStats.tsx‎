@@ -1,0 +1,321 @@
+import { useState, useEffect } from 'react';
+import {
+  TrendingUp, Award, Calendar, Clock, Target, Zap,
+  BarChart3, Trophy, Star, Flame, ChevronDown, ChevronUp
+} from 'lucide-react';
+import { useDistribution } from '../hooks/useDistribution';
+
+interface DailyStats {
+  date: string;
+  streetsCompleted: number;
+  bagsDelivered: number;
+  timeSpent: number; // minutes
+  area: number;
+}
+
+interface PersonalRecord {
+  type: string;
+  value: number;
+  date: string;
+  description: string;
+}
+
+const STATS_STORAGE_KEY = 'personal_delivery_stats';
+
+export default function PersonalStats() {
+  const [expanded, setExpanded] = useState(true);
+  const [stats, setStats] = useState<DailyStats[]>([]);
+  const [streak, setStreak] = useState(0);
+
+  const { allCompletedToday, todayArea } = useDistribution();
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  useEffect(() => {
+    // עדכן סטטיסטיקות של היום
+    updateTodayStats();
+  }, [allCompletedToday]);
+
+  const loadStats = () => {
+    try {
+      const saved = localStorage.getItem(STATS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as DailyStats[];
+        setStats(parsed);
+        calculateStreak(parsed);
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  const updateTodayStats = () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    setStats(prev => {
+      const existingIndex = prev.findIndex(s => s.date === today);
+      const todayStats: DailyStats = {
+        date: today,
+        streetsCompleted: allCompletedToday.length,
+        bagsDelivered: allCompletedToday.length * 2, // הערכה
+        timeSpent: allCompletedToday.length * 8, // 8 דקות לרחוב
+        area: todayArea
+      };
+
+      let newStats: DailyStats[];
+      if (existingIndex >= 0) {
+        newStats = [...prev];
+        newStats[existingIndex] = todayStats;
+      } else {
+        newStats = [...prev, todayStats];
+      }
+
+      // שמור רק 30 יום אחרונים
+      newStats = newStats.slice(-30);
+
+      localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(newStats));
+      return newStats;
+    });
+  };
+
+  const calculateStreak = (data: DailyStats[]) => {
+    let currentStreak = 0;
+    const today = new Date();
+
+    for (let i = 0; i < 30; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(checkDate.getDate() - i);
+      const dateStr = checkDate.toISOString().split('T')[0];
+
+      const dayStats = data.find(s => s.date === dateStr);
+      if (dayStats && dayStats.streetsCompleted > 0) {
+        currentStreak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+
+    setStreak(currentStreak);
+  };
+
+  // חישובים סטטיסטיים
+  const thisWeekStats = stats.filter(s => {
+    const date = new Date(s.date);
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return date >= weekAgo;
+  });
+
+  const thisMonthStats = stats.filter(s => {
+    const date = new Date(s.date);
+    const today = new Date();
+    return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+  });
+
+  const weeklyStreets = thisWeekStats.reduce((sum, s) => sum + s.streetsCompleted, 0);
+  const monthlyStreets = thisMonthStats.reduce((sum, s) => sum + s.streetsCompleted, 0);
+  const weeklyTime = thisWeekStats.reduce((sum, s) => sum + s.timeSpent, 0);
+  const monthlyBags = thisMonthStats.reduce((sum, s) => sum + s.bagsDelivered, 0);
+
+  const avgStreetsPerDay = thisWeekStats.length > 0
+    ? Math.round(weeklyStreets / thisWeekStats.length)
+    : 0;
+
+  const avgTimePerStreet = weeklyStreets > 0
+    ? Math.round(weeklyTime / weeklyStreets)
+    : 0;
+
+  // שיאים אישיים
+  const records: PersonalRecord[] = [
+    {
+      type: 'most_streets',
+      value: Math.max(...stats.map(s => s.streetsCompleted), 0),
+      date: stats.find(s => s.streetsCompleted === Math.max(...stats.map(x => x.streetsCompleted)))?.date || '',
+      description: 'הכי הרבה רחובות ביום'
+    },
+    {
+      type: 'longest_streak',
+      value: streak,
+      date: new Date().toISOString().split('T')[0],
+      description: 'רצף ימי עבודה'
+    }
+  ];
+
+  const bestDay = stats.reduce((best, current) =>
+    current.streetsCompleted > (best?.streetsCompleted || 0) ? current : best
+  , stats[0]);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-6">
+      {/* כותרת */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-4 text-white flex items-center justify-between"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <BarChart3 size={22} />
+          </div>
+          <div className="text-right">
+            <h3 className="font-bold text-lg">סטטיסטיקות אישיות</h3>
+            <p className="text-sm opacity-90">מעקב ביצועים והישגים</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {streak > 0 && (
+            <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full">
+              <Flame size={18} className="text-orange-300" />
+              <span className="font-bold">{streak} ימים רצופים</span>
+            </div>
+          )}
+          {expanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="p-5">
+          {/* סטטיסטיקות מהירות */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar size={18} className="text-blue-500" />
+                <span className="text-sm text-gray-600">השבוע</span>
+              </div>
+              <p className="text-3xl font-bold text-blue-700">{weeklyStreets}</p>
+              <p className="text-xs text-gray-500">רחובות</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Target size={18} className="text-green-500" />
+                <span className="text-sm text-gray-600">החודש</span>
+              </div>
+              <p className="text-3xl font-bold text-green-700">{monthlyStreets}</p>
+              <p className="text-xs text-gray-500">רחובות</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp size={18} className="text-purple-500" />
+                <span className="text-sm text-gray-600">ממוצע יומי</span>
+              </div>
+              <p className="text-3xl font-bold text-purple-700">{avgStreetsPerDay}</p>
+              <p className="text-xs text-gray-500">רחובות</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock size={18} className="text-orange-500" />
+                <span className="text-sm text-gray-600">זמן ממוצע</span>
+              </div>
+              <p className="text-3xl font-bold text-orange-700">{avgTimePerStreet}</p>
+              <p className="text-xs text-gray-500">דקות לרחוב</p>
+            </div>
+          </div>
+
+          {/* שיאים אישיים */}
+          <div className="mb-6">
+            <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <Trophy size={18} className="text-yellow-500" />
+              שיאים אישיים
+            </h4>
+            <div className="grid md:grid-cols-2 gap-3">
+              {bestDay && (
+                <div className="flex items-center gap-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">
+                  <div className="w-12 h-12 bg-yellow-400 rounded-xl flex items-center justify-center">
+                    <Award size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-800">{bestDay.streetsCompleted} רחובות</p>
+                    <p className="text-sm text-gray-500">היום הכי טוב שלך</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(bestDay.date).toLocaleDateString('he-IL')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-4 border border-red-200">
+                <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-orange-500 rounded-xl flex items-center justify-center">
+                  <Flame size={24} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-800">{streak} ימים</p>
+                  <p className="text-sm text-gray-500">רצף עבודה נוכחי</p>
+                  <p className="text-xs text-gray-400">המשך כך!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* גרף פשוט של 7 ימים אחרונים */}
+          <div>
+            <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <BarChart3 size={18} className="text-blue-500" />
+              7 ימים אחרונים
+            </h4>
+            <div className="flex items-end gap-2 h-32 bg-gray-50 rounded-xl p-4">
+              {Array.from({ length: 7 }).map((_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (6 - i));
+                const dateStr = date.toISOString().split('T')[0];
+                const dayStats = stats.find(s => s.date === dateStr);
+                const height = dayStats ? Math.min((dayStats.streetsCompleted / 20) * 100, 100) : 0;
+                const isToday = i === 6;
+
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div
+                      className={`w-full rounded-t-lg transition-all ${
+                        isToday ? 'bg-gradient-to-t from-indigo-500 to-purple-500' : 'bg-gradient-to-t from-blue-400 to-blue-300'
+                      }`}
+                      style={{ height: `${Math.max(height, 5)}%` }}
+                    />
+                    <span className="text-xs text-gray-500">
+                      {date.toLocaleDateString('he-IL', { weekday: 'narrow' })}
+                    </span>
+                    <span className="text-xs font-bold text-gray-700">
+                      {dayStats?.streetsCompleted || 0}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* הישגים */}
+          <div className="mt-6">
+            <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <Star size={18} className="text-yellow-500" />
+              הישגים
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {monthlyStreets >= 100 && (
+                <span className="px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full text-sm font-medium flex items-center gap-1">
+                  <Star size={14} /> 100+ רחובות החודש
+                </span>
+              )}
+              {streak >= 5 && (
+                <span className="px-3 py-1.5 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium flex items-center gap-1">
+                  <Flame size={14} /> רצף של {streak} ימים
+                </span>
+              )}
+              {avgStreetsPerDay >= 10 && (
+                <span className="px-3 py-1.5 bg-gradient-to-r from-green-400 to-emerald-400 text-white rounded-full text-sm font-medium flex items-center gap-1">
+                  <Zap size={14} /> ממוצע גבוה
+                </span>
+              )}
+              {stats.length === 0 && (
+                <span className="text-gray-500 text-sm">התחל לחלק כדי לצבור הישגים!</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
