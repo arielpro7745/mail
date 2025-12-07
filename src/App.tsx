@@ -32,7 +32,7 @@ import MailSortingReminder from "./components/MailSortingReminder";
 import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Sun, Cloud, Clock, MapPin, TrendingUp, Navigation2, Bell, CheckCircle2, Calendar, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
 import Gamification from "./components/Gamification";
@@ -50,6 +50,181 @@ import DailyWorkTracker from "./components/DailyWorkTracker";
 import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
 import DailySuccessTasks from "./components/DailySuccessTasks";
 import DualAreaWorkflow from "./components/DualAreaWorkflow";
+import { getTodayAreaSchedule, getTomorrowAreaSchedule } from "./utils/areaRotation";
+import { getAreaColor, getAreaName } from "./utils/areaColors";
+
+// === Inline Smart Components ===
+
+// דשבורד יומי חכם
+function SmartDashboard({ todayArea, completedCount, pendingCount }: { todayArea: number; completedCount: number; pendingCount: number }) {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const areaColor = getAreaColor(todayArea);
+  const tomorrowSchedule = getTomorrowAreaSchedule();
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const hour = currentTime.getHours();
+  const greeting = hour < 12 ? 'בוקר טוב' : hour < 17 ? 'צהריים טובים' : 'ערב טוב';
+  const progress = pendingCount + completedCount > 0 ? Math.round((completedCount / (pendingCount + completedCount)) * 100) : 0;
+
+  return (
+    <div className={`${areaColor.bgLight} rounded-2xl p-5 mb-6 border-2 ${areaColor.border}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">{greeting}! 👋</h2>
+          <p className="text-gray-600">
+            {currentTime.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="flex items-center gap-2 text-gray-600">
+            <Sun className="text-yellow-500" size={20} />
+            <span>24°C - בהיר</span>
+          </div>
+          <p className="text-xs text-gray-500">פתח תקווה</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className={`${areaColor.bgSolid} text-white rounded-xl p-3 text-center`}>
+          <MapPin size={20} className="mx-auto mb-1" />
+          <div className="text-xl font-bold">אזור {todayArea}</div>
+          <div className="text-xs opacity-80">{getAreaName(todayArea)}</div>
+        </div>
+        <div className="bg-green-500 text-white rounded-xl p-3 text-center">
+          <CheckCircle2 size={20} className="mx-auto mb-1" />
+          <div className="text-xl font-bold">{completedCount}</div>
+          <div className="text-xs opacity-80">הושלמו</div>
+        </div>
+        <div className="bg-orange-500 text-white rounded-xl p-3 text-center">
+          <Clock size={20} className="mx-auto mb-1" />
+          <div className="text-xl font-bold">{pendingCount}</div>
+          <div className="text-xs opacity-80">ממתינים</div>
+        </div>
+        <div className="bg-blue-500 text-white rounded-xl p-3 text-center">
+          <Calendar size={20} className="mx-auto mb-1" />
+          <div className="text-xl font-bold">אזור {tomorrowSchedule.area}</div>
+          <div className="text-xs opacity-80">מחר</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-3">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-600">התקדמות יומית</span>
+          <span className="font-bold text-gray-800">{progress}%</span>
+        </div>
+        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className={`h-full ${areaColor.bgSolid} transition-all duration-500`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// התראות חכמות
+function SmartNotificationsInline({ pendingCount, overdueCount }: { pendingCount: number; overdueCount: number }) {
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  const hour = new Date().getHours();
+
+  const notifications = [];
+
+  if (hour >= 6 && hour < 10 && pendingCount > 0) {
+    notifications.push({ id: 'morning', type: 'info', message: `בוקר טוב! יש לך ${pendingCount} רחובות לחלוקה היום`, icon: Sun });
+  }
+  if (overdueCount > 0) {
+    notifications.push({ id: 'overdue', type: 'warning', message: `${overdueCount} רחובות באיחור - מעל 14 ימים`, icon: AlertTriangle });
+  }
+  if (hour >= 12 && hour < 14 && pendingCount > 5) {
+    notifications.push({ id: 'lunch', type: 'info', message: 'זמן טוב להפסקה קצרה לפני המשך החלוקה', icon: Clock });
+  }
+
+  const visibleNotifications = notifications.filter(n => !dismissed.includes(n.id));
+
+  if (visibleNotifications.length === 0) return null;
+
+  return (
+    <div className="space-y-2 mb-4">
+      {visibleNotifications.map(notif => (
+        <div
+          key={notif.id}
+          className={`flex items-center gap-3 p-3 rounded-xl ${
+            notif.type === 'warning' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200'
+          }`}
+        >
+          <notif.icon size={20} className={notif.type === 'warning' ? 'text-orange-500' : 'text-blue-500'} />
+          <span className="flex-1 text-sm">{notif.message}</span>
+          <button
+            onClick={() => setDismissed([...dismissed, notif.id])}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// סדר הליכה אופטימלי
+function OptimalWalkingOrderInline({ todayArea }: { todayArea: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const areaColor = getAreaColor(todayArea);
+
+  const walkOrders: Record<number, string[]> = {
+    12: ["דוד צבי פינקס", "התשעים ושלוש", "הכרם", "הרב קוק", "זכרון משה", "אנה פרנק", "חיים כהן", "מנדלסון", "שבדיה"],
+    14: ["הדף היומי", "רוטשילד 110-132", "רוטשילד 134-150", "גד מכנס", "רוטשילד 179-143", "קק\"ל"],
+    45: ["אחד העם", "הרצל", "ביאליק", "ז'בוטינסקי", "בן יהודה", "אלנבי"]
+  };
+
+  const streets = walkOrders[todayArea] || [];
+
+  return (
+    <div className={`rounded-2xl overflow-hidden mb-6 border-2 ${areaColor.border}`}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className={`w-full ${areaColor.bgSolid} px-5 py-4 text-white flex items-center justify-between`}
+      >
+        <div className="flex items-center gap-3">
+          <Navigation2 size={22} />
+          <div className="text-right">
+            <h3 className="font-bold">סדר הליכה מומלץ - אזור {todayArea}</h3>
+            <p className="text-sm opacity-80">{streets.length} רחובות</p>
+          </div>
+        </div>
+        {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </button>
+
+      {expanded && (
+        <div className="bg-white p-4">
+          <div className="space-y-2">
+            {streets.map((street, idx) => (
+              <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                <span className={`w-7 h-7 ${areaColor.bgSolid} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
+                  {idx + 1}
+                </span>
+                <span className="flex-1 font-medium">{street}</span>
+                <a
+                  href={`https://waze.com/ul?q=${encodeURIComponent(street + ' פתח תקווה')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700"
+                >
+                  <ExternalLink size={16} />
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
@@ -197,6 +372,15 @@ export default function App() {
 
         {tab === "regular" && (
           <>
+            {/* התראות חכמות */}
+            <SmartNotificationsInline pendingCount={streetsNeedingDelivery} overdueCount={overdueStreets} />
+
+            {/* דשבורד יומי חכם */}
+            <SmartDashboard todayArea={todayArea} completedCount={allCompletedToday.length} pendingCount={streetsNeedingDelivery} />
+
+            {/* סדר הליכה אופטימלי */}
+            <OptimalWalkingOrderInline todayArea={todayArea} />
+
             {/* אינדיקטור מצב חג */}
             <HolidayModeIndicator />
 
