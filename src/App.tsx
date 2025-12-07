@@ -50,15 +50,14 @@ import DailyWorkTracker from "./components/DailyWorkTracker";
 import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
 import DailySuccessTasks from "./components/DailySuccessTasks";
 import DualAreaWorkflow from "./components/DualAreaWorkflow";
-// Temporarily disabled - files pending sync
-// import SmartDashboard from "./components/SmartDashboard";
-// import OptimalWalkingOrder from "./components/OptimalWalkingOrder";
-// import PersonalStats from "./components/PersonalStats";
-// import SmartNotifications from "./components/SmartNotifications";
-// import ResidentManager from "./components/ResidentManager";
+import SmartDashboard from "./components/SmartDashboard";
+import OptimalWalkingOrder from "./components/OptimalWalkingOrder";
+import PersonalStats from "./components/PersonalStats";
+import SmartNotifications from "./components/SmartNotifications";
+import ResidentManager from "./components/ResidentManager";
 
 export default function App() {
-  const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
+  const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting" | "residents">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
@@ -203,11 +202,20 @@ export default function App() {
 
         {tab === "regular" && (
           <>
+            {/* התראות חכמות */}
+            <SmartNotifications />
+
+            {/* דשבורד יומי חכם */}
+            <SmartDashboard />
+
             {/* אינדיקטור מצב חג */}
             <HolidayModeIndicator />
 
             {/* אינדיקטור מחזור אזורים */}
             <AreaScheduleIndicator />
+
+            {/* סדר הליכה אופטימלי */}
+            <OptimalWalkingOrder />
 
             {/* תהליך עבודה יומי - הכנה וחלוקה */}
             <div className="mb-6">
@@ -513,9 +521,13 @@ export default function App() {
             
             <Notifications count={overdue} />
             <WalkingOrder area={todayArea} />
+
+            {/* סטטיסטיקות אישיות */}
+            <PersonalStats />
           </>
         )}
 
+        {tab === "residents" && <ResidentManager />}
         {tab === "buildings" && <BuildingManager />}
         {tab === "holidays" && <HolidayManager />}
         {tab === "tasks" && <TaskManager />}
