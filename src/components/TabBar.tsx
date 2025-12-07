@@ -17,7 +17,6 @@ export default function TabBar({ current, setTab }: Props) {
     { id: "regular", label: "חלוקה", icon: CheckSquare, color: "indigo" },
     { id: "sorting", label: "מיון", icon: Package, color: "violet" },
     { id: "buildings", label: "בניינים", icon: Building2, color: "blue" },
-    { id: "residents", label: "דיירים", icon: Users, color: "teal" },
     { id: "unknowns", label: "לא יודעים", icon: HelpCircle, color: "purple" },
     { id: "tasks", label: "משימות", icon: CheckSquare, color: "emerald" },
     { id: "reports", label: "דוחות", icon: BarChart3, color: "cyan" },
