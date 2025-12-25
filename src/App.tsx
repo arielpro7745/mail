@@ -30,7 +30,22 @@ import MailSortingReminder from "./components/MailSortingReminder";
 import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
-import { AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, CalendarClock, Cloud } from "lucide-react";
+// התיקון: הוספנו את כל האייקונים החסרים כדי למנוע קריסה
+import { 
+  AlertTriangle, 
+  Sun, 
+  Coffee, 
+  Calendar, 
+  ArrowRight, 
+  ArrowLeft, 
+  Info, 
+  CalendarClock, 
+  Cloud, 
+  CheckCircle2, 
+  Navigation2, 
+  ChevronUp, 
+  ChevronDown 
+} from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
 import Gamification from "./components/Gamification";
@@ -73,35 +88,39 @@ const SCHEDULE_15_DAYS = [
 
 // === פונקציית עזר לחישוב אוטומטי של היום בסבב ===
 const calculateAutoCycleDay = () => {
-  // תאריך עוגן: 25/12/2025 (יום חמישי) הוגדר כיום 5 בסבב
-  const anchorDate = new Date('2025-12-25T00:00:00');
-  const anchorCycleDay = 5;
-  
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  
-  // אם התאריך הוא לפני העוגן, נחזיר 5 (ברירת מחדל להתחלה)
-  if (today < anchorDate) return 5;
-  
-  // חישוב ימי עבודה (א-ה) שעברו מאז
-  let workDaysPassed = 0;
-  let currentDate = new Date(anchorDate);
-  
-  while (currentDate < today) {
-    currentDate.setDate(currentDate.getDate() + 1);
-    const dayOfWeek = currentDate.getDay();
-    // סופרים רק אם זה לא שישי (5) ולא שבת (6)
-    if (dayOfWeek !== 5 && dayOfWeek !== 6) {
-      workDaysPassed++;
+  try {
+    const anchorDate = new Date('2025-12-25T00:00:00'); // יום חמישי - יום 5 בסבב
+    const anchorCycleDay = 5;
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    // אם התאריך הוא לפני העוגן, נחזיר 5 (ברירת מחדל להתחלה)
+    if (today < anchorDate) return 5;
+    
+    let workDaysPassed = 0;
+    let currentDate = new Date(anchorDate);
+    
+    // מנגנון הגנה: לא לרוץ יותר מדי שנים קדימה כדי למנוע תקיעה
+    let safetyCounter = 0;
+    while (currentDate < today && safetyCounter < 1000) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      const dayOfWeek = currentDate.getDay();
+      // סופרים רק אם זה לא שישי (5) ולא שבת (6)
+      if (dayOfWeek !== 5 && dayOfWeek !== 6) {
+        workDaysPassed++;
+      }
+      safetyCounter++;
     }
+    
+    let currentCycle = (anchorCycleDay + workDaysPassed) % 15;
+    if (currentCycle === 0) currentCycle = 15;
+    
+    return currentCycle;
+  } catch (e) {
+    console.error("Error calculating cycle day", e);
+    return 5; // ברירת מחדל במקרה שגיאה
   }
-  
-  // חישוב היום בסבב (מודולו 15)
-  // מתחילים מ-5, מוסיפים ימים, ועושים רוטציה של 1-15
-  let currentCycle = (anchorCycleDay + workDaysPassed) % 15;
-  if (currentCycle === 0) currentCycle = 15;
-  
-  return currentCycle;
 };
 
 // === דשבורד חכם ===
@@ -120,11 +139,11 @@ function CycleDashboard({
 }) {
   const [currentTime, setCurrentTime] = useState(new Date());
   
+  // מנגנון הגנה: אם הלו"ז לא נמצא, משתמשים ביום הראשון
   const currentSchedule = SCHEDULE_15_DAYS.find(s => s.day === cycleDay) || SCHEDULE_15_DAYS[0];
   const areaColor = getAreaColor(currentSchedule.area);
   const isAreaMismatch = currentArea !== currentSchedule.area;
 
-  // בדיקת סופ"ש
   const isWeekend = currentTime.getDay() === 5 || currentTime.getDay() === 6;
 
   useEffect(() => {
@@ -136,9 +155,7 @@ function CycleDashboard({
   const prevDay = () => setCycleDay(cycleDay === 1 ? 15 : cycleDay - 1);
   const progress = pendingCount + completedCount > 0 ? Math.round((completedCount / (pendingCount + completedCount)) * 100) : 0;
 
-  // === תצוגת סופ"ש מיוחדת ===
   if (isWeekend) {
-    // חישוב מה יהיה ביום ראשון (היום הבא בסבב)
     const nextDayNum = cycleDay === 15 ? 1 : cycleDay + 1;
     const nextSchedule = SCHEDULE_15_DAYS.find(s => s.day === nextDayNum);
     const nextAreaColor = getAreaColor(nextSchedule?.area || 45);
@@ -181,7 +198,6 @@ function CycleDashboard({
           <h2 className="text-3xl font-bold text-gray-800 tracking-tight">{currentSchedule.title}</h2>
         </div>
         
-        {/* בקרת ניווט ימים */}
         <div className="flex items-center bg-white rounded-xl shadow-sm border border-gray-100 p-1 self-start md:self-auto">
           <button onClick={prevDay} className="p-2 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors">
             <ArrowRight size={20} />
@@ -195,7 +211,6 @@ function CycleDashboard({
         </div>
       </div>
 
-      {/* התראת אזור לא תואם */}
       {isAreaMismatch && (
         <div className="bg-red-50 border-l-4 border-red-500 p-3 mb-4 rounded-r-lg flex items-start gap-3 animate-pulse shadow-sm">
            <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
@@ -205,7 +220,7 @@ function CycleDashboard({
                התוכנית להיום היא ב<strong>אזור {currentSchedule.area}</strong>, אך האפליקציה באזור {currentArea}.
                <br/>
                <button 
-                 onClick={() => document.getElementById('area-toggle')?.click()}
+                 onClick={() => document.getElementById('area-toggle-btn')?.click()}
                  className="underline font-bold hover:text-red-900 mt-1"
                >
                  לחץ כאן להחלפת אזור
@@ -215,7 +230,6 @@ function CycleDashboard({
         </div>
       )}
 
-      {/* באנר הוראות יומי */}
       <div className="bg-white/80 border border-yellow-200 rounded-xl p-3 mb-4 flex items-start gap-3 shadow-sm">
         <div className="bg-yellow-100 p-2 rounded-full shrink-0">
            <Info className="text-yellow-700" size={18} />
@@ -260,7 +274,6 @@ function SmartNotificationsInline({ pendingCount, overdueCount }: { pendingCount
   if (hour >= 6 && hour < 10 && pendingCount > 0) {
     notifications.push({ id: 'morning', type: 'info', message: `בוקר טוב! יום מוצלח ושמור על עצמך בדרכים`, icon: Sun });
   }
-  // הוספת מזג אוויר דמו לאווירה
   notifications.push({ id: 'weather', type: 'info', message: `תחזית להיום: נעים לחלוקה. שמים בהירים.`, icon: Cloud });
   
   if (overdueCount > 0) {
@@ -466,8 +479,9 @@ export default function App() {
                               <AlertTriangle className="mx-auto mb-2" size={32} />
                               <h3 className="text-lg font-bold">אזור לא תואם</h3>
                               <p>היום עובדים באזור {currentDaySchedule.area} (יום {cycleDay}).<br/>אבל האפליקציה כרגע באזור {todayArea}.</p>
-                              <div className="mt-4" id="area-toggle">
-                                <AreaToggle area={todayArea} onEnd={endDay} forceArea={currentDaySchedule.area} />
+                              {/* הסרתי את forceArea כדי למנוע את המסך הלבן */}
+                              <div className="mt-4" id="area-toggle-btn">
+                                <AreaToggle area={todayArea} onEnd={endDay} />
                               </div>
                             </div>
                           ) : (
@@ -540,3 +554,4 @@ export default function App() {
     </div>
   );
 }
+```</candidate>
