@@ -34,7 +34,7 @@ import { getAreaColor } from "./utils/areaColors";
 import { 
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
-  Building, MapPin, Eye, Zap
+  Building, MapPin, Eye, Zap, Layers
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -45,76 +45,92 @@ import UnknownResidents from "./components/UnknownResidents";
 import DailyTaskGenerator from "./components/DailyTaskGenerator";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === נתונים ו"מודיעין" ===
+// === נתונים ו"מודיעין" מעודכנים לפי ספירת הבניינים ===
 
-// 1. הגדרת סבב 16 הימים (לא כולל שישי-שבת)
-const SCHEDULE_16_DAYS = [
-  // יום 1 - אזור 45 - היבנר
-  { day: 1, area: 45, title: "היבנר", color: "blue", streets: ["היבנר"], tips: "יום כבד! 20 בניינים + 10 בתים בזוגי, 15 בניינים + 7 בתים באי-זוגי." },
+const SCHEDULE_15_DAYS = [
+  // --- ימים 1-5: ההתחלה הקשה ---
   
-  // יום 2 - אזור 14 - רוטשילד זוגי (סבב 1)
-  { day: 2, area: 14, title: "רוטשילד זוגי", color: "red", streets: ["הדף היומי", "רוטשילד זוגי", "גד מכנס 4"], tips: "הדף היומי → רוטשילד 110-132 → 136-150 → 152-182 → גד מכנס 4 (בית אבות בסוף!)" },
-  
-  // יום 3 - אזור 12 - הרב קוק
-  { day: 3, area: 12, title: "הרב קוק", color: "green", streets: ["הרב קוק"], tips: "30 בניינים - יום כבד!" },
-  
-  // יום 4 - אזור 45 - דגל ראובן
-  { day: 4, area: 45, title: "דגל ראובן", color: "blue", streets: ["דגל ראובן"], tips: "16 בניינים בזוגי, 8 בניינים + 12 בתים באי-זוגי." },
-  
-  // יום 5 - אזור 12 - חיים כהן
-  { day: 5, area: 12, title: "חיים כהן", color: "green", streets: ["חיים כהן"], tips: "29 בניינים - יום כבד!" },
-  
-  // יום 6 - אזור 45 - ויצמן + ליסין
-  { day: 6, area: 45, title: "ויצמן + ליסין", color: "blue", streets: ["ויצמן", "ליסין"], tips: "ויצמן: 14 בניינים אי-זוגי, 14 בתים + 2 בניינים זוגי. ליסין: 2 בניינים." },
-  
-  // יום 7 - אזור 14 - רוטשילד אי-זוגי (סבב 1)
-  { day: 7, area: 14, title: "רוטשילד אי-זוגי", color: "red", streets: ["רוטשילד אי-זוגי", "קק\"ל זוגי", "קק\"ל אי-זוגי"], tips: "רוטשילד 179-143 → קק\"ל זוגי → קק\"ל אי-זוגי → רוטשילד 141-109" },
-  
-  // יום 8 - אזור 12 - דוד צבי פנקס + שבדיה
-  { day: 8, area: 12, title: "פנקס + שבדיה", color: "green", streets: ["דוד צבי פנקס", "שבדיה"], tips: "פנקס: 23 בניינים. שבדיה: 7 בניינים." },
-  
-  // יום 9 - אזור 45 - יטקובסקי
-  { day: 9, area: 45, title: "יטקובסקי", color: "blue", streets: ["אחים יטקובסקי"], tips: "4 בניינים זוגי, 7 בניינים אי-זוגי. שים לב ל-37 ו-36." },
-  
-  // יום 10 - אזור 14 - רוטשילד זוגי (סבב 2)
-  { day: 10, area: 14, title: "רוטשילד זוגי (סבב 2)", color: "red", streets: ["הדף היומי", "רוטשילד זוגי", "גד מכנס 4"], tips: "סבב שני! הדף היומי → רוטשילד 110-132 → 136-150 → 152-182 → גד מכנס 4" },
-  
-  // יום 11 - אזור 12 - זכרון משה + הכרם + חפץ מרדכי + ראב
-  { day: 11, area: 12, title: "זכרון משה + הכרם + חפץ + ראב", color: "green", streets: ["זכרון משה", "הכרם", "חפץ מרדכי", "האחים ראב"], tips: "יום כבד! זכרון משה: 20, הכרם: 8, חפץ מרדכי: 19, ראב: 8 בניינים." },
-  
-  // יום 12 - אזור 45 - ברטונוב + סנדרוב
-  { day: 12, area: 45, title: "ברטונוב + סנדרוב", color: "blue", streets: ["ברטונוב", "סנדרוב"], tips: "ברטונוב: 9 בניינים. סנדרוב: 4 בניינים." },
-  
-  // יום 13 - אזור 14 - רוטשילד אי-זוגי (סבב 2)
-  { day: 13, area: 14, title: "רוטשילד אי-זוגי (סבב 2)", color: "red", streets: ["רוטשילד אי-זוגי", "קק\"ל זוגי", "קק\"ל אי-זוגי"], tips: "סבב שני! רוטשילד 179-143 → קק\"ל זוגי → קק\"ל אי-זוגי → רוטשילד 141-109" },
-  
-  // יום 14 - אזור 12 - התשעים ושלוש
-  { day: 14, area: 12, title: "התשעים ושלוש", color: "green", streets: ["התשעים ושלוש זוגי", "התשעים ושלוש אי-זוגי"], tips: "זוגי: 18 בניינים + בית. אי-זוגי: 11 בניינים." },
-  
-  // יום 15 - אזור 45 - מרטין בובר + שטרן + מירקין + הפרטיזנים
-  { day: 15, area: 45, title: "בובר + שטרן + מירקין + פרטיזנים", color: "blue", streets: ["מרטין בובר", "שטרן", "מירקין מרדכי", "הפרטיזנים"], tips: "יום קל! בובר: 20 בתים, שטרן: 7 בתים, מירקין: 11 בתים + 1 בניין, פרטיזנים: 14 בתים." },
-  
-  // יום 16 - אזור 12 - אנה פרנק + מנדלסון
-  { day: 16, area: 12, title: "אנה פרנק + מנדלסון", color: "green", streets: ["אנה פרנק", "מנדלסון"], tips: "אנה פרנק: 17 בניינים. מנדלסון: 12 בניינים. סיום הסבב!" }
+  // יום 1: היבנר (45) - המפלצת
+  // 35 בניינים סה"כ (20 זוגי + 15 אי-זוגי)
+  { day: 1, area: 45, title: "היבנר סולו", color: "blue", bldgCount: 35, streets: ["היבנר"], tips: "יום עמוס מאוד! 35 בניינים סה\"כ. תעבוד לאט ובטוח." },
+
+  // יום 2: רוטשילד זוגי (14) - טכני
+  { day: 2, area: 14, title: "רוטשילד זוגי (1/3)", color: "red", bldgCount: "בינוני", streets: ["הדף היומי", "רוטשילד", "גד מכנס"], tips: "רק צד זוגי (110-182). זהירות בכניסות המרובות של 140-144." },
+
+  // יום 3: הרב קוק (12) - הכי כבד ב-12
+  // הרב קוק (30) + הכרם (8) = 38 בניינים
+  { day: 3, area: 12, title: "הרב קוק והכרם", color: "green", bldgCount: 38, streets: ["הרב קוק", "הכרם"], tips: "הרב קוק זה 30 בניינים! יום עבודה רציני." },
+
+  // יום 4: דגל ראובן (45)
+  // דגל (24 בניינים) + מירקין (בעיקר פרטיים) = ~25 בניינים
+  { day: 4, area: 45, title: "דגל ראובן ומירקין", color: "blue", bldgCount: 25, streets: ["דגל ראובן", "מירקין מרדכי"], tips: "דגל ראובן: 16 בזוגי, 8 באי-זוגי. מירקין זה בעיקר פרטיים." },
+
+  // יום 5: חיים כהן (12) - הכבד השני
+  // חיים כהן (29) + שבדיה (7) = 36 בניינים
+  { day: 5, area: 12, title: "חיים כהן ושבדיה", color: "green", bldgCount: 36, streets: ["חיים כהן", "שבדיה"], tips: "חיים כהן צפוף מאוד (29 בניינים). שבדיה קליל." },
+
+  // --- ימים 6-10: האמצע המאוזן ---
+
+  // יום 6: ויצמן (45)
+  // ויצמן (16 בניינים) + ליסין (2) + בובר (פרטיים) = 18 בניינים
+  { day: 6, area: 45, title: "ויצמן ובובר", color: "blue", bldgCount: 18, streets: ["ויצמן", "ליסין", "מרטין בובר"], tips: "ויצמן: בניינים כבדים ב-33, 9, 7. בובר: הליכה (20 פרטיים)." },
+
+  // יום 7: רוטשילד אי-זוגי (14) - הקל
+  { day: 7, area: 14, title: "רוטשילד אי-זוגי (2/3)", color: "red", bldgCount: "קל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], tips: "יום קל. צד אי-זוגי בלבד + קק\"ל." },
+
+  // יום 8: ה-93 (12) - הכבד השלישי
+  // ה-93 (29 בניינים) + ראב (8) = 37 בניינים
+  { day: 8, area: 12, title: "התשעים ושלוש וראב", color: "green", bldgCount: 37, streets: ["התשעים ושלוש", "האחים ראב"], tips: "ה-93 עמוס (18 זוגי, 11 אי-זוגי). ראב לקינוח." },
+
+  // יום 9: יטקובסקי (45) - הסולם הדרומי
+  // יטקובסקי (11) + ברטונוב (9) + סנדרוב (4) = 24 בניינים
+  { day: 9, area: 45, title: "יטקובסקי וברטונוב", color: "blue", bldgCount: 24, streets: ["אחים יטקובסקי", "ברטונוב", "סנדרוב"], tips: "יטקובסקי 37 כבד. יום רגוע יחסית." },
+
+  // יום 10: פנקס (12)
+  // פנקס (23) + מנדלסון (12) = 35 בניינים
+  { day: 10, area: 12, title: "פנקס ומנדלסון", color: "green", bldgCount: 35, streets: ["דוד צבי פנקס", "מנדלסון"], tips: "פנקס: 12 זוגי, 11 אי-זוגי. מנדלסון: 12 בניינים." },
+
+  // --- ימים 11-15: הסגירות והמרתון ---
+
+  // יום 11: הבתים הפרטיים (45) - יום מנוחה
+  // פרטיזנים (14 פרטי) + שטרן (7 פרטי)
+  { day: 11, area: 45, title: "יום הווילות (קל)", color: "blue", bldgCount: 0, streets: ["הפרטיזנים", "שטרן"], tips: "יום הליכה קליל! רק בתים פרטיים." },
+
+  // יום 12: רוטשילד המלא (14) - המרתון
+  { day: 12, area: 14, title: "רוטשילד מלא (3/3)", color: "red", bldgCount: "כבד", streets: ["רוטשילד", "קק\"ל", "גד מכנס", "הדף היומי"], tips: "🚨 יום המרתון! גם זוגי וגם אי-זוגי. לנקות את כל המרכז." },
+
+  // יום 13: זכרון משה ואנה פרנק (12)
+  // זכרון משה (20) + אנה פרנק (17) = 37 בניינים
+  { day: 13, area: 12, title: "זכרון משה ואנה פרנק", color: "green", bldgCount: 37, streets: ["זכרון משה", "אנה פרנק"], tips: "שני רחובות צפופים. 37 בניינים סה\"כ." },
+
+  // יום 14: חפץ מרדכי (12)
+  // חפץ מרדכי (19 בניינים)
+  { day: 14, area: 12, title: "חפץ מרדכי (סגירה)", color: "green", bldgCount: 19, streets: ["חפץ מרדכי"], tips: "יום קל יחסית לסגירת איזור 12. 19 בניינים." },
+
+  // יום 15: יום רזרבי / חזרה
+  { day: 15, area: 45, title: "יום סגירות (45)", color: "blue", bldgCount: "?", streets: ["ויצמן", "ליסין"], tips: "סוגרים את הסבב, מוודאים שויצמן נקי לפני שמתחילים שוב." }
 ];
 
 // 2. מודיעין בניינים - התראות ספציפיות
 const BUILDING_ALERTS: Record<string, string> = {
-  "היבנר": "יום הכי כבד! זוגי יורד (20 בניינים), אי-זוגי עולה (15 בניינים).",
-  "דגל ראובן": "16 בניינים בזוגי, 8 בניינים + 12 בתים באי-זוגי.",
-  "ויצמן": "שים לב: בניין 33 עמוס מאוד! גם 9, 7, 32, 34 ו-35 דורשים תשומת לב.",
-  "אחים יטקובסקי": "זהירות: בניין 37 הכי עמוס ברחוב. גם 36 כבד.",
-  "רוטשילד": "בצד הזוגי: 140, 142, 144 - המון כניסות. 182 - בית אבות.",
-  "הרב קוק": "30 בניינים - יום כבד!",
-  "חיים כהן": "29 בניינים - עומס כבד!",
+  "היבנר": "⚠️ זהירות: 35 בניינים! 20 זוגי, 15 אי-זוגי.",
+  "ויצמן": "בניינים: 33 (עמוס), 35, 34, 32, 9, 7. היתר פרטיים.",
+  "אחים יטקובסקי": "11 בניינים. בניין 37 עמוס מאוד.",
+  "דגל ראובן": "16 בניינים בזוגי, 8 באי-זוגי.",
+  "הרב קוק": "🏢 שיא: 30 בניינים!",
+  "חיים כהן": "🏢 עומס: 29 בניינים.",
+  "התשעים ושלוש": "🏢 עומס: 29 בניינים (18 זוגי).",
   "דוד צבי פנקס": "23 בניינים.",
-  "גד מכנס": "בית אבות במספר 4 - לפרוק בסוף!",
-  "התשעים ושלוש": "זוגי: 18 בניינים. אי-זוגי: 11 בניינים."
+  "זכרון משה": "20 בניינים.",
+  "חפץ מרדכי": "19 בניינים.",
+  "אנה פרנק": "17 בניינים.",
+  "מנדלסון": "12 בניינים.",
+  "רוטשילד": "כניסות מרובות ב-140-144. בית אבות ב-182."
 };
 
-// 3. מערכת הצבעים החדשה
+// 3. מערכת הצבעים
 const AREA_THEMES: Record<number, any> = {
-  45: { // כחול - כפר גנים
+  45: {
     gradient: "from-blue-50 via-indigo-50 to-slate-50",
     primary: "bg-blue-600",
     secondary: "bg-blue-100",
@@ -126,8 +142,8 @@ const AREA_THEMES: Record<number, any> = {
     iconColor: "text-blue-500",
     buttonHover: "hover:bg-blue-700"
   },
-  14: { // אדום - רוטשילד
-    gradient: "from-red-50 via-orange-50 to-slate-50",
+  14: {
+    gradient: "from-red-50 via-rose-50 to-slate-50",
     primary: "bg-red-600",
     secondary: "bg-red-100",
     textMain: "text-red-900",
@@ -138,7 +154,7 @@ const AREA_THEMES: Record<number, any> = {
     iconColor: "text-red-500",
     buttonHover: "hover:bg-red-700"
   },
-  12: { // ירוק - אזור 12
+  12: {
     gradient: "from-emerald-50 via-teal-50 to-slate-50",
     primary: "bg-emerald-600",
     secondary: "bg-emerald-100",
@@ -152,31 +168,36 @@ const AREA_THEMES: Record<number, any> = {
   }
 };
 
-// חישוב יום אוטומטי (16 ימים, דילוג על שישי-שבת)
+// חישוב יום אוטומטי (מודולו 15)
 const calculateAutoCycleDay = () => {
   try {
-    const anchorDate = new Date('2025-12-25T00:00:00');
+    const anchorDate = new Date('2025-12-25T00:00:00'); // יום חמישי ה-25.12
+    const anchorCycleDay = 1; // מתחילים מיום 1
+    
     const today = new Date();
     today.setHours(0,0,0,0);
-    if (today < anchorDate) return 5;
+    
+    if (today < anchorDate) return 1;
+    
     let workDays = 0;
     let curr = new Date(anchorDate);
     while (curr < today) {
       curr.setDate(curr.getDate() + 1);
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
-    let cycle = (5 + workDays) % 16;
-    return cycle === 0 ? 16 : cycle;
-  } catch(e) { return 5; }
+    
+    let cycle = (anchorCycleDay + workDays) % 15;
+    return cycle === 0 ? 15 : cycle;
+  } catch(e) { return 1; }
 };
 
 // === רכיבים ===
 
-// פס ניווט דביק - מראה את הרחוב הבא
 function StickyNextStreet({ streets, theme }: { streets: Street[], theme: any }) {
   if (streets.length === 0) return null;
   const nextStreet = streets[0];
-
+  const alertInfo = Object.entries(BUILDING_ALERTS).find(([key]) => nextStreet.name.includes(key));
+  
   return (
     <div className={`fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t ${theme.border} shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-40 transform transition-transform duration-300 animate-slide-up`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -187,6 +208,7 @@ function StickyNextStreet({ streets, theme }: { streets: Street[], theme: any })
           <div>
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">היעד הבא</p>
             <p className={`font-bold text-lg ${theme.textMain}`}>{nextStreet.name}</p>
+            {alertInfo && <p className="text-xs text-orange-600 font-medium truncate max-w-[200px]">{alertInfo[1]}</p>}
           </div>
         </div>
         <div className="flex gap-2">
@@ -200,10 +222,9 @@ function StickyNextStreet({ streets, theme }: { streets: Street[], theme: any })
   );
 }
 
-// דשבורד חכם
 function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, currentArea, theme }: any) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const currentSchedule = SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0];
+  const currentSchedule = SCHEDULE_15_DAYS.find(s => s.day === cycleDay) || SCHEDULE_15_DAYS[0];
   const isWeekend = currentTime.getDay() === 5 || currentTime.getDay() === 6;
   const isAreaMismatch = currentArea !== currentSchedule.area;
 
@@ -212,21 +233,20 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
     return () => clearInterval(timer);
   }, []);
 
-  const nextDay = () => setCycleDay(cycleDay === 16 ? 1 : cycleDay + 1);
-  const prevDay = () => setCycleDay(cycleDay === 1 ? 16 : cycleDay - 1);
+  const nextDay = () => setCycleDay(cycleDay === 15 ? 1 : cycleDay + 1);
+  const prevDay = () => setCycleDay(cycleDay === 1 ? 15 : cycleDay - 1);
   const total = pendingCount + completedCount;
   const progress = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
   if (isWeekend) return (
     <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl p-8 mb-6 text-white shadow-2xl relative overflow-hidden">
       <h2 className="text-4xl font-bold mb-2">סופ"ש נעים! ☕</h2>
-      <p className="text-indigo-100 text-lg">הסוללה שלך בטעינה. נתראה בראשון.</p>
+      <p className="text-indigo-100 text-lg">תנוח טוב. חוזרים בראשון.</p>
     </div>
   );
 
   return (
     <div className={`rounded-3xl p-6 mb-6 shadow-xl relative overflow-hidden transition-all duration-500 bg-white ${theme.border}`}>
-      {/* רקע צבעוני עליון */}
       <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${theme.gradient}`}></div>
       
       <div className="relative z-10">
@@ -234,7 +254,7 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
           <div>
             <div className="inline-flex items-center gap-2 mb-2">
                <span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm tracking-wide`}>
-                 יום {cycleDay} / 16
+                 יום {cycleDay} / 15
                </span>
                <span className={`${theme.secondary} ${theme.textSub} text-xs font-bold px-3 py-1 rounded-full border ${theme.border} flex items-center gap-1`}>
                  <CalendarClock size={12} /> {currentTime.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -254,11 +274,10 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
           <div className="bg-red-50 border-r-4 border-red-500 p-4 mb-5 rounded-lg flex items-start gap-4 shadow-sm animate-pulse">
              <div className="bg-red-100 p-2 rounded-full"><AlertTriangle className="text-red-600" size={24} /></div>
              <div>
-               <p className="font-bold text-red-800 text-lg">טעות באזור!</p>
+               <p className="font-bold text-red-800 text-lg">אזור לא תואם</p>
                <p className="text-red-700">
-                 התוכנית להיום היא <strong>אזור {currentSchedule.area}</strong>, אבל אתה נמצא ב-<strong>אזור {currentArea}</strong>.
-                 <br/>
-                 <button onClick={() => document.getElementById('area-toggle-btn')?.click()} className="underline font-bold hover:text-red-900 mt-1">לחץ להחלפה</button>
+                 היום <strong>אזור {currentSchedule.area}</strong>. אתה ב-<strong>{currentArea}</strong>.
+                 <br/><button onClick={() => document.getElementById('area-toggle-btn')?.click()} className="underline font-bold hover:text-red-900 mt-1">לחץ להחלפה</button>
                </p>
              </div>
           </div>
@@ -266,23 +285,20 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
 
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
-            <div className="text-3xl font-black text-gray-800">{pendingCount}</div>
-            <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">נותרו</div>
+            <div className="text-3xl font-black text-gray-800">{currentSchedule.bldgCount}</div>
+            <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">בניינים</div>
           </div>
           <div className={`${theme.secondary} rounded-2xl p-4 text-center border ${theme.border}`}>
-            <div className={`text-3xl font-black ${theme.textMain}`}>{completedCount}</div>
-            <div className={`text-xs ${theme.textSub} font-bold uppercase tracking-wider`}>הושלמו</div>
+            <div className={`text-3xl font-black ${theme.textMain}`}>{pendingCount}</div>
+            <div className={`text-xs ${theme.textSub} font-bold uppercase tracking-wider`}>רחובות</div>
           </div>
           <div className="bg-white rounded-2xl p-4 text-center border border-gray-100 relative overflow-hidden">
             <div className="text-3xl font-black text-gray-800">{progress}%</div>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-100">
-               <div className={`h-full ${theme.primary} transition-all duration-1000`} style={{ width: `${progress}%` }}></div>
-            </div>
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-100"><div className={`h-full ${theme.primary} transition-all duration-1000`} style={{ width: `${progress}%` }}></div></div>
             <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">התקדמות</div>
           </div>
         </div>
 
-        {/* טיפ יומי מעוצב */}
         <div className={`${theme.cardBg} rounded-xl p-4 flex gap-3 items-start border ${theme.border}`}>
           <Info className={`${theme.iconColor} shrink-0 mt-1`} size={18} />
           <p className={`text-sm leading-relaxed ${theme.textMain} font-medium`}>{currentSchedule.tips}</p>
@@ -303,11 +319,6 @@ export default function App() {
   const [sunMode, setSunMode] = useState(false);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
 
-  // פונקציה לסנכרון לתאריך הנוכחי
-  const syncToDate = () => {
-    setCycleDay(calculateAutoCycleDay());
-  };
-
   useEffect(() => {
     const day = new Date().getDay();
     setIsWeekend(day === 5 || day === 6);
@@ -319,17 +330,37 @@ export default function App() {
 
   useNotifications();
 
-  // בחירת ערכת הנושא לפי האזור של היום בסבב
-  const currentDaySchedule = useMemo(() => SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0], [cycleDay]);
+  const currentDaySchedule = useMemo(() => SCHEDULE_15_DAYS.find(s => s.day === cycleDay) || SCHEDULE_15_DAYS[0], [cycleDay]);
   const theme = AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[45];
 
   const streetsToShow = useMemo(() => {
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
     if (todayArea !== currentDaySchedule.area) return [];
-    return list.filter(street => 
-       currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name))
-    );
-  }, [pendingToday, currentDaySchedule, todayArea, optimizedStreets]);
+    
+    // סינון מיוחד ליום 12 (כל רוטשילד)
+    if (cycleDay === 12 && currentDaySchedule.area === 14) {
+       return list.filter(street => 
+         street.name.includes("רוטשילד") || street.name.includes("קק") || street.name.includes("קרן קיימת") || street.name.includes("הדף היומי") || street.name.includes("גד מכנס")
+       );
+    }
+
+    return list.filter(street => {
+      // האם הרחוב נמצא בלו"ז היומי
+      const isScheduled = currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name));
+      if (!isScheduled) return false;
+      
+      // סינון חכם לרוטשילד (זוגי/אי-זוגי)
+      if (currentDaySchedule.area === 14 && street.name.includes("רוטשילד")) {
+         const match = street.name.match(/(\d+)/);
+         if (match) {
+           const num = parseInt(match[0]);
+           if (currentDaySchedule.title.includes("זוגי") && !currentDaySchedule.title.includes("מלא")) return num % 2 === 0;
+           if (currentDaySchedule.title.includes("אי-זוגי") && !currentDaySchedule.title.includes("מלא")) return num % 2 !== 0;
+         }
+      }
+      return true;
+    });
+  }, [pendingToday, currentDaySchedule, todayArea, optimizedStreets, cycleDay]);
 
   const completedCycleToday = useMemo(() => {
     return allCompletedToday.filter(street => 
@@ -342,16 +373,13 @@ export default function App() {
     if (currentStreet) { markDelivered(currentStreet.id, time); setCurrentStreet(null); }
   };
 
-  const handleStartTimer = (street: Street) => {
-    setCurrentStreet(street);
-  };
+  const handleStartTimer = (street: Street) => { setCurrentStreet(street); };
 
   if (loading) return <LoadingSpinner />;
 
   return (
     <div className={`min-h-screen transition-colors duration-500 bg-gradient-to-br ${sunMode ? 'from-white to-gray-100' : theme.gradient}`}>
       
-      {/* כפתור מצב שמש */}
       <button 
         onClick={() => setSunMode(!sunMode)}
         className={`fixed bottom-4 left-4 z-50 px-4 py-3 rounded-full shadow-xl border-2 flex items-center gap-2 font-bold transition-all transform hover:scale-105 ${sunMode ? 'bg-yellow-400 text-black border-black ring-4 ring-yellow-200' : 'bg-gray-800 text-white border-gray-600'}`}
@@ -359,7 +387,6 @@ export default function App() {
         <Sun size={20}/> {sunMode ? 'רגיל' : 'מצב שמש'}
       </button>
 
-      {/* פס ניווט תחתון - מופיע רק כשיש רחובות */}
       {!isWeekend && streetsToShow.length > 0 && !currentStreet && (
         <StickyNextStreet streets={streetsToShow} theme={theme} />
       )}
@@ -367,13 +394,7 @@ export default function App() {
       <div className={sunMode ? 'grayscale contrast-125' : ''}>
         {showFirebaseGuide && <FirebaseSetupGuide />}
         <MailSortingReminder currentArea={currentDaySchedule.area} />
-        
-        <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-200 shadow-sm px-4 py-3 flex items-center justify-between">
-           <div className="flex items-center gap-2">
-             <div className={`w-3 h-8 rounded-full ${theme.primary}`}></div>
-             <h1 className="font-black text-xl tracking-tight text-gray-800">Mail<span className={theme.textMain}>Master</span></h1>
-           </div>
-        </header>
+        <Header />
         
         <main className="max-w-7xl mx-auto px-4 py-6 pb-32">
           <TabBar current={tab} setTab={setTab} />
@@ -389,7 +410,6 @@ export default function App() {
               {!isWeekend && (
                 <div className="animate-fade-in-up">
                   
-                  {/* בועת התראה לבניין ספציפי (מודיעין בניינים) */}
                   {currentStreet && (() => {
                     const alertKey = Object.keys(BUILDING_ALERTS).find(key => currentStreet.name.includes(key));
                     if (alertKey) return (
@@ -406,13 +426,13 @@ export default function App() {
 
                   <div className="flex justify-between items-center mb-4">
                      <h2 className="text-xl font-bold text-gray-800">המשימות להיום</h2>
-                     <button onClick={syncToDate} className={`text-xs ${theme.textMain} underline`}>סנכרן לתאריך</button>
+                     <button onClick={() => setCycleDay(calculateAutoCycleDay())} className={`text-xs ${theme.textMain} underline`}>סנכרן לתאריך</button>
                   </div>
 
                   {todayArea !== currentDaySchedule.area ? (
                      <div className="bg-white p-8 rounded-3xl border-2 border-dashed border-gray-200 text-center shadow-sm">
                         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <AlertTriangle className="text-red-500" size={32} />
+                          <Layers className="text-red-500" size={32} />
                         </div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">אזור לא תואם</h3>
                         <p className="text-gray-500 mb-6 max-w-md mx-auto">
@@ -430,7 +450,7 @@ export default function App() {
                             <div className="text-center p-12">
                               <CheckCircle2 size={48} className={`mx-auto mb-3 ${theme.iconColor}`} />
                               <h3 className="text-2xl font-bold text-gray-800">הכל הושלם!</h3>
-                              <button onClick={() => setCycleDay(cycleDay === 16 ? 1 : cycleDay + 1)} className={`mt-4 ${theme.primary} text-white px-6 py-2 rounded-lg shadow-md hover:opacity-90 transition-all`}>עבור ליום הבא</button>
+                              <button onClick={() => setCycleDay(cycleDay === 15 ? 1 : cycleDay + 1)} className={`mt-4 ${theme.primary} text-white px-6 py-2 rounded-lg shadow-md hover:opacity-90 transition-all`}>עבור ליום הבא</button>
                             </div>
                           )
                         )}
@@ -443,10 +463,9 @@ export default function App() {
                   <WalkingOrder area={todayArea} />
                   <CompletedToday list={completedCycleToday} onUndo={undoDelivered} totalCompleted={completedCycleToday.length} />
                   
-                  {/* הצצה למחר */}
                   {(() => {
-                    const nextDayNum = cycleDay === 16 ? 1 : cycleDay + 1;
-                    const nextSchedule = SCHEDULE_16_DAYS.find(s => s.day === nextDayNum);
+                    const nextDayNum = cycleDay === 15 ? 1 : cycleDay + 1;
+                    const nextSchedule = SCHEDULE_15_DAYS.find(s => s.day === nextDayNum);
                     if (!nextSchedule) return null;
                     return (
                       <div className="mt-8 p-4 rounded-xl border border-dashed border-gray-300 opacity-60 hover:opacity-100 transition-opacity">
