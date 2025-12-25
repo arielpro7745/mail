@@ -365,7 +365,7 @@ export default function App() {
 
                   <div className="flex justify-between items-center mb-4">
                      <h2 className="text-xl font-bold text-gray-800">המשימות להיום</h2>
-                     <button onClick={syncToDate} className={`text-xs ${theme.textMain} underline`}>סנכרן לתאריך</button>
+                    <button onClick={() => setCycleDay(calculateAutoCycleDay())} className={`text-xs ${theme.textMain} underline`}>סנכרן לתאריך</button>
                   </div>
 
                   {todayArea !== currentDaySchedule.area ? (
