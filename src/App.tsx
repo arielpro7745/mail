@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Header from "./components/Header";
 import TabBar from "./components/TabBar";
 import { useDistribution } from "./hooks/useDistribution";
@@ -32,7 +32,7 @@ import MailSortingReminder from "./components/MailSortingReminder";
 import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
-import { AlertTriangle, Sun, Cloud, Clock, MapPin, TrendingUp, Navigation2, Bell, CheckCircle2, Calendar, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, Sun, Cloud, Clock, MapPin, TrendingUp, Navigation2, Bell, CheckCircle2, Calendar, ExternalLink, ChevronDown, ChevronUp, RotateCcw, ArrowRight, ArrowLeft, Info } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
 import Gamification from "./components/Gamification";
@@ -42,86 +42,137 @@ import UnknownResidents from "./components/UnknownResidents";
 import AreaScheduleIndicator from "./components/AreaScheduleIndicator";
 import DailyTaskGenerator from "./components/DailyTaskGenerator";
 import AreaSortingManager from "./components/AreaSortingManager";
-import SmartAreaReorganizer from "./components/SmartAreaReorganizer";
-import IntelligentAreaOptimizer from "./components/IntelligentAreaOptimizer";
-import ManualAreaOrganizer from "./components/ManualAreaOrganizer";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
-import DailyWorkTracker from "./components/DailyWorkTracker";
-import DailyFlyersDistribution from "./components/DailyFlyersDistribution";
-import DailySuccessTasks from "./components/DailySuccessTasks";
 import DualAreaWorkflow from "./components/DualAreaWorkflow";
-import { getTodayAreaSchedule, getTomorrowAreaSchedule } from "./utils/areaRotation";
 import { getAreaColor, getAreaName } from "./utils/areaColors";
+
+// === הגדרת סבב 15 הימים (המוח החדש של האפליקציה) ===
+const SCHEDULE_15_DAYS = [
+  // סיבוב ראשון (ימים 1-9)
+  { day: 1, area: 45, title: "ויצמן והצפון", color: "blue", streets: ["ויצמן", "ליסין", "מרטין בובר"], tips: "שים לב: ויצמן 33 (עמוס), 9 ו-7." },
+  { day: 2, area: 14, title: "רוטשילד זוגי (הכבד)", color: "red", streets: ["הדף היומי", "רוטשילד", "גד מכנס"], tips: "רוטשילד צד זוגי בלבד! (110-182). זהירות בכניסות." },
+  { day: 3, area: 12, title: "צפון 12 (ה-93)", color: "green", streets: ["רוטשילד 100", "דוד צבי פנקס", "התשעים ושלוש"], tips: "המוקד היום: התשעים ושלוש." },
+  { day: 4, area: 45, title: "היבנר סולו", color: "blue", streets: ["היבנר"], tips: "יום פיזי קשה. כל הרחוב: זוגי יורד, אי-זוגי עולה." },
+  { day: 5, area: 12, title: "אמצע 12 (הרב קוק)", color: "green", streets: ["הרב קוק", "הכרם", "זכרון משה", "אנה פרנק"], tips: "יום רגוע יחסית." },
+  { day: 6, area: 45, title: "דגל ראובן סולו", color: "blue", streets: ["דגל ראובן"], tips: "הליכה ישרה. לסיים הכל." },
+  { day: 7, area: 14, title: "רוטשילד אי-זוגי (הקל)", color: "red", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], tips: "רוטשילד אי-זוגי בלבד! לא לשכוח להיכנס לקק\"ל." },
+  { day: 8, area: 12, title: "דרום 12 (הגשר)", color: "green", streets: ["חיים כהן", "מנדלסון", "האחים ראב", "שבדיה"], tips: "זהירות בחיים כהן." },
+  { day: 9, area: 45, title: "דרום 45 (יטקובסקי)", color: "blue", streets: ["מירקין", "ברטונוב", "הפרטיזנים", "סנדרוב", "שטרן", "אחים יטקובסקי"], tips: "יטקובסקי: לשים לב ל-37 ו-36." },
+  
+  // סיבוב שני - חזרות על העמוסים (ימים 10-15)
+  { day: 10, area: 45, title: "ויצמן (חזרה)", color: "blue", streets: ["ויצמן", "ליסין", "מרטין בובר"], tips: "סיבוב שני." },
+  { day: 11, area: 14, title: "רוטשילד זוגי (חזרה)", color: "red", streets: ["הדף היומי", "רוטשילד", "גד מכנס"], tips: "סיבוב שני." },
+  { day: 12, area: 12, title: "ה-93 (חזרה)", color: "green", streets: ["רוטשילד 100", "דוד צבי פנקס", "התשעים ושלוש"], tips: "סיבוב שני." },
+  { day: 13, area: 45, title: "היבנר (חזרה)", color: "blue", streets: ["היבנר"], tips: "סיבוב שני." },
+  { day: 14, area: 12, title: "הרב קוק (חזרה)", color: "green", streets: ["הרב קוק", "הכרם", "זכרון משה", "אנה פרנק"], tips: "סיבוב שני." },
+  { day: 15, area: 45, title: "דגל ראובן (חזרה)", color: "blue", streets: ["דגל ראובן"], tips: "סיבוב שני וסיום הסבב." }
+];
 
 // === Inline Smart Components ===
 
-// דשבורד יומי חכם
-function SmartDashboard({ todayArea, completedCount, pendingCount }: { todayArea: number; completedCount: number; pendingCount: number }) {
+// דשבורד יומי חכם - מותאם לסבב 15 הימים
+function CycleDashboard({ 
+  cycleDay, 
+  setCycleDay, 
+  completedCount, 
+  pendingCount,
+  currentArea
+}: { 
+  cycleDay: number; 
+  setCycleDay: (day: number) => void;
+  completedCount: number; 
+  pendingCount: number;
+  currentArea: number;
+}) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const areaColor = getAreaColor(todayArea);
-  const tomorrowSchedule = getTomorrowAreaSchedule();
+  
+  const currentSchedule = SCHEDULE_15_DAYS.find(s => s.day === cycleDay) || SCHEDULE_15_DAYS[0];
+  const areaColor = getAreaColor(currentSchedule.area);
+  const isAreaMismatch = currentArea !== currentSchedule.area;
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  const hour = currentTime.getHours();
-  const greeting = hour < 12 ? 'בוקר טוב' : hour < 17 ? 'צהריים טובים' : 'ערב טוב';
+  const nextDay = () => setCycleDay(cycleDay === 15 ? 1 : cycleDay + 1);
+  const prevDay = () => setCycleDay(cycleDay === 1 ? 15 : cycleDay - 1);
   const progress = pendingCount + completedCount > 0 ? Math.round((completedCount / (pendingCount + completedCount)) * 100) : 0;
 
   return (
-    <div className={`${areaColor.bgLight} rounded-2xl p-5 mb-6 border-2 ${areaColor.border}`}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={`${areaColor.bgLight} rounded-2xl p-5 mb-6 border-2 ${areaColor.border} shadow-sm transition-all duration-300`}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">{greeting}! 👋</h2>
-          <p className="text-gray-600">
-            {currentTime.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-        </div>
-        <div className="text-right">
-          <div className="flex items-center gap-2 text-gray-600">
-            <Sun className="text-yellow-500" size={20} />
-            <span>24°C - בהיר</span>
+          <div className="flex items-center gap-2 mb-1">
+             <span className={`${areaColor.bgSolid} text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm`}>
+               יום {cycleDay} / 15
+             </span>
+             <span className="text-gray-500 text-xs font-medium bg-white/50 px-2 py-1 rounded-full border border-gray-100">
+               {currentTime.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
+             </span>
           </div>
-          <p className="text-xs text-gray-500">פתח תקווה</p>
+          <h2 className="text-3xl font-bold text-gray-800 tracking-tight">{currentSchedule.title}</h2>
+        </div>
+        
+        {/* בקרת ניווט ימים */}
+        <div className="flex items-center bg-white rounded-xl shadow-sm border border-gray-100 p-1 self-start md:self-auto">
+          <button onClick={prevDay} className="p-2 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors">
+            <ArrowRight size={20} />
+          </button>
+          <div className="px-4 font-bold text-gray-700 border-x border-gray-100">
+            יום {cycleDay}
+          </div>
+          <button onClick={nextDay} className="p-2 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors">
+            <ArrowLeft size={20} />
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div className={`${areaColor.bgSolid} text-white rounded-xl p-3 text-center`}>
-          <MapPin size={20} className="mx-auto mb-1" />
-          <div className="text-xl font-bold">אזור {todayArea}</div>
-          <div className="text-xs opacity-80">{getAreaName(todayArea)}</div>
+      {/* התראת אזור לא תואם */}
+      {isAreaMismatch && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-3 mb-4 rounded-r-lg flex items-start gap-3 animate-pulse">
+           <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
+           <div>
+             <p className="font-bold text-red-800 text-sm">שים לב! אזור לא תואם</p>
+             <p className="text-red-700 text-sm">
+               התוכנית להיום היא ב<strong>אזור {currentSchedule.area}</strong>, אך האפליקציה מוגדרת כרגע על <strong>אזור {currentArea}</strong>.
+               <br/>אנא לחץ על כפתור החלפת האזור למטה.
+             </p>
+           </div>
         </div>
-        <div className="bg-green-500 text-white rounded-xl p-3 text-center">
-          <CheckCircle2 size={20} className="mx-auto mb-1" />
-          <div className="text-xl font-bold">{completedCount}</div>
-          <div className="text-xs opacity-80">הושלמו</div>
+      )}
+
+      {/* באנר הוראות יומי */}
+      <div className="bg-white/80 border border-yellow-200 rounded-xl p-3 mb-4 flex items-start gap-3 shadow-sm">
+        <div className="bg-yellow-100 p-2 rounded-full shrink-0">
+           <Info className="text-yellow-700" size={18} />
         </div>
-        <div className="bg-orange-500 text-white rounded-xl p-3 text-center">
-          <Clock size={20} className="mx-auto mb-1" />
-          <div className="text-xl font-bold">{pendingCount}</div>
-          <div className="text-xs opacity-80">ממתינים</div>
-        </div>
-        <div className="bg-blue-500 text-white rounded-xl p-3 text-center">
-          <Calendar size={20} className="mx-auto mb-1" />
-          <div className="text-xl font-bold">אזור {tomorrowSchedule.area}</div>
-          <div className="text-xs opacity-80">מחר</div>
+        <div>
+          <span className="font-bold text-gray-800 block text-sm">💡 טיפ מקצועי להיום:</span>
+          <span className="text-gray-700 text-sm">{currentSchedule.tips}</span>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-3">
-        <div className="flex justify-between text-sm mb-2">
-          <span className="text-gray-600">התקדמות יומית</span>
-          <span className="font-bold text-gray-800">{progress}%</span>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-white/60 rounded-xl p-3 text-center border border-gray-100">
+          <div className="text-2xl font-bold text-gray-800">{pendingCount}</div>
+          <div className="text-xs text-gray-500 font-medium">נותרו</div>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className={`h-full ${areaColor.bgSolid} transition-all duration-500`}
-            style={{ width: `${progress}%` }}
-          />
+        <div className="bg-green-100/50 rounded-xl p-3 text-center border border-green-100">
+          <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+          <div className="text-xs text-green-600 font-medium">הושלמו</div>
         </div>
+        <div className="bg-blue-100/50 rounded-xl p-3 text-center border border-blue-100">
+          <div className="text-2xl font-bold text-blue-600">{progress}%</div>
+          <div className="text-xs text-blue-600 font-medium">התקדמות</div>
+        </div>
+      </div>
+
+      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div 
+          className={`h-full ${areaColor.bgSolid} transition-all duration-500`} 
+          style={{ width: `${progress}%` }} 
+        />
       </div>
     </div>
   );
@@ -135,13 +186,10 @@ function SmartNotificationsInline({ pendingCount, overdueCount }: { pendingCount
   const notifications = [];
 
   if (hour >= 6 && hour < 10 && pendingCount > 0) {
-    notifications.push({ id: 'morning', type: 'info', message: `בוקר טוב! יש לך ${pendingCount} רחובות לחלוקה היום`, icon: Sun });
+    notifications.push({ id: 'morning', type: 'info', message: `בוקר טוב! יום מוצלח ושמור על עצמך בדרכים`, icon: Sun });
   }
   if (overdueCount > 0) {
     notifications.push({ id: 'overdue', type: 'warning', message: `${overdueCount} רחובות באיחור - מעל 14 ימים`, icon: AlertTriangle });
-  }
-  if (hour >= 12 && hour < 14 && pendingCount > 5) {
-    notifications.push({ id: 'lunch', type: 'info', message: 'זמן טוב להפסקה קצרה לפני המשך החלוקה', icon: Clock });
   }
 
   const visibleNotifications = notifications.filter(n => !dismissed.includes(n.id));
@@ -153,15 +201,15 @@ function SmartNotificationsInline({ pendingCount, overdueCount }: { pendingCount
       {visibleNotifications.map(notif => (
         <div
           key={notif.id}
-          className={`flex items-center gap-3 p-3 rounded-xl ${
-            notif.type === 'warning' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200'
+          className={`flex items-center gap-3 p-3 rounded-xl shadow-sm ${
+            notif.type === 'warning' ? 'bg-orange-50 border border-orange-200' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100'
           }`}
         >
           <notif.icon size={20} className={notif.type === 'warning' ? 'text-orange-500' : 'text-blue-500'} />
-          <span className="flex-1 text-sm">{notif.message}</span>
+          <span className="flex-1 text-sm font-medium text-gray-800">{notif.message}</span>
           <button
             onClick={() => setDismissed([...dismissed, notif.id])}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 p-1"
           >
             ✕
           </button>
@@ -171,30 +219,21 @@ function SmartNotificationsInline({ pendingCount, overdueCount }: { pendingCount
   );
 }
 
-// סדר הליכה אופטימלי
-function OptimalWalkingOrderInline({ todayArea }: { todayArea: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const areaColor = getAreaColor(todayArea);
-
-  const walkOrders: Record<number, string[]> = {
-    12: ["דוד צבי פינקס", "התשעים ושלוש", "הכרם", "הרב קוק", "זכרון משה", "אנה פרנק", "חיים כהן", "מנדלסון", "שבדיה"],
-    14: ["הדף היומי", "רוטשילד 110-132", "רוטשילד 134-150", "גד מכנס", "רוטשילד 179-143", "קק\"ל"],
-    45: ["אחד העם", "הרצל", "ביאליק", "ז'בוטינסקי", "בן יהודה", "אלנבי"]
-  };
-
-  const streets = walkOrders[todayArea] || [];
+// סדר הליכה - מציג את הרחובות של היום הנוכחי בסבב
+function OptimalWalkingOrderInline({ streets }: { streets: string[] }) {
+  const [expanded, setExpanded] = useState(true);
 
   return (
-    <div className={`rounded-2xl overflow-hidden mb-6 border-2 ${areaColor.border}`}>
+    <div className={`rounded-2xl overflow-hidden mb-6 border-2 border-indigo-100 shadow-sm bg-white`}>
       <button
         onClick={() => setExpanded(!expanded)}
-        className={`w-full ${areaColor.bgSolid} px-5 py-4 text-white flex items-center justify-between`}
+        className={`w-full bg-indigo-50 px-5 py-4 text-indigo-900 flex items-center justify-between hover:bg-indigo-100 transition-colors`}
       >
         <div className="flex items-center gap-3">
-          <Navigation2 size={22} />
+          <Navigation2 size={22} className="text-indigo-600" />
           <div className="text-right">
-            <h3 className="font-bold">סדר הליכה מומלץ - אזור {todayArea}</h3>
-            <p className="text-sm opacity-80">{streets.length} רחובות</p>
+            <h3 className="font-bold text-lg">מסלול הליכה להיום</h3>
+            <p className="text-sm opacity-70">{streets.length} רחובות מתוכננים</p>
           </div>
         </div>
         {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -204,18 +243,18 @@ function OptimalWalkingOrderInline({ todayArea }: { todayArea: number }) {
         <div className="bg-white p-4">
           <div className="space-y-2">
             {streets.map((street, idx) => (
-              <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                <span className={`w-7 h-7 ${areaColor.bgSolid} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
+              <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-indigo-200 transition-all">
+                <span className={`w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-sm`}>
                   {idx + 1}
                 </span>
-                <span className="flex-1 font-medium">{street}</span>
+                <span className="flex-1 font-bold text-gray-800">{street}</span>
                 <a
                   href={`https://waze.com/ul?q=${encodeURIComponent(street + ' פתח תקווה')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-700"
+                  className="text-blue-500 hover:text-blue-700 bg-blue-50 p-2 rounded-full border border-blue-100"
                 >
-                  <ExternalLink size={16} />
+                  <Navigation2 size={16} />
                 </a>
               </div>
             ))}
@@ -226,6 +265,8 @@ function OptimalWalkingOrderInline({ todayArea }: { todayArea: number }) {
   );
 }
 
+// === MAIN APP COMPONENT ===
+
 export default function App() {
   const [tab, setTab] = useState<"regular" | "buildings" | "holidays" | "tasks" | "reports" | "phones" | "export" | "whatsapp" | "advanced" | "ai" | "gamification" | "journal" | "complaints" | "unknowns" | "sorting">("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
@@ -233,106 +274,68 @@ export default function App() {
   const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
   const [showAdvancedFeatures, setShowAdvancedFeatures] = useState(false);
   
-  // הוק מצב חג
+  // === ניהול מחזור 15 הימים ===
+  // שומרים את היום הנוכחי ב-LocalStorage כדי שיישמר בין כניסות
+  const [cycleDay, setCycleDay] = useState<number>(() => {
+    const saved = localStorage.getItem("currentCycleDay");
+    return saved ? parseInt(saved) : 1; // ברירת מחדל: יום 1
+  });
+
+  // שמירת יום הסבב כשמשתנה
+  useEffect(() => {
+    localStorage.setItem("currentCycleDay", cycleDay.toString());
+  }, [cycleDay]);
+  
   const { isHolidayMode } = useHolidayMode();
 
   const {
-    todayArea,
-    pendingToday,
+    todayArea, 
+    pendingToday, 
     completedToday,
-    recommended,
     markDelivered,
     undoDelivered,
     endDay,
     loading,
     allCompletedToday,
-    totalStreetsInArea,
-    isAllCompleted,
     streetsNeedingDelivery,
     overdueStreets,
-    resetCycle,
-    urgencyGroups,
-    urgencyCounts,
     getStreetUrgencyLevel,
     getUrgencyColor,
     getUrgencyLabel,
   } = useDistribution();
 
-  // Initialize notifications
   useNotifications();
 
-  // Listen for navigation events from child components
-  useEffect(() => {
-    const handleNavigate = (e: CustomEvent) => {
-      if (e.detail === 'unknowns') {
-        setTab('unknowns');
-      }
-    };
-    window.addEventListener('navigate-to-tab', handleNavigate as EventListener);
-    return () => {
-      window.removeEventListener('navigate-to-tab', handleNavigate as EventListener);
-    };
-  }, []);
-
-  // Check for Firebase permission errors
-  useEffect(() => {
-    const checkFirebaseErrors = () => {
-      // Listen for console errors related to Firebase permissions
-      const originalError = console.error;
-      console.error = (...args) => {
-        const message = args.join(' ');
-        if (message.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
-          setShowFirebaseGuide(true);
-        }
-        originalError.apply(console, args);
-      };
-
-      return () => {
-        console.error = originalError;
-      };
-    };
-
-    const cleanup = checkFirebaseErrors();
-    return cleanup;
-  }, []);
-
-  const overdue = pendingToday.filter((s) => {
-    if (!s.lastDelivered) return true;
-    return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
-  }).length;
-
-  // מציאת הרחוב שהכי הרבה זמן לא חולק (מכל האזורים)
-  const getOldestUndeliveredStreets = (count = 3) => {
-    const today = new Date();
-    const streetsByUrgency: Array<{street: Street, days: number}> = [];
-    
-    // בדיקה של כל הרחובות מכל האזורים
-    const allStreets = [...new Set([...allCompletedToday, ...pendingToday])]; // הסרת כפילויות
-    
-    allStreets.forEach(street => {
-      if (!street.lastDelivered) {
-        streetsByUrgency.push({street, days: 999});
-      } else {
-        const days = totalDaysBetween(new Date(street.lastDelivered), today);
-        streetsByUrgency.push({street, days});
-      }
-    });
-    
-    // מיון לפי דחיפות: לא חולק מעולם ראשון, אחר כך לפי מספר ימים
-    return streetsByUrgency
-      .sort((a, b) => {
-        if (a.days === 999 && b.days !== 999) return -1;
-        if (b.days === 999 && a.days !== 999) return 1;
-        if (a.days !== b.days) return b.days - a.days;
-        // אם אותו מספר ימים, רחובות גדולים קודם
-        if (a.street.isBig !== b.street.isBig) return a.street.isBig ? -1 : 1;
-        return a.street.name.localeCompare(b.street.name);
-      })
-      .slice(0, count)
-      .filter(item => item.days >= 7); // רק רחובות שעברו לפחות שבוע
-  };
+  // === לוגיקה קריטית: סינון רחובות לפי הסבב ===
   
-  const criticalStreets = getOldestUndeliveredStreets(3);
+  // 1. שליפת הנתונים של היום הנוכחי
+  const currentDaySchedule = useMemo(() => {
+    return SCHEDULE_15_DAYS.find(s => s.day === cycleDay) || SCHEDULE_15_DAYS[0];
+  }, [cycleDay]);
+
+  // 2. סינון הרחובות: מציגים רק מה ששייך ליום הנוכחי
+  const cycleDisplayStreets = useMemo(() => {
+    // אם האפליקציה לא באזור הנכון, הרחובות של היום לא יהיו ב-pendingToday (כי הוא מביא רק לפי אזור)
+    // לכן הטבלה תהיה ריקה וזה תקין - המשתמש יראה התראה להחליף אזור
+    if (todayArea !== currentDaySchedule.area) return [];
+
+    return pendingToday.filter(street => {
+       // בדיקה האם שם הרחוב מכיל את אחד השמות ברשימה היומית
+       // הלוגיקה הדו-כיוונית עוזרת במקרים כמו "רוטשילד" מול "רוטשילד 100"
+       return currentDaySchedule.streets.some(scheduledName => 
+         street.name.includes(scheduledName) || scheduledName.includes(street.name)
+       );
+    });
+  }, [pendingToday, currentDaySchedule, todayArea]);
+
+  // 3. חישוב השלמות להיום (מתוך הרשימה הספציפית)
+  const completedCycleToday = useMemo(() => {
+    return allCompletedToday.filter(street => 
+      street.area === currentDaySchedule.area &&
+      currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName))
+    );
+  }, [allCompletedToday, currentDaySchedule]);
+
   const handleStartTimer = (street: Street) => {
     setCurrentStreet(street);
   };
@@ -344,179 +347,132 @@ export default function App() {
     }
   };
 
-  const handleOptimizeRoute = (streets: Street[]) => {
-    setOptimizedStreets(streets);
-  };
+  // מאזינים לניווט מטאבים אחרים
+  useEffect(() => {
+    const handleNavigate = (e: CustomEvent) => {
+      if (e.detail === 'unknowns') setTab('unknowns');
+    };
+    window.addEventListener('navigate-to-tab', handleNavigate as EventListener);
+    return () => window.removeEventListener('navigate-to-tab', handleNavigate as EventListener);
+  }, []);
+
+  // בדיקת שגיאות פיירבייס
+  useEffect(() => {
+    const checkFirebaseErrors = () => {
+      const originalError = console.error;
+      console.error = (...args) => {
+        const message = args.join(' ');
+        if (message.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
+          setShowFirebaseGuide(true);
+        }
+        originalError.apply(console, args);
+      };
+      return () => { console.error = originalError; };
+    };
+    return checkFirebaseErrors();
+  }, []);
+
+  const overdue = pendingToday.filter((s) => {
+    if (!s.lastDelivered) return true;
+    return totalDaysBetween(new Date(s.lastDelivered), new Date()) >= 14;
+  }).length;
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  const displayStreets = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
+  // תצוגה ראשית
+  const streetsToShow = optimizedStreets.length > 0 ? optimizedStreets : cycleDisplayStreets;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
-      {/* תבנית רקע דקורטיבית */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-violet-200/30 to-transparent rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-200/30 to-transparent rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-r from-indigo-200/20 to-transparent rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
       </div>
 
       {showFirebaseGuide && <FirebaseSetupGuide />}
       <DailyTaskGenerator />
-      <MailSortingReminder currentArea={todayArea} />
+      <MailSortingReminder currentArea={currentDaySchedule.area} />
       <Header />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <TabBar current={tab} setTab={setTab} />
 
         {tab === "regular" && (
           <>
+            {/* רכיב הדשבורד החדש שמנהל את ה-15 ימים */}
+            <CycleDashboard 
+              cycleDay={cycleDay} 
+              setCycleDay={setCycleDay}
+              completedCount={completedCycleToday.length}
+              pendingCount={streetsToShow.length}
+              currentArea={todayArea}
+            />
+
             {/* התראות חכמות */}
-            <SmartNotificationsInline pendingCount={streetsNeedingDelivery} overdueCount={overdueStreets} />
+            <SmartNotificationsInline pendingCount={streetsToShow.length} overdueCount={overdueStreets} />
 
-            {/* דשבורד יומי חכם */}
-            <SmartDashboard todayArea={todayArea} completedCount={allCompletedToday.length} pendingCount={streetsNeedingDelivery} />
-
-            {/* סדר הליכה אופטימלי */}
-            <OptimalWalkingOrderInline todayArea={todayArea} />
-
-            {/* אינדיקטור מצב חג */}
-            <HolidayModeIndicator />
-
-            {/* אינדיקטור מחזור אזורים */}
-            <AreaScheduleIndicator />
-
-            {/* תהליך עבודה יומי - הכנה וחלוקה */}
-            <div className="mb-6">
-              <DualAreaWorkflow />
-            </div>
-
-            <AreaToggle area={todayArea} onEnd={endDay} />
-
-            {/* התראה על הרחובות הוותיקים ביותר */}
-            {criticalStreets.length > 0 && (
-              <div className="space-y-3 mb-6">
-                {criticalStreets.map(({street, days}, index) => {
-                  const isFirst = index === 0;
-                  const bgColor = days === 999 ? 'bg-purple-50 border-purple-300' :
-                                 days >= 21 ? 'bg-red-50 border-red-300' :
-                                 days >= 14 ? 'bg-orange-50 border-orange-300' :
-                                 'bg-yellow-50 border-yellow-300';
-                  
-                  const textColor = days === 999 ? 'text-purple-600' :
-                                   days >= 21 ? 'text-red-600' :
-                                   days >= 14 ? 'text-orange-600' :
-                                   'text-yellow-600';
-                  
-                  const headerColor = days === 999 ? 'text-purple-800' :
-                                     days >= 21 ? 'text-red-800' :
-                                     days >= 14 ? 'text-orange-800' :
-                                     'text-yellow-800';
-                  
-                  const buttonColor = days === 999 ? 'bg-purple-500 hover:bg-purple-600' :
-                                     days >= 21 ? 'bg-red-500 hover:bg-red-600' :
-                                     days >= 14 ? 'bg-orange-500 hover:bg-orange-600' :
-                                     'bg-yellow-500 hover:bg-yellow-600';
-
-                  return (
-                    <div key={street.id} className={`border rounded-xl p-4 shadow-sm ${bgColor} ${isFirst ? 'ring-2 ring-offset-2 ring-blue-400' : ''}`}>
-                      <div className="flex items-center gap-3">
-                        <AlertTriangle size={24} className={`${textColor} ${days >= 14 ? 'animate-pulse' : ''}`} />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {isFirst && (
-                              <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                                #1 הכי דחוף
-                              </span>
-                            )}
-                            <h3 className={`font-bold text-lg ${headerColor}`}>
-                              {days === 999 ? '🆕 רחוב שלא חולק מעולם!' : 
-                               days >= 21 ? '🚨 רחוב קריטי!' :
-                               days >= 14 ? '⚠️ רחוב דחוף!' :
-                               '📅 רחוב זקוק לתשומת לב'}
-                            </h3>
-                          </div>
-                          <p className={`text-sm font-medium ${headerColor.replace('800', '700')}`}>
-                            <span className="font-bold">{street.name}</span> (אזור {street.area}) - 
-                            {days === 999 ? ' לא חולק מעולם' : ` ${days} ימים ללא חלוקה`}
-                          </p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              street.area === 12 ? 'bg-purple-100 text-purple-700' :
-                              street.area === 14 ? 'bg-blue-100 text-blue-700' :
-                              'bg-indigo-100 text-indigo-700'
-                            }`}>
-                              אזור {street.area}
-                            </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              street.isBig ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {street.isBig ? 'רחוב גדול' : 'רחוב קטן'}
-                            </span>
-                            {street.lastDelivered && (
-                              <span className="text-xs text-gray-600">
-                                חולק לאחרונה: {new Date(street.lastDelivered).toLocaleDateString('he-IL')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          {street.area === todayArea && (
-                            <button
-                              onClick={() => markDelivered(street.id)}
-                              className={`px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg ${buttonColor}`}
-                            >
-                              סמן כחולק עכשיו
-                            </button>
-                          )}
-                          {street.area !== todayArea && (
-                            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-lg">
-                              יטופל באזור {street.area}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {/* סטטיסטיקת התקדמות */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-800">מעקב חלוקה יומי</h3>
-                <span className="text-sm text-gray-600">
-                  אזור {todayArea}
+            {/* רשימת הרחובות המותאמת */}
+            <section className="mb-8">
+              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                רשימת חלוקה להיום
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
+                  {streetsToShow.length}
                 </span>
-              </div>
+              </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-blue-700 font-medium">חולקו היום</span>
-                    <span className="text-xl font-bold text-blue-600">{allCompletedToday.length}</span>
-                  </div>
-                </div>
-                
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-orange-700 font-medium">ממתינים</span>
-                    <span className="text-xl font-bold text-orange-600">{streetsNeedingDelivery}</span>
-                  </div>
-                </div>
-                
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-red-700 font-medium">דחופים (14+ ימים)</span>
-                    <span className="text-xl font-bold text-red-600">{overdueStreets}</span>
-                  </div>
-                </div>
+              <div className="text-xs text-gray-600 bg-white border border-gray-200 px-3 py-2 rounded-lg mb-3 shadow-sm flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <strong>מצב מיקוד 15 יום:</strong> מוצגים רק הרחובות המתוכננים להיום.
               </div>
-              
-              <div className="mt-3 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded">
-                💡 רחובות מסודרים לפי דחיפות: לא חולק מעולם → קריטי (14+ ימים) → דחוף (10-13 ימים) → אזהרה (7-9 ימים) → רגיל
-              </div>
+
+              {isHolidayMode ? (
+                <HolidayAdjustedStreetTable
+                  list={streetsToShow} 
+                  onDone={markDelivered}
+                  onStartTimer={handleStartTimer}
+                  getStreetUrgencyLevel={getStreetUrgencyLevel}
+                  getUrgencyColor={getUrgencyColor}
+                  getUrgencyLabel={getUrgencyLabel}
+                />
+              ) : (
+                <div className="overflow-x-auto">
+                  {streetsToShow.length > 0 ? (
+                    <StreetTable 
+                      list={streetsToShow} 
+                      onDone={markDelivered}
+                      onStartTimer={handleStartTimer}
+                      getStreetUrgencyLevel={getStreetUrgencyLevel}
+                      getUrgencyColor={getUrgencyColor}
+                      getUrgencyLabel={getUrgencyLabel}
+                    />
+                  ) : (
+                    <div className="text-center p-10 bg-white rounded-xl border border-dashed border-gray-300">
+                      {todayArea !== currentDaySchedule.area ? (
+                        <div className="text-orange-500">
+                          <AlertTriangle className="mx-auto mb-2" size={32} />
+                          <h3 className="text-lg font-bold">אזור לא תואם</h3>
+                          <p>אנא עבור לאזור {currentDaySchedule.area} כדי לראות את הרחובות.</p>
+                        </div>
+                      ) : (
+                        <div className="text-green-500">
+                          <CheckCircle2 className="mx-auto mb-2" size={32} />
+                          <h3 className="text-lg font-bold">הכל הושלם להיום!</h3>
+                          <p>אין רחובות ממתינים בתוכנית היומית.</p>
+                          <button onClick={() => setCycleDay(cycleDay === 15 ? 1 : cycleDay + 1)} className="mt-2 text-blue-600 underline">
+                            עבור ליום הבא
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* כפתור סיום יום */}
+            <div className="mb-6">
+               <AreaToggle area={todayArea} onEnd={endDay} />
             </div>
 
             {currentStreet && (
@@ -527,123 +483,17 @@ export default function App() {
                 />
               </div>
             )}
+            
+            {/* מסלול הליכה */}
+            <OptimalWalkingOrderInline streets={currentDaySchedule.streets} />
 
-            {!isAllCompleted && (
-              <RouteOptimizer
-                streets={pendingToday}
-                area={todayArea}
-                onOptimize={handleOptimizeRoute}
-              />
-            )}
-
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                מומלץ להיום
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                  {recommended.length}
-                </span>
-                {urgencyCounts.never > 0 && (
-                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    🆕 {urgencyCounts.never} לא חולק
-                  </span>
-                )}
-                {urgencyCounts.critical > 0 && (
-                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    🚨 {urgencyCounts.critical} קריטי
-                  </span>
-                )}
-                {urgencyCounts.urgent > 0 && (
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                    ⚠️ {urgencyCounts.urgent} דחוף
-                  </span>
-                )}
-              </h2>
-              <div className="text-xs text-gray-600 bg-green-50 px-3 py-2 rounded mb-3 flex items-center justify-between">
-                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
-                <span className="text-blue-600 font-medium">אזור נוכחי: {todayArea}</span>
-              </div>
-              {/* טבלה מותאמת לחגים או רגילה */}
-              {isHolidayMode ? (
-                <HolidayAdjustedStreetTable
-                  list={recommended} 
-                  onDone={markDelivered}
-                  onStartTimer={handleStartTimer}
-                  getStreetUrgencyLevel={getStreetUrgencyLevel}
-                  getUrgencyColor={getUrgencyColor}
-                  getUrgencyLabel={getUrgencyLabel}
-                />
-              ) : (
-                <div className="overflow-x-auto">
-                  <StreetTable 
-                    list={recommended} 
-                    onDone={markDelivered}
-                    onStartTimer={handleStartTimer}
-                    getStreetUrgencyLevel={getStreetUrgencyLevel}
-                    getUrgencyColor={getUrgencyColor}
-                    getUrgencyLabel={getUrgencyLabel}
-                  />
-                </div>
-              )}
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                כל הרחובות
-                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">
-                  {displayStreets.length}
-                </span>
-                {urgencyCounts.never > 0 && (
-                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                    לא חולק: {urgencyCounts.never}
-                  </span>
-                )}
-                {urgencyCounts.critical > 0 && (
-                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
-                    קריטי: {urgencyCounts.critical}
-                  </span>
-                )}
-                {urgencyCounts.urgent > 0 && (
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                    דחוף: {urgencyCounts.urgent}
-                  </span>
-                )}
-                {urgencyCounts.warning > 0 && (
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                    אזהרה: {urgencyCounts.warning}
-                  </span>
-                )}
-              </h2>
-              <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded mb-3">
-                📅 <strong>מיון לפי דחיפות:</strong> לא חולק מעולם → הכי הרבה ימים → פחות ימים (רחובות גדולים מקבלים עדיפות)
-              </div>
-              {/* טבלה מותאמת לחגים או רגילה */}
-              {isHolidayMode ? (
-                <HolidayAdjustedStreetTable
-                  list={displayStreets} 
-                  onDone={markDelivered}
-                  onStartTimer={handleStartTimer}
-                  getStreetUrgencyLevel={getStreetUrgencyLevel}
-                  getUrgencyColor={getUrgencyColor}
-                  getUrgencyLabel={getUrgencyLabel}
-                />
-              ) : (
-                <div className="overflow-x-auto">
-                  <StreetTable 
-                    list={displayStreets} 
-                    onDone={markDelivered}
-                    onStartTimer={handleStartTimer}
-                    getStreetUrgencyLevel={getStreetUrgencyLevel}
-                    getUrgencyColor={getUrgencyColor}
-                    getUrgencyLabel={getUrgencyLabel}
-                  />
-                </div>
-              )}
-            </section>
-
+            {/* אינדיקטור מצב חג */}
+            <HolidayModeIndicator />
+            
             <CompletedToday 
-              list={completedToday} 
+              list={completedCycleToday} 
               onUndo={undoDelivered}
-              totalCompleted={allCompletedToday.length}
+              totalCompleted={completedCycleToday.length}
             />
             
             {/* תכונות מתקדמות */}
@@ -658,42 +508,21 @@ export default function App() {
 
               {showAdvancedFeatures && (
                 <div className="space-y-6">
-                  {/* מפה אינטראקטיבית */}
-                  <InteractiveMap 
-                    buildings={[]} 
-                    currentArea={todayArea}
-                    completedToday={completedToday}
-                  />
-                  
-                  {/* התראות קוליות */}
-                  <VoiceNotifications 
-                    onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)}
-                  />
-                  
-                  {/* סטטיסטיקות מתקדמות */}
+                  <InteractiveMap buildings={[]} currentArea={todayArea} completedToday={completedToday} />
+                  <VoiceNotifications onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)} />
                   <AdvancedStats />
-                  
-                  {/* גיבוי אוטומטי */}
                   <AutoBackup />
-                  
-                  {/* מצב לילה אוטומטי */}
                   <NightModeScheduler />
-                  
-                  {/* ייצוא GPS */}
-                  <GPSExporter 
-                    buildings={[]}
-                    currentArea={todayArea}
-                    optimizedRoute={optimizedStreets}
-                  />
+                  <GPSExporter buildings={[]} currentArea={todayArea} optimizedRoute={optimizedStreets} />
                 </div>
               )}
             </div>
             
             <Notifications count={overdue} />
-            <WalkingOrder area={todayArea} />
           </>
         )}
 
+        {/* שאר הטאבים */}
         {tab === "buildings" && <BuildingManager />}
         {tab === "holidays" && <HolidayManager />}
         {tab === "tasks" && <TaskManager />}
@@ -722,34 +551,8 @@ export default function App() {
               <h2 className="text-3xl font-bold text-gray-800 mb-2">🚀 תכונות מתקדמות</h2>
               <p className="text-gray-600">כלים חכמים לניהול מתקדם של חלוקת הדואר</p>
             </div>
-            
-            {/* מפה אינטראקטיבית */}
-            <InteractiveMap 
-              buildings={[]} 
-              currentArea={todayArea}
-              completedToday={completedToday}
-            />
-            
-            {/* התראות קוליות */}
-            <VoiceNotifications 
-              onStreetCompleted={(streetName) => console.log(`Street completed: ${streetName}`)}
-            />
-            
-            {/* סטטיסטיקות מתקדמות */}
+            <InteractiveMap buildings={[]} currentArea={todayArea} completedToday={completedToday} />
             <AdvancedStats />
-            
-            {/* גיבוי אוטומטי */}
-            <AutoBackup />
-            
-            {/* מצב לילה אוטומטי */}
-            <NightModeScheduler />
-            
-            {/* ייצוא GPS */}
-            <GPSExporter 
-              buildings={[]}
-              currentArea={todayArea}
-              optimizedRoute={optimizedStreets}
-            />
           </div>
         )}
       </main>
