@@ -34,7 +34,7 @@ import { getAreaColor } from "./utils/areaColors";
 import { 
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
-  Building, MapPin, Eye, Zap, Layers
+  Building, MapPin, Eye, Zap, Layers, Package
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -45,70 +45,104 @@ import UnknownResidents from "./components/UnknownResidents";
 import DailyTaskGenerator from "./components/DailyTaskGenerator";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === הלו"ז המדויק והסופי (15 ימים) ===
+// === הלו"ז המדויק עם שיוך תיבות ממסר (Relay Boxes) ===
 
 const SCHEDULE_15_DAYS = [
   // --- ימים 1-5 ---
-  
-  // יום 1: היבנר (45)
-  { day: 1, area: 45, title: "היבנר סולו", color: "blue", bldgCount: 35, streets: ["היבנר"], tips: "יום עמוס! 35 בניינים סה\"כ (20 זוגי, 15 אי-זוגי)." },
-
-  // יום 2: רוטשילד זוגי (14)
-  { day: 2, area: 14, title: "רוטשילד זוגי", color: "red", bldgCount: "בינוני", streets: ["הדף היומי", "רוטשילד", "גד מכנס"], tips: "רק צד זוגי (110-182). זהירות: 140-144 עמוסים בכניסות." },
-
-  // יום 3: הרב קוק (12)
-  { day: 3, area: 12, title: "הרב קוק והכרם", color: "green", bldgCount: 38, streets: ["הרב קוק", "הכרם"], tips: "הרב קוק: 30 בניינים! הכרם: 8 בניינים. יום כבד." },
-
-  // יום 4: דגל ומירקין (45)
-  // תוקן: הוספנו את "מירקין" (יתפוס גם "מירקין מרדכי")
-  { day: 4, area: 45, title: "דגל ומירקין מרדכי", color: "blue", bldgCount: 25, streets: ["דגל ראובן", "מירקין"], tips: "דגל: 16 זוגי, 8 אי-זוגי. מירקין מרדכי: בעיקר פרטיים + בניין אחד." },
-
-  // יום 5: חיים כהן (12)
-  { day: 5, area: 12, title: "חיים כהן ושבדיה", color: "green", bldgCount: 36, streets: ["חיים כהן", "שבדיה"], tips: "חיים כהן צפוף מאוד (29 בניינים). שבדיה קליל (7)." },
-
-  // --- ימים 6-10 ---
-
-  // יום 6: ויצמן וליסין (45)
-  { day: 6, area: 45, title: "ויצמן וליסין", color: "blue", bldgCount: 18, streets: ["ויצמן", "ליסין", "מרטין בובר"], tips: "ויצמן: בניינים ב-33 (עמוס), 9, 7. בובר: 20 פרטיים." },
-
-  // יום 7: רוטשילד אי-זוגי (14) - המסלול המדויק
-  { day: 7, area: 14, title: "רוטשילד אי-זוגי + קק\"ל", color: "red", bldgCount: "קל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], tips: "מסלול: רוטשילד 179-143 -> קק\"ל (28-34 ו-25-21) -> רוטשילד 141-109." },
-
-  // יום 8: ה-93 (12)
-  { day: 8, area: 12, title: "התשעים ושלוש וראב", color: "green", bldgCount: 37, streets: ["התשעים ושלוש", "האחים ראב"], tips: "ה-93 עמוס (18 זוגי, 11 אי-זוגי). ראב: 8 בניינים." },
-
-  // יום 9: יטקובסקי וברטונוב (45) - התיקון!
   { 
-    day: 9, 
-    area: 45, 
-    title: "יטקובסקי אחים וברטונוב", 
-    color: "blue", 
-    bldgCount: 24, 
-    // שימוש במילה "יטקובסקי" בלבד יתפוס כל וריאציה של השם
-    streets: ["יטקובסקי", "ברטונוב", "סנדרוב"], 
-    tips: "יטקובסקי: זוגי 32-42, אי-זוגי 37-25. שים לב לבניין 37 העמוס." 
+    day: 1, area: 45, title: "היבנר סולו", color: "blue", bldgCount: 35, 
+    streets: ["היבנר"], 
+    relays: ["היבנר 25"], // התיבה באמצע הרחוב
+    tips: "יום עמוס! 35 בניינים. שק מחכה בהיבנר 25." 
+  },
+  { 
+    day: 2, area: 14, title: "רוטשילד זוגי", color: "red", bldgCount: "בינוני", 
+    streets: ["הדף היומי", "רוטשילד", "גד מכנס"], 
+    relays: ["רוטשילד 132"], 
+    tips: "רק צד זוגי (110-182). שק ברוטשילד 132." 
+  },
+  { 
+    day: 3, area: 12, title: "הרב קוק והכרם", color: "green", bldgCount: 38, 
+    streets: ["הרב קוק", "הכרם"], 
+    relays: ["התשעים ושלוש 19", "התשעים ושלוש 11"], // שתי האופציות
+    tips: "הרב קוק: 30 בניינים! קח סחורה מה-93 לפני הכניסה." 
+  },
+  { 
+    day: 4, area: 45, title: "דגל ומירקין", color: "blue", bldgCount: 25, 
+    streets: ["דגל ראובן", "מירקין"], 
+    relays: ["דגל ראובן 22"], 
+    tips: "דגל ראובן 22 - נקודת מילוי באמצע הרחוב." 
+  },
+  { 
+    day: 5, area: 12, title: "חיים כהן ושבדיה", color: "green", bldgCount: 36, 
+    streets: ["חיים כהן", "שבדיה"], 
+    relays: ["התשעים ושלוש 11"], // קרוב יותר לחיים כהן
+    tips: "חיים כהן צפוף מאוד." 
   },
 
-  // יום 10: פנקס (12)
-  { day: 10, area: 12, title: "פנקס ומנדלסון", color: "green", bldgCount: 35, streets: ["דוד צבי פנקס", "מנדלסון"], tips: "פנקס: 12 זוגי, 11 אי-זוגי. מנדלסון: 12 בניינים." },
+  // --- ימים 6-10 ---
+  { 
+    day: 6, area: 45, title: "ויצמן וליסין", color: "blue", bldgCount: 18, 
+    streets: ["ויצמן", "ליסין", "מרטין בובר"], 
+    relays: ["ויצמן 12", "ויצמן 33"], // שתי נקודות לאורך הרחוב
+    tips: "ויצמן: שקים ב-12 (התחלה) או ב-33 (מול הבניינים)." 
+  },
+  { 
+    day: 7, area: 14, title: "רוטשילד אי-זוגי + קק\"ל", color: "red", bldgCount: "קל", 
+    streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], 
+    relays: ["רוטשילד 132"], 
+    tips: "מסלול: רוטשילד 179-143 -> קק\"ל -> רוטשילד 141-109." 
+  },
+  { 
+    day: 8, area: 12, title: "התשעים ושלוש וראב", color: "green", bldgCount: 37, 
+    streets: ["התשעים ושלוש", "האחים ראב"], 
+    relays: ["התשעים ושלוש 19", "התשעים ושלוש 11"], // אתה ממש ברחוב
+    tips: "השקים מחכים ב-19 או 11, אתה כבר שם." 
+  },
+  { 
+    day: 9, area: 45, title: "יטקובסקי וברטונוב", color: "blue", bldgCount: 24, 
+    streets: ["יטקובסקי", "ברטונוב", "סנדרוב"], 
+    relays: ["ויצמן 33"], // הנקודה הכי קרובה לדרום השכונה
+    tips: "יטקובסקי (דרום): קח שק מויצמן 33 לפני שאתה יורד למטה." 
+  },
+  { 
+    day: 10, area: 12, title: "פנקס ומנדלסון", color: "green", bldgCount: 35, 
+    streets: ["דוד צבי פנקס", "מנדלסון"], 
+    relays: ["התשעים ושלוש 11"], 
+    tips: "פנקס: 12 זוגי, 11 אי-זוגי." 
+  },
 
   // --- ימים 11-15 ---
-
-  // יום 11: יום הווילות (45)
-  { day: 11, area: 45, title: "הפרטיזנים ושטרן (קל)", color: "blue", bldgCount: 0, streets: ["הפרטיזנים", "שטרן"], tips: "יום הליכה קליל! רק בתים פרטיים." },
-
-  // יום 12: רוטשילד מלא (14)
-  { day: 12, area: 14, title: "רוטשילד מלא (מרתון)", color: "red", bldgCount: "כבד", streets: ["רוטשילד", "קק\"ל", "גד מכנס", "הדף היומי"], tips: "🚨 יום המרתון! מנקים את כל איזור 14 (זוגי + אי-זוגי)." },
-
-  // יום 13: זכרון משה (12)
-  { day: 13, area: 12, title: "זכרון משה ואנה פרנק", color: "green", bldgCount: 37, streets: ["זכרון משה", "אנה פרנק"], tips: "זכרון משה: 20 בניינים. אנה פרנק: 17 בניינים." },
-
-  // יום 14: חפץ מרדכי (12)
-  { day: 14, area: 12, title: "חפץ מרדכי (סגירה)", color: "green", bldgCount: 19, streets: ["חפץ מרדכי"], tips: "סוגרים את איזור 12. 19 בניינים." },
-
-  // יום 15: חזרה על היבנר (45)
-  // תוקן: החלפנו את ויצמן/ליסין בהיבנר לסיבוב שני
-  { day: 15, area: 45, title: "היבנר (סיבוב שני)", color: "blue", bldgCount: 35, streets: ["היבנר"], tips: "חוזרים לרחוב הכי קשה כדי שלא יקרוס." }
+  { 
+    day: 11, area: 45, title: "הפרטיזנים ושטרן (קל)", color: "blue", bldgCount: 0, 
+    streets: ["הפרטיזנים", "שטרן"], 
+    relays: ["ויצמן 33"], // אופציונלי
+    tips: "יום הליכה קליל." 
+  },
+  { 
+    day: 12, area: 14, title: "רוטשילד מלא (מרתון)", color: "red", bldgCount: "כבד", 
+    streets: ["רוטשילד", "קק\"ל", "גד מכנס", "הדף היומי"], 
+    relays: ["רוטשילד 132"], 
+    tips: "🚨 תמלא שקים ב-132 לפני שאתה מתחיל את המרתון." 
+  },
+  { 
+    day: 13, area: 12, title: "זכרון משה ואנה פרנק", color: "green", bldgCount: 37, 
+    streets: ["זכרון משה", "אנה פרנק"], 
+    relays: ["התשעים ושלוש 19"], 
+    tips: "זכרון משה: 20 בניינים." 
+  },
+  { 
+    day: 14, area: 12, title: "חפץ מרדכי (סגירה)", color: "green", bldgCount: 19, 
+    streets: ["חפץ מרדכי"], 
+    relays: ["התשעים ושלוש 11"], 
+    tips: "סוגרים את איזור 12." 
+  },
+  { 
+    day: 15, area: 45, title: "היבנר (סיבוב שני)", color: "blue", bldgCount: 35, 
+    streets: ["היבנר"], 
+    relays: ["היבנר 25"], 
+    tips: "חוזרים לרחוב הכי קשה." 
+  }
 ];
 
 // מודיעין בניינים - התראות חכמות
@@ -137,7 +171,6 @@ const AREA_THEMES: Record<number, any> = {
   12: { gradient: "from-emerald-50 via-teal-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" }
 };
 
-// חישוב יום אוטומטי
 const calculateAutoCycleDay = () => {
   try {
     const anchorDate = new Date('2025-12-25T00:00:00'); 
@@ -155,6 +188,53 @@ const calculateAutoCycleDay = () => {
     return cycle === 0 ? 15 : cycle;
   } catch(e) { return 5; }
 };
+
+// === רכיב ווידג'ט תיבות ממסר (חדש!) ===
+function RelayBoxWidget({ relays }: { relays: string[] }) {
+  const [collected, setCollected] = useState<Record<string, boolean>>({});
+
+  if (!relays || relays.length === 0) return null;
+
+  const toggleCollected = (relay: string) => {
+    setCollected(prev => ({ ...prev, [relay]: !prev[relay] }));
+  };
+
+  return (
+    <div className="mb-4 p-4 rounded-xl border-l-4 border-purple-500 bg-white shadow-sm animate-fade-in">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="bg-purple-100 p-2 rounded-full shrink-0">
+          <Package className="text-purple-600" size={20} />
+        </div>
+        <div>
+          <h3 className="font-bold text-gray-800 text-lg">נקודות איסוף שקים להיום</h3>
+          <p className="text-xs text-gray-500">נווט לתיבה לאיסוף סחורה</p>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        {relays.map((relay, idx) => (
+          <div key={idx} className={`flex items-center justify-between p-3 rounded-lg border transition-all ${collected[relay] ? 'bg-green-50 border-green-200' : 'bg-purple-50 border-purple-100 hover:bg-purple-100'}`}>
+             <a 
+               href={`https://waze.com/ul?q=${encodeURIComponent(relay + ' פתח תקווה')}`}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="flex items-center gap-2 flex-1 group"
+             >
+               <Navigation2 size={18} className={`${collected[relay] ? 'text-green-500' : 'text-purple-500 group-hover:scale-110 transition-transform'}`} />
+               <span className={`font-bold text-base ${collected[relay] ? 'text-green-800 line-through opacity-70' : 'text-purple-900'}`}>{relay}</span>
+             </a>
+             <button 
+               onClick={() => toggleCollected(relay)}
+               className={`text-xs px-3 py-1 rounded-full font-bold border ${collected[relay] ? 'bg-white text-green-600 border-green-200' : 'bg-white text-gray-500 border-gray-200 hover:text-purple-600'}`}
+             >
+               {collected[relay] ? 'נאסף' : 'סמן'}
+             </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function StickyNextStreet({ streets, theme }: { streets: Street[], theme: any }) {
   if (streets.length === 0) return null;
@@ -244,6 +324,9 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
           </div>
         )}
 
+        {/* הצגת ווידג'ט תיבות ממסר */}
+        <RelayBoxWidget relays={currentSchedule.relays || []} />
+
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
             <div className="text-3xl font-black text-gray-800">{currentSchedule.bldgCount}</div>
@@ -304,7 +387,7 @@ export default function App() {
        );
     }
     
-    // יום 7 - רוטשילד אי-זוגי ספציפי (179-143, 141-109) וקק"ל
+    // יום 7 - רוטשילד אי-זוגי ספציפי
     if (cycleDay === 7 && currentDaySchedule.area === 14) {
        return list.filter(street => {
          const name = street.name;
@@ -313,8 +396,7 @@ export default function App() {
            const match = name.match(/(\d+)/);
            if (match) {
              const num = parseInt(match[0]);
-             if (num % 2 === 0) return false; // מסננים זוגי
-             // טווח 1: 143-179, טווח 2: 109-141
+             if (num % 2 === 0) return false;
              return (num >= 143 && num <= 179) || (num >= 109 && num <= 141);
            }
          }
@@ -328,7 +410,6 @@ export default function App() {
       );
       if (!isScheduled) return false;
       
-      // סינון רוטשילד זוגי (יום 2)
       if (cycleDay === 2 && street.name.includes("רוטשילד")) {
          const match = street.name.match(/(\d+)/);
          return match && parseInt(match[0]) % 2 === 0;
