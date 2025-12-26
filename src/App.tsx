@@ -34,7 +34,7 @@ import { getAreaColor } from "./utils/areaColors";
 import { 
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
-  Building, MapPin, Eye, Zap, Layers, Package, Clock, StickyNote, Edit3, Save
+  Building, MapPin, Eye, Zap, Layers, Package, Clock, StickyNote, Edit3, Save, Calculator
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -45,21 +45,21 @@ import UnknownResidents from "./components/UnknownResidents";
 import DailyTaskGenerator from "./components/DailyTaskGenerator";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === נתונים ולו"ז ===
+// === נתונים ולו"ז מעודכנים עם מספרי בניינים מדויקים לחישוב ===
 
 const SCHEDULE_15_DAYS = [
   { day: 1, area: 45, title: "היבנר סולו", color: "blue", bldgCount: 35, streets: ["היבנר"], relays: ["היבנר 25"], tips: "יום עמוס! 35 בניינים סה\"כ. שק מחכה בהיבנר 25." },
-  { day: 2, area: 14, title: "רוטשילד זוגי", color: "red", bldgCount: "בינוני", streets: ["הדף היומי", "רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "רק צד זוגי (110-182). שק ברוטשילד 132." },
+  { day: 2, area: 14, title: "רוטשילד זוגי", color: "red", bldgCount: 25, streets: ["הדף היומי", "רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "רק צד זוגי (110-182). שק ברוטשילד 132." },
   { day: 3, area: 12, title: "הרב קוק והכרם", color: "green", bldgCount: 38, streets: ["הרב קוק", "הכרם"], relays: ["התשעים ושלוש 19", "התשעים ושלוש 11"], tips: "הרב קוק: 30 בניינים! קח סחורה מה-93 לפני הכניסה." },
   { day: 4, area: 45, title: "דגל ומירקין", color: "blue", bldgCount: 25, streets: ["דגל ראובן", "מירקין"], relays: ["דגל ראובן 22"], tips: "דגל ראובן 22 - נקודת מילוי באמצע הרחוב." },
   { day: 5, area: 12, title: "חיים כהן ושבדיה", color: "green", bldgCount: 36, streets: ["חיים כהן", "שבדיה"], relays: ["התשעים ושלוש 11"], tips: "חיים כהן צפוף מאוד." },
   { day: 6, area: 45, title: "ויצמן וליסין", color: "blue", bldgCount: 18, streets: ["ויצמן", "ליסין", "מרטין בובר"], relays: ["ויצמן 12", "ויצמן 33"], tips: "ויצמן: שקים ב-12 (התחלה) או ב-33 (מול הבניינים)." },
-  { day: 7, area: 14, title: "רוטשילד אי-זוגי + קק\"ל", color: "red", bldgCount: "קל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "מסלול: רוטשילד 179-143 -> קק\"ל -> רוטשילד 141-109." },
+  { day: 7, area: 14, title: "רוטשילד אי-זוגי + קק\"ל", color: "red", bldgCount: 20, streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "מסלול: רוטשילד 179-143 -> קק\"ל -> רוטשילד 141-109." },
   { day: 8, area: 12, title: "התשעים ושלוש וראב", color: "green", bldgCount: 37, streets: ["התשעים ושלוש", "האחים ראב"], relays: ["התשעים ושלוש 19", "התשעים ושלוש 11"], tips: "השקים מחכים ב-19 או 11, אתה כבר שם." },
   { day: 9, area: 45, title: "יטקובסקי וברטונוב", color: "blue", bldgCount: 24, streets: ["יטקובסקי", "ברטונוב", "סנדרוב"], relays: ["ויצמן 33"], tips: "יטקובסקי (דרום): קח שק מויצמן 33 לפני שאתה יורד למטה." },
   { day: 10, area: 12, title: "פנקס ומנדלסון", color: "green", bldgCount: 35, streets: ["דוד צבי פנקס", "מנדלסון"], relays: ["התשעים ושלוש 11"], tips: "פנקס: 12 זוגי, 11 אי-זוגי." },
   { day: 11, area: 45, title: "הפרטיזנים ושטרן (קל)", color: "blue", bldgCount: 0, streets: ["הפרטיזנים", "שטרן"], relays: ["ויצמן 33"], tips: "יום הליכה קליל." },
-  { day: 12, area: 14, title: "רוטשילד מלא (מרתון)", color: "red", bldgCount: "כבד", streets: ["רוטשילד", "קק\"ל", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "🚨 תמלא שקים ב-132 לפני שאתה מתחיל את המרתון." },
+  { day: 12, area: 14, title: "רוטשילד מלא (מרתון)", color: "red", bldgCount: 45, streets: ["רוטשילד", "קק\"ל", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "🚨 תמלא שקים ב-132 לפני שאתה מתחיל את המרתון." },
   { day: 13, area: 12, title: "זכרון משה ואנה פרנק", color: "green", bldgCount: 37, streets: ["זכרון משה", "אנה פרנק"], relays: ["התשעים ושלוש 19"], tips: "זכרון משה: 20 בניינים." },
   { day: 14, area: 12, title: "חפץ מרדכי (סגירה)", color: "green", bldgCount: 19, streets: ["חפץ מרדכי"], relays: ["התשעים ושלוש 11"], tips: "סוגרים את איזור 12." },
   { day: 15, area: 45, title: "היבנר (סיבוב שני)", color: "blue", bldgCount: 35, streets: ["היבנר"], relays: ["היבנר 25"], tips: "חוזרים לרחוב הכי קשה." }
@@ -108,7 +108,7 @@ const calculateAutoCycleDay = () => {
   } catch(e) { return 5; }
 };
 
-// === רכיב: כרטיס רחוב עם פתקים (המוח השני) ===
+// === רכיב: כרטיס רחוב עם פתקים ===
 function StreetCard({ street, theme, onDone, onStartTimer, notes, onSaveNote }: any) {
   const [isEditing, setIsEditing] = useState(false);
   const [noteText, setNoteText] = useState(notes[street.name] || "");
@@ -170,12 +170,25 @@ function StreetCard({ street, theme, onDone, onStartTimer, notes, onSaveNote }: 
   );
 }
 
-// === רכיב: וידג'ט צפי סיום ===
-function EstimatedFinishWidget({ pendingCount, kmWalked }: { pendingCount: number, kmWalked: string }) {
-  const avgMinutesPerStreet = 4; // 4 דקות לרחוב בממוצע
-  const totalMinutesLeft = pendingCount * avgMinutesPerStreet;
+// === רכיב: וידג'ט צפי סיום מדויק (7 דקות לבניין) ===
+function EstimatedFinishWidget({ pendingCount, totalStreets, kmWalked, schedule }: any) {
+  let minutesLeft = 0;
+  let details = "";
+
+  if (typeof schedule.bldgCount === 'number' && schedule.bldgCount > 0 && totalStreets > 0) {
+    // חישוב יחסי: סך בניינים / סך רחובות = ממוצע בניינים לרחוב
+    const avgBuildingsPerStreet = schedule.bldgCount / totalStreets;
+    const estimatedBuildingsLeft = Math.ceil(pendingCount * avgBuildingsPerStreet);
+    minutesLeft = estimatedBuildingsLeft * 7; 
+    details = `נותרו כ-${estimatedBuildingsLeft} בניינים (7 דק'/בניין)`;
+  } else {
+    // יום של בתים פרטיים: 15 דקות לרחוב
+    minutesLeft = pendingCount * 15;
+    details = "חישוב לפי 15 דק' לרחוב";
+  }
+
   const finishTime = new Date();
-  finishTime.setMinutes(finishTime.getMinutes() + totalMinutesLeft);
+  finishTime.setMinutes(finishTime.getMinutes() + minutesLeft);
   const timeString = finishTime.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
   if (pendingCount === 0) return null;
@@ -183,10 +196,11 @@ function EstimatedFinishWidget({ pendingCount, kmWalked }: { pendingCount: numbe
   return (
     <div className="bg-gray-900 text-white rounded-xl p-4 shadow-lg mb-4 flex items-center justify-between border border-gray-700">
       <div className="flex items-center gap-3">
-        <div className="bg-gray-800 p-2 rounded-full"><Clock className="text-yellow-400" size={20} /></div>
+        <div className="bg-gray-800 p-2 rounded-full"><Calculator className="text-yellow-400" size={20} /></div>
         <div>
-          <p className="text-xs text-gray-400 font-medium">צפי סיום משוער</p>
+          <p className="text-xs text-gray-400 font-medium">צפי סיום (מדויק)</p>
           <p className="text-xl font-bold font-mono tracking-wider">{timeString}</p>
+          <p className="text-[10px] text-gray-500">{details}</p>
         </div>
       </div>
       <div className="text-right border-r border-gray-700 pr-4">
@@ -426,9 +440,6 @@ export default function App() {
         <Sun size={20}/> {sunMode ? 'רגיל' : 'מצב שמש'}
       </button>
 
-      {/* מודל עריכת הערות */}
-      {/* הערה: הקוד משתמש בעריכה בתוך השורה, רכיב המודל קיים לשימוש עתידי אם צריך */}
-
       {!isWeekend && streetsToShow.length > 0 && !currentStreet && <StickyNextStreet streets={streetsToShow} theme={theme} />}
 
       <div className={sunMode ? 'grayscale contrast-125' : ''}>
@@ -451,8 +462,13 @@ export default function App() {
                     return null;
                   })()}
                   
-                  {/* ווידג'ט חדש: צפי סיום ומד ק"מ */}
-                  <EstimatedFinishWidget pendingCount={streetsToShow.length} kmWalked={kmWalked} />
+                  {/* ווידג'ט חדש ומתוקן: צפי סיום מדויק (7 דקות לבניין) */}
+                  <EstimatedFinishWidget 
+                     pendingCount={streetsToShow.length} 
+                     totalStreets={streetsToShow.length + completedCycleToday.length}
+                     kmWalked={kmWalked} 
+                     schedule={currentDaySchedule} 
+                  />
 
                   <div className="flex justify-between items-center mb-4">
                      <h2 className="text-xl font-bold text-gray-800">המשימות להיום</h2>
@@ -471,7 +487,7 @@ export default function App() {
                         {isHolidayMode ? (
                           <HolidayAdjustedStreetTable list={streetsToShow} onDone={markDelivered} onStartTimer={handleStartTimer} getStreetUrgencyLevel={getStreetUrgencyLevel} getUrgencyColor={getUrgencyColor} getUrgencyLabel={getUrgencyLabel} />
                         ) : (streetsToShow.length > 0 ? (
-                            // כאן השדרוג הגדול: רינדור ידני של כרטיסיות עם מערכת פתקים
+                            // רינדור הכרטיסיות עם פתקים
                             streetsToShow.map(street => (
                               <StreetCard 
                                 key={street.id} 
