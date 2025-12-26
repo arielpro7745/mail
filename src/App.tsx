@@ -60,24 +60,34 @@ const SCHEDULE_15_DAYS = [
   { day: 3, area: 12, title: "הרב קוק והכרם", color: "green", bldgCount: 38, streets: ["הרב קוק", "הכרם"], tips: "הרב קוק: 30 בניינים! הכרם: 8 בניינים. יום כבד." },
 
   // יום 4: דגל ומירקין (45)
-  { day: 4, area: 45, title: "דגל ומירקין מרדכי", color: "blue", bldgCount: 25, streets: ["דגל ראובן", "מירקין מרדכי", "מירקין"], tips: "דגל: 16 זוגי, 8 אי-זוגי. מירקין מרדכי: בעיקר פרטיים + בניין אחד." },
+  // תוקן: הוספנו את "מירקין" (יתפוס גם "מירקין מרדכי")
+  { day: 4, area: 45, title: "דגל ומירקין מרדכי", color: "blue", bldgCount: 25, streets: ["דגל ראובן", "מירקין"], tips: "דגל: 16 זוגי, 8 אי-זוגי. מירקין מרדכי: בעיקר פרטיים + בניין אחד." },
 
-  // יום 5: חיים כהן (12) - (יום חמישי 25.12)
+  // יום 5: חיים כהן (12)
   { day: 5, area: 12, title: "חיים כהן ושבדיה", color: "green", bldgCount: 36, streets: ["חיים כהן", "שבדיה"], tips: "חיים כהן צפוף מאוד (29 בניינים). שבדיה קליל (7)." },
 
   // --- ימים 6-10 ---
 
-  // יום 6: ויצמן וליסין (45) - יום ראשון הקרוב
+  // יום 6: ויצמן וליסין (45)
   { day: 6, area: 45, title: "ויצמן וליסין", color: "blue", bldgCount: 18, streets: ["ויצמן", "ליסין", "מרטין בובר"], tips: "ויצמן: בניינים ב-33 (עמוס), 9, 7. בובר: 20 פרטיים." },
 
   // יום 7: רוטשילד אי-זוגי (14) - המסלול המדויק
-  { day: 7, area: 14, title: "רוטשילד אי-זוגי + קק\"ל", color: "red", bldgCount: "קל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], tips: "מסלול: רוטשילד 179 עד 143 -> קק\"ל (28-34 ו-25-21) -> רוטשילד 141 עד 109." },
+  { day: 7, area: 14, title: "רוטשילד אי-זוגי + קק\"ל", color: "red", bldgCount: "קל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], tips: "מסלול: רוטשילד 179-143 -> קק\"ל (28-34 ו-25-21) -> רוטשילד 141-109." },
 
   // יום 8: ה-93 (12)
   { day: 8, area: 12, title: "התשעים ושלוש וראב", color: "green", bldgCount: 37, streets: ["התשעים ושלוש", "האחים ראב"], tips: "ה-93 עמוס (18 זוגי, 11 אי-זוגי). ראב: 8 בניינים." },
 
-  // יום 9: יטקובסקי וברטונוב (45) - הנה יטקובסקי!
-  { day: 9, area: 45, title: "יטקובסקי אחים וברטונוב", color: "blue", bldgCount: 24, streets: ["יטקובסקי אחים", "אחים יטקובסקי", "ברטונוב", "סנדרוב"], tips: "יטקובסקי אחים: 11 בניינים (שים לב ל-37). ברטונוב: 9 בניינים." },
+  // יום 9: יטקובסקי וברטונוב (45) - התיקון!
+  { 
+    day: 9, 
+    area: 45, 
+    title: "יטקובסקי אחים וברטונוב", 
+    color: "blue", 
+    bldgCount: 24, 
+    // שימוש במילה "יטקובסקי" בלבד יתפוס כל וריאציה של השם
+    streets: ["יטקובסקי", "ברטונוב", "סנדרוב"], 
+    tips: "יטקובסקי: זוגי 32-42, אי-זוגי 37-25. שים לב לבניין 37 העמוס." 
+  },
 
   // יום 10: פנקס (12)
   { day: 10, area: 12, title: "פנקס ומנדלסון", color: "green", bldgCount: 35, streets: ["דוד צבי פנקס", "מנדלסון"], tips: "פנקס: 12 זוגי, 11 אי-זוגי. מנדלסון: 12 בניינים." },
@@ -97,17 +107,17 @@ const SCHEDULE_15_DAYS = [
   { day: 14, area: 12, title: "חפץ מרדכי (סגירה)", color: "green", bldgCount: 19, streets: ["חפץ מרדכי"], tips: "סוגרים את איזור 12. 19 בניינים." },
 
   // יום 15: חזרה על היבנר (45)
+  // תוקן: החלפנו את ויצמן/ליסין בהיבנר לסיבוב שני
   { day: 15, area: 45, title: "היבנר (סיבוב שני)", color: "blue", bldgCount: 35, streets: ["היבנר"], tips: "חוזרים לרחוב הכי קשה כדי שלא יקרוס." }
 ];
 
-// מודיעין בניינים
+// מודיעין בניינים - התראות חכמות
 const BUILDING_ALERTS: Record<string, string> = {
   "היבנר": "⚠️ 35 בניינים! (20 זוגי, 15 אי-זוגי).",
   "ויצמן": "בניינים: 33 (עמוס), 35, 34, 32, 9, 7.",
-  "יטקובסקי אחים": "בניין 37 הכי עמוס. סה\"כ 11 בניינים.",
-  "אחים יטקובסקי": "בניין 37 הכי עמוס. סה\"כ 11 בניינים.",
+  "יטקובסקי": "זוגי 32-42, אי-זוגי 37-25. בניין 37 עמוס!",
+  "אחים יטקובסקי": "זוגי 32-42, אי-זוגי 37-25. בניין 37 עמוס!",
   "דגל ראובן": "16 בניינים בזוגי, 8 באי-זוגי.",
-  "מירקין מרדכי": "11 בתים פרטיים ובניין אחד.",
   "מירקין": "11 בתים פרטיים ובניין אחד.",
   "הרב קוק": "🏢 30 בניינים!",
   "חיים כהן": "🏢 29 בניינים.",
@@ -127,23 +137,20 @@ const AREA_THEMES: Record<number, any> = {
   12: { gradient: "from-emerald-50 via-teal-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" }
 };
 
-// חישוב יום אוטומטי (מתחיל מיום 5 ב-25.12)
+// חישוב יום אוטומטי
 const calculateAutoCycleDay = () => {
   try {
     const anchorDate = new Date('2025-12-25T00:00:00'); 
-    const anchorCycleDay = 5; // היום ה-25.12 הוא יום 5 (חיים כהן - ירוק)
+    const anchorCycleDay = 5; 
     const today = new Date();
     today.setHours(0,0,0,0);
-    
     if (today < anchorDate) return 5;
-    
     let workDays = 0;
     let curr = new Date(anchorDate);
     while (curr < today) {
       curr.setDate(curr.getDate() + 1);
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
-    
     let cycle = (anchorCycleDay + workDays) % 15;
     return cycle === 0 ? 15 : cycle;
   } catch(e) { return 5; }
@@ -297,7 +304,7 @@ export default function App() {
        );
     }
     
-    // יום 7 - רוטשילד אי-זוגי ספציפי וקק"ל
+    // יום 7 - רוטשילד אי-זוגי ספציפי (179-143, 141-109) וקק"ל
     if (cycleDay === 7 && currentDaySchedule.area === 14) {
        return list.filter(street => {
          const name = street.name;
@@ -306,7 +313,8 @@ export default function App() {
            const match = name.match(/(\d+)/);
            if (match) {
              const num = parseInt(match[0]);
-             if (num % 2 === 0) return false; // מעיפים זוגי
+             if (num % 2 === 0) return false; // מסננים זוגי
+             // טווח 1: 143-179, טווח 2: 109-141
              return (num >= 143 && num <= 179) || (num >= 109 && num <= 141);
            }
          }
