@@ -34,7 +34,7 @@ import { getAreaColor } from "./utils/areaColors";
 import { 
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
-  Building, MapPin, Eye, Zap, Layers, Package, Clock, StickyNote, Edit3, Save, Calculator
+  Building, MapPin, Eye, Zap, Layers, Package, Calculator, Plus
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -45,24 +45,52 @@ import UnknownResidents from "./components/UnknownResidents";
 import DailyTaskGenerator from "./components/DailyTaskGenerator";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === נתונים ולו"ז מעודכנים עם מספרי בניינים מדויקים לחישוב ===
+// === מילון בניינים מדויק לחישוב זמן ===
+const STREET_COUNTS: Record<string, number> = {
+  "דגל ראובן": 24, // 16+8
+  "ויצמן": 16, // 14+2 או 14+1, לקחנו מחמיר
+  "יטקובסקי": 11,
+  "אחים יטקובסקי": 11,
+  "יטקובסקי אחים": 11,
+  "היבנר": 35,
+  "ליסין": 2,
+  "סנדרוב": 4,
+  "ברטונוב": 9,
+  "מירקין": 1,
+  "מירקין מרדכי": 1,
+  "הפרטיזנים": 0, // וילות
+  "שטרן": 0, // וילות
+  "מרטין בובר": 0, // וילות
+  "שבדיה": 7,
+  "האחים ראב": 8,
+  "מנדלסון": 12,
+  "חפץ מרדכי": 19,
+  "חיים כהן": 29,
+  "אנה פרנק": 17,
+  "זכרון משה": 20,
+  "הרב קוק": 30,
+  "הכרם": 8,
+  "התשעים ושלוש": 29,
+  "דוד צבי פנקס": 23
+};
 
+// === לו"ז 15 ימים ===
 const SCHEDULE_15_DAYS = [
-  { day: 1, area: 45, title: "היבנר סולו", color: "blue", bldgCount: 35, streets: ["היבנר"], relays: ["היבנר 25"], tips: "יום עמוס! 35 בניינים סה\"כ. שק מחכה בהיבנר 25." },
-  { day: 2, area: 14, title: "רוטשילד זוגי", color: "red", bldgCount: 25, streets: ["הדף היומי", "רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "רק צד זוגי (110-182). שק ברוטשילד 132." },
-  { day: 3, area: 12, title: "הרב קוק והכרם", color: "green", bldgCount: 38, streets: ["הרב קוק", "הכרם"], relays: ["התשעים ושלוש 19", "התשעים ושלוש 11"], tips: "הרב קוק: 30 בניינים! קח סחורה מה-93 לפני הכניסה." },
-  { day: 4, area: 45, title: "דגל ומירקין", color: "blue", bldgCount: 25, streets: ["דגל ראובן", "מירקין"], relays: ["דגל ראובן 22"], tips: "דגל ראובן 22 - נקודת מילוי באמצע הרחוב." },
-  { day: 5, area: 12, title: "חיים כהן ושבדיה", color: "green", bldgCount: 36, streets: ["חיים כהן", "שבדיה"], relays: ["התשעים ושלוש 11"], tips: "חיים כהן צפוף מאוד." },
-  { day: 6, area: 45, title: "ויצמן וליסין", color: "blue", bldgCount: 18, streets: ["ויצמן", "ליסין", "מרטין בובר"], relays: ["ויצמן 12", "ויצמן 33"], tips: "ויצמן: שקים ב-12 (התחלה) או ב-33 (מול הבניינים)." },
-  { day: 7, area: 14, title: "רוטשילד אי-זוגי + קק\"ל", color: "red", bldgCount: 20, streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "מסלול: רוטשילד 179-143 -> קק\"ל -> רוטשילד 141-109." },
-  { day: 8, area: 12, title: "התשעים ושלוש וראב", color: "green", bldgCount: 37, streets: ["התשעים ושלוש", "האחים ראב"], relays: ["התשעים ושלוש 19", "התשעים ושלוש 11"], tips: "השקים מחכים ב-19 או 11, אתה כבר שם." },
-  { day: 9, area: 45, title: "יטקובסקי וברטונוב", color: "blue", bldgCount: 24, streets: ["יטקובסקי", "ברטונוב", "סנדרוב"], relays: ["ויצמן 33"], tips: "יטקובסקי (דרום): קח שק מויצמן 33 לפני שאתה יורד למטה." },
-  { day: 10, area: 12, title: "פנקס ומנדלסון", color: "green", bldgCount: 35, streets: ["דוד צבי פנקס", "מנדלסון"], relays: ["התשעים ושלוש 11"], tips: "פנקס: 12 זוגי, 11 אי-זוגי." },
-  { day: 11, area: 45, title: "הפרטיזנים ושטרן (קל)", color: "blue", bldgCount: 0, streets: ["הפרטיזנים", "שטרן"], relays: ["ויצמן 33"], tips: "יום הליכה קליל." },
-  { day: 12, area: 14, title: "רוטשילד מלא (מרתון)", color: "red", bldgCount: 45, streets: ["רוטשילד", "קק\"ל", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "🚨 תמלא שקים ב-132 לפני שאתה מתחיל את המרתון." },
-  { day: 13, area: 12, title: "זכרון משה ואנה פרנק", color: "green", bldgCount: 37, streets: ["זכרון משה", "אנה פרנק"], relays: ["התשעים ושלוש 19"], tips: "זכרון משה: 20 בניינים." },
-  { day: 14, area: 12, title: "חפץ מרדכי (סגירה)", color: "green", bldgCount: 19, streets: ["חפץ מרדכי"], relays: ["התשעים ושלוש 11"], tips: "סוגרים את איזור 12." },
-  { day: 15, area: 45, title: "היבנר (סיבוב שני)", color: "blue", bldgCount: 35, streets: ["היבנר"], relays: ["היבנר 25"], tips: "חוזרים לרחוב הכי קשה." }
+  { day: 1, area: 45, title: "היבנר סולו", color: "blue", streets: ["היבנר"], relays: ["היבנר 25"], tips: "יום עמוס! 35 בניינים סה\"כ. שק מחכה בהיבנר 25." },
+  { day: 2, area: 14, title: "רוטשילד זוגי", color: "red", streets: ["הדף היומי", "רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "רק צד זוגי (110-182). שק ברוטשילד 132." },
+  { day: 3, area: 12, title: "הרב קוק והכרם", color: "green", streets: ["הרב קוק", "הכרם"], relays: ["התשעים ושלוש 19", "התשעים ושלוש 11"], tips: "הרב קוק: 30 בניינים! קח סחורה מה-93 לפני הכניסה." },
+  { day: 4, area: 45, title: "דגל ומירקין", color: "blue", streets: ["דגל ראובן", "מירקין"], relays: ["דגל ראובן 22"], tips: "דגל ראובן 22 - נקודת מילוי באמצע הרחוב." },
+  { day: 5, area: 12, title: "חיים כהן ושבדיה", color: "green", streets: ["חיים כהן", "שבדיה"], relays: ["התשעים ושלוש 11"], tips: "חיים כהן צפוף מאוד." },
+  { day: 6, area: 45, title: "ויצמן וליסין", color: "blue", streets: ["ויצמן", "ליסין", "מרטין בובר"], relays: ["ויצמן 12", "ויצמן 33"], tips: "ויצמן: שקים ב-12 (התחלה) או ב-33 (מול הבניינים)." },
+  { day: 7, area: 14, title: "רוטשילד אי-זוגי + קק\"ל", color: "red", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "מסלול: רוטשילד 179-143 -> קק\"ל -> רוטשילד 141-109." },
+  { day: 8, area: 12, title: "התשעים ושלוש וראב", color: "green", streets: ["התשעים ושלוש", "האחים ראב"], relays: ["התשעים ושלוש 19", "התשעים ושלוש 11"], tips: "השקים מחכים ב-19 או 11, אתה כבר שם." },
+  { day: 9, area: 45, title: "יטקובסקי וברטונוב", color: "blue", streets: ["יטקובסקי", "ברטונוב", "סנדרוב"], relays: ["ויצמן 33"], tips: "יטקובסקי (דרום): קח שק מויצמן 33 לפני שאתה יורד למטה." },
+  { day: 10, area: 12, title: "פנקס ומנדלסון", color: "green", streets: ["דוד צבי פנקס", "מנדלסון"], relays: ["התשעים ושלוש 11"], tips: "פנקס: 12 זוגי, 11 אי-זוגי." },
+  { day: 11, area: 45, title: "הפרטיזנים ושטרן (קל)", color: "blue", streets: ["הפרטיזנים", "שטרן"], relays: ["ויצמן 33"], tips: "יום הליכה קליל." },
+  { day: 12, area: 14, title: "רוטשילד מלא (מרתון)", color: "red", streets: ["רוטשילד", "קק\"ל", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "🚨 תמלא שקים ב-132 לפני שאתה מתחיל את המרתון." },
+  { day: 13, area: 12, title: "זכרון משה ואנה פרנק", color: "green", streets: ["זכרון משה", "אנה פרנק"], relays: ["התשעים ושלוש 19"], tips: "זכרון משה: 20 בניינים." },
+  { day: 14, area: 12, title: "חפץ מרדכי (סגירה)", color: "green", streets: ["חפץ מרדכי"], relays: ["התשעים ושלוש 11"], tips: "סוגרים את איזור 12." },
+  { day: 15, area: 45, title: "היבנר (סיבוב שני)", color: "blue", streets: ["היבנר"], relays: ["היבנר 25"], tips: "חוזרים לרחוב הכי קשה." }
 ];
 
 const BUILDING_ALERTS: Record<string, string> = {
@@ -108,104 +136,67 @@ const calculateAutoCycleDay = () => {
   } catch(e) { return 5; }
 };
 
-// === רכיב: כרטיס רחוב עם פתקים ===
-function StreetCard({ street, theme, onDone, onStartTimer, notes, onSaveNote }: any) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [noteText, setNoteText] = useState(notes[street.name] || "");
-  const hasNote = !!notes[street.name];
+// === וידג'ט חישוב זמן חכם עם הפסקות ===
+function EstimatedFinishWidget({ streetsToShow, kmWalked }: { streetsToShow: Street[], kmWalked: string }) {
+  const [breakMinutes, setBreakMinutes] = useState(0);
+  
+  // חישוב כירורגי: סכימת בניינים מדויקת
+  const totalBuildingsLeft = streetsToShow.reduce((acc, street) => {
+    // מחפשים את שם הרחוב במילון הבניינים
+    const count = Object.entries(STREET_COUNTS).find(([key]) => street.name.includes(key))?.[1];
+    // אם מצאנו - מוסיפים. אם לא מצאנו - מניחים ממוצע של 10 בניינים (או 0 אם זה נראה כמו בית פרטי)
+    return acc + (count !== undefined ? count : 10);
+  }, 0);
 
-  const handleSave = () => {
-    onSaveNote(street.name, noteText);
-    setIsEditing(false);
-  };
-
-  return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-3 transition-all hover:shadow-md">
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${theme.primary}`}>
-            <MapPin size={18} />
-          </div>
-          <div>
-            <h3 className="font-bold text-gray-800 text-lg leading-tight">{street.name}</h3>
-            <div className="flex items-center gap-2 mt-1">
-               {hasNote && !isEditing && (
-                 <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-md flex items-center gap-1 border border-yellow-200">
-                   <StickyNote size={10} /> {notes[street.name]}
-                 </span>
-               )}
-            </div>
-          </div>
-        </div>
-        <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${hasNote ? 'text-yellow-500' : 'text-gray-300'}`}>
-          <Edit3 size={20} />
-        </button>
-      </div>
-
-      {isEditing && (
-        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-3 animate-fade-in">
-          <label className="text-xs font-bold text-yellow-800 block mb-1">הערות (קוד, כלב, מיקום):</label>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              value={noteText} 
-              onChange={(e) => setNoteText(e.target.value)} 
-              placeholder="לדוגמה: קוד 2580..." 
-              className="flex-1 border border-yellow-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            />
-            <button onClick={handleSave} className="bg-yellow-500 text-white px-3 py-1 rounded text-sm font-bold"><Save size={16}/></button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex gap-2 mt-2">
-        <button onClick={() => onStartTimer(street)} className="flex-1 bg-gray-50 text-gray-700 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-100 border border-gray-200 transition-colors">
-          התחל מדידה
-        </button>
-        <button onClick={() => onDone(street.id)} className={`flex-1 ${theme.primary} text-white py-2.5 rounded-lg font-bold text-sm hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2`}>
-          <CheckCircle2 size={18} /> סמן כבוצע
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// === רכיב: וידג'ט צפי סיום מדויק (7 דקות לבניין) ===
-function EstimatedFinishWidget({ pendingCount, totalStreets, kmWalked, schedule }: any) {
-  let minutesLeft = 0;
-  let details = "";
-
-  if (typeof schedule.bldgCount === 'number' && schedule.bldgCount > 0 && totalStreets > 0) {
-    // חישוב יחסי: סך בניינים / סך רחובות = ממוצע בניינים לרחוב
-    const avgBuildingsPerStreet = schedule.bldgCount / totalStreets;
-    const estimatedBuildingsLeft = Math.ceil(pendingCount * avgBuildingsPerStreet);
-    minutesLeft = estimatedBuildingsLeft * 7; 
-    details = `נותרו כ-${estimatedBuildingsLeft} בניינים (7 דק'/בניין)`;
-  } else {
-    // יום של בתים פרטיים: 15 דקות לרחוב
-    minutesLeft = pendingCount * 15;
-    details = "חישוב לפי 15 דק' לרחוב";
+  // הנוסחה: 7 דקות לבניין + 2 דקות הליכה בין רחובות
+  let minutesLeft = (totalBuildingsLeft * 7) + (streetsToShow.length * 2);
+  
+  // אם אין בניינים (יום וילות), מחשבים לפי 15 דקות הליכה לרחוב
+  if (totalBuildingsLeft === 0 && streetsToShow.length > 0) {
+    minutesLeft = streetsToShow.length * 15;
   }
 
+  const totalMinutes = minutesLeft + breakMinutes;
+  
   const finishTime = new Date();
-  finishTime.setMinutes(finishTime.getMinutes() + minutesLeft);
+  finishTime.setMinutes(finishTime.getMinutes() + totalMinutes);
   const timeString = finishTime.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
-  if (pendingCount === 0) return null;
+  if (streetsToShow.length === 0) return null;
 
   return (
-    <div className="bg-gray-900 text-white rounded-xl p-4 shadow-lg mb-4 flex items-center justify-between border border-gray-700">
-      <div className="flex items-center gap-3">
-        <div className="bg-gray-800 p-2 rounded-full"><Calculator className="text-yellow-400" size={20} /></div>
-        <div>
-          <p className="text-xs text-gray-400 font-medium">צפי סיום (מדויק)</p>
-          <p className="text-xl font-bold font-mono tracking-wider">{timeString}</p>
-          <p className="text-[10px] text-gray-500">{details}</p>
+    <div className="bg-gray-900 text-white rounded-xl p-4 shadow-lg mb-4 border border-gray-700 animate-fade-in">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="bg-gray-800 p-2 rounded-full"><Calculator className="text-yellow-400" size={20} /></div>
+          <div>
+            <p className="text-xs text-gray-400 font-medium">צפי סיום (לפי 7 דק'/בניין)</p>
+            <p className="text-2xl font-bold font-mono tracking-wider text-yellow-400">{timeString}</p>
+            <p className="text-[10px] text-gray-500">נותרו כ-{totalBuildingsLeft} בניינים {breakMinutes > 0 && `(+${breakMinutes} דק' הפסקה)`}</p>
+          </div>
+        </div>
+        <div className="text-right">
+           <p className="text-xs text-gray-400">הלכת היום</p>
+           <p className="font-bold text-green-400">{kmWalked} ק"מ</p>
         </div>
       </div>
-      <div className="text-right border-r border-gray-700 pr-4">
-        <p className="text-xs text-gray-400">הלכת היום</p>
-        <p className="font-bold text-green-400">{kmWalked} ק"מ</p>
+      
+      {/* כפתור הפסקת קפה */}
+      <div className="flex gap-2">
+        <button 
+          onClick={() => setBreakMinutes(prev => prev + 15)}
+          className="flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-2 rounded-lg flex items-center justify-center gap-2 transition-colors border border-gray-600"
+        >
+          <Coffee size={14} /> הוסף הפסקה (+15 דק')
+        </button>
+        {breakMinutes > 0 && (
+          <button 
+            onClick={() => setBreakMinutes(0)}
+            className="bg-red-900/50 hover:bg-red-900 text-red-200 text-xs px-3 py-2 rounded-lg transition-colors"
+          >
+            אפס
+          </button>
+        )}
       </div>
     </div>
   );
@@ -319,7 +310,7 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
 
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
-            <div className="text-3xl font-black text-gray-800">{currentSchedule.bldgCount}</div>
+            <div className={`text-3xl font-black ${theme.textMain}`}>{currentSchedule.bldgCount || "?"}</div>
             <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">בניינים</div>
           </div>
           <div className={`${theme.secondary} rounded-2xl p-4 text-center border ${theme.border}`}>
@@ -352,18 +343,6 @@ export default function App() {
   const [sunMode, setSunMode] = useState(false);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   
-  // ניהול פתקים לרחובות
-  const [streetNotes, setStreetNotes] = useState<Record<string, string>>(() => {
-    const saved = localStorage.getItem("streetNotes");
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  const saveNote = (streetName: string, note: string) => {
-    const updated = { ...streetNotes, [streetName]: note };
-    setStreetNotes(updated);
-    localStorage.setItem("streetNotes", JSON.stringify(updated));
-  };
-
   useEffect(() => {
     const day = new Date().getDay();
     setIsWeekend(day === 5 || day === 6);
@@ -377,8 +356,6 @@ export default function App() {
 
   const currentDaySchedule = useMemo(() => SCHEDULE_15_DAYS.find(s => s.day === cycleDay) || SCHEDULE_15_DAYS[0], [cycleDay]);
   const theme = AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[45];
-
-  // חישוב ק"מ (0.5 ק"מ בממוצע לרחוב)
   const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
   const streetsToShow = useMemo(() => {
@@ -462,12 +439,10 @@ export default function App() {
                     return null;
                   })()}
                   
-                  {/* ווידג'ט חדש ומתוקן: צפי סיום מדויק (7 דקות לבניין) */}
+                  {/* הוידג'ט המתוקן עם חישוב 7 דקות והכפתור החדש */}
                   <EstimatedFinishWidget 
-                     pendingCount={streetsToShow.length} 
-                     totalStreets={streetsToShow.length + completedCycleToday.length}
+                     streetsToShow={streetsToShow} 
                      kmWalked={kmWalked} 
-                     schedule={currentDaySchedule} 
                   />
 
                   <div className="flex justify-between items-center mb-4">
@@ -483,22 +458,12 @@ export default function App() {
                         <div className="inline-block" id="area-toggle-btn"><AreaToggle area={todayArea} onEnd={endDay} /></div>
                      </div>
                   ) : (
-                     <div className="space-y-2">
+                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         {isHolidayMode ? (
                           <HolidayAdjustedStreetTable list={streetsToShow} onDone={markDelivered} onStartTimer={handleStartTimer} getStreetUrgencyLevel={getStreetUrgencyLevel} getUrgencyColor={getUrgencyColor} getUrgencyLabel={getUrgencyLabel} />
                         ) : (streetsToShow.length > 0 ? (
-                            // רינדור הכרטיסיות עם פתקים
-                            streetsToShow.map(street => (
-                              <StreetCard 
-                                key={street.id} 
-                                street={street} 
-                                theme={theme} 
-                                onDone={markDelivered} 
-                                onStartTimer={handleStartTimer} 
-                                notes={streetNotes} 
-                                onSaveNote={saveNote}
-                              />
-                            ))
+                            // הטבלה חזרה במקום הכרטיסיות
+                            <StreetTable list={streetsToShow} onDone={markDelivered} onStartTimer={handleStartTimer} getStreetUrgencyLevel={getStreetUrgencyLevel} getUrgencyColor={getUrgencyColor} getUrgencyLabel={getUrgencyLabel} />
                           ) : (
                             <div className="text-center p-12"><CheckCircle2 size={48} className={`mx-auto mb-3 ${theme.iconColor}`} /><h3 className="text-2xl font-bold text-gray-800">הכל הושלם!</h3><p className="text-gray-500 text-sm mb-4">כל הכבוד, סיימת את המכסה להיום.</p><div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-4"><div className="bg-green-500 h-full w-full animate-pulse"></div></div><button onClick={() => setCycleDay(cycleDay === 15 ? 1 : cycleDay + 1)} className={`mt-2 ${theme.primary} text-white px-6 py-2 rounded-lg shadow-md hover:opacity-90 transition-all`}>עבור ליום הבא</button></div>
                           )
