@@ -31,10 +31,12 @@ import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 import { getAreaColor } from "./utils/areaColors";
+// תיקון: הוספנו את Umbrella כדי למנוע את המסך הלבן
 import { 
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
-  Building, MapPin, Eye, Zap, Layers, Package, Calculator, Plus, Minus, Mail, Box, Truck, Lightbulb, Bike, CloudRain, History, Undo2, Clock, Umbrella
+  Building, MapPin, Eye, Zap, Layers, Package, Calculator, Plus, Minus, 
+  Mail, Box, Truck, Lightbulb, Bike, CloudRain, History, Undo2, Clock, Umbrella
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -108,34 +110,94 @@ const calculateAutoCycleDay = () => {
   } catch(e) { return 5; }
 };
 
-// === שורת רחוב חכמה עם סימון היסטוריה ירוק ===
-function StreetRow({ street, theme, onDone, onUndo, onStartTimer, isCompleted, isRecentlyDone }: any) {
-  // אם בוצע היום - ירוק כהה (Emerald)
+// === שורת רחוב חכמה עם סימון "הרחוב חולק" ותאריך ===
+function StreetRow({ street, theme, onDone, onUndo, onStartTimer, isCompleted, isRecentlyDone, daysSinceLastDelivery }: any) {
+  // פורמט תאריך עברי
+  const formatDeliveryDate = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
+  };
+
+  const deliveryDate = street.lastDelivered ? formatDeliveryDate(street.lastDelivered) : null;
+
+  // אם בוצע היום - ירוק כהה
   if (isCompleted) {
+    const todayDate = new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
     return (
-      <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200 shadow-sm mb-3 flex items-center justify-between animate-fade-in opacity-80">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-600 font-bold"><CheckCircle2 size={20} /></div>
-          <div><h3 className="font-bold text-emerald-900 text-lg leading-tight line-through opacity-70">{street.name}</h3><p className="text-xs text-emerald-700">בוצע היום</p></div>
+      <div className="bg-green-100 rounded-xl p-4 border-2 border-green-400 shadow-sm mb-3 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-green-500 text-white shadow-md">
+              <CheckCircle2 size={24} />
+            </div>
+            <div>
+              <h3 className="font-bold text-green-900 text-lg">{street.name}</h3>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="bg-green-500 text-white text-sm font-bold px-3 py-1 rounded-full">
+                  ✓ הרחוב חולק
+                </span>
+                <span className="text-green-800 text-sm font-medium flex items-center gap-1">
+                  <Calendar size={14} /> {todayDate}
+                </span>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => onUndo(street.id)} className="p-3 text-green-600 hover:text-red-500 hover:bg-red-50 transition-colors bg-white rounded-full shadow-sm border border-green-200">
+            <Undo2 size={20} />
+          </button>
         </div>
-        <button onClick={() => onUndo(street.id)} className="p-2 text-emerald-400 hover:text-red-500 transition-colors bg-white rounded-full shadow-sm border border-emerald-100"><Undo2 size={20} /></button>
       </div>
     );
   }
 
-  // אם בוצע לאחרונה - ירוק בהיר (History)
+  // אם בוצע לאחרונה (ב-6 ימים האחרונים) - ירוק בהיר עם תאריך
+  if (isRecentlyDone && deliveryDate) {
+    return (
+      <div className="bg-green-50 rounded-xl p-4 border-2 border-green-300 shadow-sm mb-3 transition-all hover:shadow-md">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-green-400 text-white shadow-sm">
+              <CheckCircle2 size={22} />
+            </div>
+            <div>
+              <h3 className="font-bold text-green-900 text-lg">{street.name}</h3>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="bg-green-400 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  ✓ הרחוב חולק
+                </span>
+                <span className="text-green-700 text-xs font-medium flex items-center gap-1">
+                  <Calendar size={12} /> {deliveryDate}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => onStartTimer(street)} className="flex-1 bg-white text-gray-700 py-3 rounded-lg font-bold text-sm hover:bg-gray-50 border border-gray-200 transition-colors flex items-center justify-center gap-2">
+            <Clock size={16} /> מדוד
+          </button>
+          <button onClick={() => onDone(street.id)} className="flex-1 bg-green-500 text-white py-3 rounded-lg font-bold text-sm hover:bg-green-600 shadow-sm transition-all flex items-center justify-center gap-2">
+            <CheckCircle2 size={18} /> חלק שוב
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // רחוב רגיל שלא חולק לאחרונה
   return (
-    <div className={`rounded-xl p-4 border shadow-sm mb-3 transition-all border-r-4 ${isRecentlyDone ? 'border-r-green-500 bg-green-50/80' : 'border-r-transparent bg-white border-gray-100 hover:shadow-md'}`}>
+    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-3 transition-all hover:shadow-md hover:border-indigo-200">
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${isRecentlyDone ? 'bg-green-500' : theme.primary}`}>
-            {isRecentlyDone ? <History size={18} /> : <MapPin size={18} />}
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${theme.primary}`}>
+            <MapPin size={20} />
           </div>
           <div>
-            <h3 className={`font-bold text-lg leading-tight ${isRecentlyDone ? 'text-green-900' : 'text-gray-800'}`}>{street.name}</h3>
-            {isRecentlyDone && (
-              <span className="text-xs font-bold text-green-700 flex items-center gap-1 mt-1 bg-white/50 px-2 py-0.5 rounded-md w-fit border border-green-200">
-                <History size={10} /> חולק לאחרונה
+            <h3 className="font-bold text-gray-800 text-lg">{street.name}</h3>
+            {deliveryDate && (
+              <span className="text-gray-500 text-xs flex items-center gap-1 mt-1">
+                <Calendar size={12} /> חלוקה אחרונה: {deliveryDate}
               </span>
             )}
           </div>
@@ -145,8 +207,8 @@ function StreetRow({ street, theme, onDone, onUndo, onStartTimer, isCompleted, i
         <button onClick={() => onStartTimer(street)} className="flex-1 bg-white text-gray-700 py-3 rounded-lg font-bold text-sm hover:bg-gray-50 border border-gray-200 transition-colors flex items-center justify-center gap-2">
           <Clock size={16} /> מדוד
         </button>
-        <button onClick={() => onDone(street.id)} className={`flex-1 text-white py-3 rounded-lg font-bold text-sm hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 ${isRecentlyDone ? 'bg-green-600' : theme.primary}`}>
-          <CheckCircle2 size={18} /> {isRecentlyDone ? 'בצע שוב' : 'סמן כבוצע'}
+        <button onClick={() => onDone(street.id)} className={`flex-1 text-white py-3 rounded-lg font-bold text-sm hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 ${theme.primary}`}>
+          <CheckCircle2 size={18} /> סמן כבוצע
         </button>
       </div>
     </div>
@@ -165,7 +227,7 @@ function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRa
 
   // חישוב: אופניים חשמליים (5 דק' לבניין) מול הליכה בגשם (9 דק')
   const timePerBldg = isRainMode ? 9 : 5;
-  const timePerStreet = isRainMode ? 3 : 1;
+  const timePerStreet = isRainMode ? 3 : 1; 
   
   let minutesLeft = (totalBuildingsLeft * timePerBldg) + (pendingStreets.length * timePerStreet) + (regLeft * 2.5) + (pkgLeft * 3);
   
@@ -367,7 +429,7 @@ export default function App() {
   const [flashlight, setFlashlight] = useState(false);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
   
-  // מתג מצב גשם
+  // מתג מצב גשם (משפיע על חישובי זמנים)
   const [isRainMode, setIsRainMode] = useState(false);
   
   const [regTotal, setRegTotal] = useState(0);
@@ -390,7 +452,7 @@ export default function App() {
   const theme = AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[45];
   const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
-  // === הגדרת completedCycleToday - רחובות שהושלמו היום לפי הלו"ז ===
+  // רחובות שהושלמו היום לפי הלו"ז הנוכחי
   const completedCycleToday = useMemo(() => {
     return allCompletedToday.filter(street => 
       currentDaySchedule.streets.some(scheduledName => 
@@ -430,17 +492,32 @@ export default function App() {
     const today = new Date();
     const mapped = filtered.map(s => {
       const isDoneToday = allCompletedToday.some(done => done.id === s.id);
-      return { ...s, isCompleted: isDoneToday };
+      // חישוב ימים מאז החלוקה האחרונה
+      const daysSince = s.lastDelivered ? totalDaysBetween(new Date(s.lastDelivered), today) : null;
+      const isRecentlyDone = daysSince !== null && daysSince <= 6 && !isDoneToday;
+      return { 
+        ...s, 
+        isCompleted: isDoneToday, 
+        isRecentlyDone: isRecentlyDone,
+        daysSinceLastDelivery: daysSince
+      };
     });
 
     // הוספת מה שכבר הושלם היום
     allCompletedToday
       .filter(street => currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name)))
       .forEach(s => {
-         if (!mapped.some(m => m.id === s.id)) mapped.push({...s, isCompleted: true});
+         if (!mapped.some(m => m.id === s.id)) mapped.push({...s, isCompleted: true, isRecentlyDone: false});
       });
 
-    return mapped.sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1));
+    // מיון: קודם רגילים, אחר כך "ירוקים" (שבוצעו לאחרונה), ובסוף מה שבוצע היום
+    return mapped.sort((a, b) => {
+      if (a.isCompleted && !b.isCompleted) return 1;
+      if (!a.isCompleted && b.isCompleted) return -1;
+      if (a.isRecentlyDone && !b.isRecentlyDone) return 1;
+      if (!a.isRecentlyDone && b.isRecentlyDone) return -1;
+      return 0;
+    });
 
   }, [pendingToday, allCompletedToday, currentDaySchedule, todayArea, optimizedStreets, cycleDay]);
 
@@ -464,6 +541,7 @@ export default function App() {
     <div className={`min-h-screen transition-colors duration-500 bg-gradient-to-br ${sunMode ? 'from-white to-gray-100' : theme.gradient}`}>
       
       <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2">
+        {/* כפתור מצב גשם */}
         <button onClick={() => setIsRainMode(!isRainMode)} className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-transform hover:scale-105 ${isRainMode ? 'bg-blue-500 text-white animate-pulse' : 'bg-yellow-500 text-white'}`} title="מצב גשם">
           {isRainMode ? <Umbrella size={22} /> : <Bike size={22} />}
         </button>
@@ -483,11 +561,10 @@ export default function App() {
         <MailSortingReminder currentArea={currentDaySchedule.area} />
         <Header />
         
-        {/* מתג מצב גשם בראש המסך לאינדיקציה */}
         <div className={`px-4 py-2 flex justify-between items-center transition-colors ${isRainMode ? 'bg-slate-900 text-white' : 'bg-transparent text-gray-800'}`}>
            <div className="flex items-center gap-2 text-sm font-bold">
              {isRainMode ? <CloudRain size={18} className="text-blue-300"/> : <Bike size={18} className="text-green-600"/>}
-             {isRainMode ? "מצב גשם (הליכה)" : "מצב אופניים חשמליים"}
+             {isRainMode ? "מצב גשם (הליכה)" : "מצב אופניים חשמליים ⚡"}
            </div>
            <button 
              onClick={() => setIsRainMode(!isRainMode)} 
@@ -549,7 +626,8 @@ export default function App() {
                                onUndo={undoDelivered}
                                onStartTimer={handleStartTimer} 
                                isCompleted={street.isCompleted}
-                               isRecentlyDone={false}
+                               isRecentlyDone={street.isRecentlyDone}
+                               daysSinceLastDelivery={street.daysSinceLastDelivery}
                              />
                            ))
                         ) : (
