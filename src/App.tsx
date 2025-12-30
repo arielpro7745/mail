@@ -34,7 +34,7 @@ import { getAreaColor } from "./utils/areaColors";
 import { 
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
-  Building, MapPin, Eye, Zap, Layers, Package, Calculator, Plus, Minus, Mail, Box, Truck, Lightbulb, Bike, CloudRain, History, Undo2, Clock
+  Building, MapPin, Eye, Zap, Layers, Package, Calculator, Plus, Minus, Mail, Box, Truck, Lightbulb, Bike, CloudRain, History, Undo2, Clock, Umbrella
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -390,6 +390,15 @@ export default function App() {
   const theme = AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[45];
   const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
+  // === הגדרת completedCycleToday - רחובות שהושלמו היום לפי הלו"ז ===
+  const completedCycleToday = useMemo(() => {
+    return allCompletedToday.filter(street => 
+      currentDaySchedule.streets.some(scheduledName => 
+        street.name.includes(scheduledName) || scheduledName.includes(street.name)
+      )
+    );
+  }, [allCompletedToday, currentDaySchedule]);
+
   const streetsToShow = useMemo(() => {
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
     if (todayArea !== currentDaySchedule.area) return [];
@@ -540,7 +549,7 @@ export default function App() {
                                onUndo={undoDelivered}
                                onStartTimer={handleStartTimer} 
                                isCompleted={street.isCompleted}
-                               lastDeliveredDate={street.lastDelivered}
+                               isRecentlyDone={false}
                              />
                            ))
                         ) : (
