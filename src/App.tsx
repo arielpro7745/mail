@@ -31,7 +31,6 @@ import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
 import { getAreaColor } from "./utils/areaColors";
-// רשימת האייקונים המלאה והמתוקנת למניעת קריסות
 import { 
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
@@ -446,22 +445,22 @@ export default function App() {
     
     const filtered = list.filter(street => {
        if (cycleDay === 12 && currentDaySchedule.area === 14) {
-          return street.name.includes("רוטשילד") || street.name.includes("קק") || street.name.includes("קרן קיימת") || street.name.includes("הדף היומי") || street.name.includes("גד מכנס");
+         return street.name.includes("רוטשילד") || street.name.includes("קק") || street.name.includes("קרן קיימת") || street.name.includes("הדף היומי") || street.name.includes("גד מכנס");
        }
        if (cycleDay === 7 && currentDaySchedule.area === 14) {
-          if (street.name.includes("קק") || street.name.includes("קרן קיימת")) return true;
-          if (street.name.includes("רוטשילד")) {
-            const match = street.name.match(/(\d+)/);
-            if (match) {
-              const num = parseInt(match[0]);
-              return num % 2 !== 0 && ((num >= 143 && num <= 179) || (num >= 109 && num <= 141));
-            }
-          }
-          return false;
+         if (street.name.includes("קק") || street.name.includes("קרן קיימת")) return true;
+         if (street.name.includes("רוטשילד")) {
+           const match = street.name.match(/(\d+)/);
+           if (match) {
+             const num = parseInt(match[0]);
+             return num % 2 !== 0 && ((num >= 143 && num <= 179) || (num >= 109 && num <= 141));
+           }
+         }
+         return false;
        }
        if (cycleDay === 2 && street.name.includes("רוטשילד")) {
-          const match = street.name.match(/(\d+)/);
-          return match && parseInt(match[0]) % 2 === 0;
+         const match = street.name.match(/(\d+)/);
+         return match && parseInt(match[0]) % 2 === 0;
        }
        return currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name));
     });
@@ -562,7 +561,8 @@ export default function App() {
 
           {tab === "regular" && (
             <>
-              <CycleDashboard cycleDay={cycleDay} setCycleDay={setCycleDay} completedCount={completedCycleToday.length} pendingCount={streetsToShow.filter((s:any)=>!s.isCompleted).length} currentArea={todayArea} theme={theme} />
+              {/* תיקון: הוחלף completedCycleToday ב-completedToday */}
+              <CycleDashboard cycleDay={cycleDay} setCycleDay={setCycleDay} completedCount={completedToday.length} pendingCount={streetsToShow.filter((s:any)=>!s.isCompleted).length} currentArea={todayArea} theme={theme} />
 
               {!isWeekend && (
                 <div className="animate-fade-in-up">
@@ -573,32 +573,32 @@ export default function App() {
                   })()}
                   
                   <CargoTracker 
-                     regTotal={regTotal} setRegTotal={setRegTotal} regDone={regDone} setRegDone={setRegDone}
-                     pkgTotal={pkgTotal} setPkgTotal={setPkgTotal} pkgDone={pkgDone} setPkgDone={setPkgDone}
+                      regTotal={regTotal} setRegTotal={setRegTotal} regDone={regDone} setRegDone={setRegDone}
+                      pkgTotal={pkgTotal} setPkgTotal={setPkgTotal} pkgDone={pkgDone} setPkgDone={setPkgDone}
                   />
 
                   <EstimatedFinishWidget 
-                     streetsToShow={streetsToShow} 
-                     kmWalked={kmWalked} 
-                     regLeft={Math.max(0, regTotal - regDone)}
-                     pkgLeft={Math.max(0, pkgTotal - pkgDone)}
-                     isRainMode={isRainMode}
+                      streetsToShow={streetsToShow} 
+                      kmWalked={kmWalked} 
+                      regLeft={Math.max(0, regTotal - regDone)}
+                      pkgLeft={Math.max(0, pkgTotal - pkgDone)}
+                      isRainMode={isRainMode}
                   />
 
                   <div className="flex justify-between items-center mb-4">
-                     <h2 className="text-xl font-bold text-gray-800">המשימות להיום</h2>
-                     <button onClick={() => setCycleDay(calculateAutoCycleDay())} className={`text-xs ${theme.textMain} underline`}>סנכרן לתאריך</button>
+                      <h2 className="text-xl font-bold text-gray-800">המשימות להיום</h2>
+                      <button onClick={() => setCycleDay(calculateAutoCycleDay())} className={`text-xs ${theme.textMain} underline`}>סנכרן לתאריך</button>
                   </div>
 
                   {todayArea !== currentDaySchedule.area ? (
-                     <div className="bg-white p-8 rounded-3xl border-2 border-dashed border-gray-200 text-center shadow-sm">
+                      <div className="bg-white p-8 rounded-3xl border-2 border-dashed border-gray-200 text-center shadow-sm">
                         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4"><Layers className="text-red-500" size={32} /></div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">אזור לא תואם</h3>
                         <p className="text-gray-500 mb-6 max-w-md mx-auto">היום עובדים ב<strong>אזור {currentDaySchedule.area}</strong>. אנא החלף אזור.</p>
                         <div className="inline-block" id="area-toggle-btn"><AreaToggle area={todayArea} onEnd={endDay} /></div>
-                     </div>
+                      </div>
                   ) : (
-                     <div className="space-y-2">
+                      <div className="space-y-2">
                         {streetsToShow.length > 0 ? (
                            streetsToShow.map((street: any) => (
                              <StreetCard 
@@ -618,7 +618,7 @@ export default function App() {
                         ) : (
                            <div className="text-center p-12"><CheckCircle2 size={48} className={`mx-auto mb-3 ${theme.iconColor}`} /><h3 className="text-2xl font-bold text-gray-800">הכל הושלם!</h3><p className="text-gray-500 text-sm mb-4">כל הכבוד, סיימת את המכסה להיום.</p><div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-4"><div className="bg-green-500 h-full w-full animate-pulse"></div></div><button onClick={() => setCycleDay(cycleDay === 15 ? 1 : cycleDay + 1)} className={`mt-2 ${theme.primary} text-white px-6 py-2 rounded-lg shadow-md hover:opacity-90 transition-all`}>עבור ליום הבא</button></div>
                         )}
-                     </div>
+                      </div>
                   )}
 
                   <div className="my-6 opacity-70 hover:opacity-100 transition-opacity"><AreaToggle area={todayArea} onEnd={endDay} /></div>
@@ -627,7 +627,8 @@ export default function App() {
                   
                   <div className="mt-8 text-center">
                     <button onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)} className="text-sm text-gray-400 hover:text-gray-600 underline">כלים מתקדמים</button>
-                    {showAdvancedFeatures && <div className="mt-4 space-y-4"><InteractiveMap buildings={[]} currentArea={todayArea} completedToday={completedCycleToday} /><VoiceNotifications onStreetCompleted={(s) => console.log(s)} /><AdvancedStats /><AutoBackup /><NightModeScheduler /><GPSExporter buildings={[]} currentArea={todayArea} optimizedRoute={optimizedStreets} /></div>}
+                    {/* תיקון: הוחלף completedCycleToday ב-completedToday */}
+                    {showAdvancedFeatures && <div className="mt-4 space-y-4"><InteractiveMap buildings={[]} currentArea={todayArea} completedToday={completedToday} /><VoiceNotifications onStreetCompleted={(s) => console.log(s)} /><AdvancedStats /><AutoBackup /><NightModeScheduler /><GPSExporter buildings={[]} currentArea={todayArea} optimizedRoute={optimizedStreets} /></div>}
                   </div>
                 </div>
               )}
