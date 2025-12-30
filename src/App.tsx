@@ -7,6 +7,7 @@ import { AreaToggle } from "./components/AreaToggle";
 import StreetTable from "./components/StreetTable";
 import Notifications from "./components/Notifications";
 import BuildingManager from "./components/BuildingManager";
+import CompletedToday from "./components/CompletedToday";
 import WalkingOrder from "./components/WalkingOrder";
 import LoadingSpinner from "./components/LoadingSpinner";
 import DeliveryTimer from "./components/DeliveryTimer";
@@ -33,7 +34,7 @@ import { getAreaColor } from "./utils/areaColors";
 import { 
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
-  Building, MapPin, Eye, Zap, Layers, Package, Calculator, Plus, Minus, Mail, Box, Truck, Lightbulb, Bike, Undo2, Clock
+  Building, MapPin, Eye, Zap, Layers, Package, Calculator, Plus, Minus, Mail, Box, Truck, Lightbulb, Bike, CloudRain, History, Undo2, Clock
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -107,44 +108,98 @@ const calculateAutoCycleDay = () => {
   } catch(e) { return 5; }
 };
 
-// === שורת רחוב נקייה (ללא פתקים) עם הדגשה ירוקה ל"בוצע" ===
-function StreetRow({ street, theme, onDone, onUndo, onStartTimer, isCompleted }: any) {
+// === שורת רחוב חכמה עם סימון היסטוריה ירוק ===
+function StreetRow({ street, theme, onDone, onUndo, onStartTimer, isCompleted, isRecentlyDone }: any) {
+  // אם בוצע היום - ירוק כהה (Emerald)
   if (isCompleted) {
     return (
-      <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200 shadow-sm mb-3 flex items-center justify-between animate-fade-in">
+      <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200 shadow-sm mb-3 flex items-center justify-between animate-fade-in opacity-80">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-600 font-bold">
-            <CheckCircle2 size={20} />
-          </div>
-          <div>
-            <h3 className="font-bold text-emerald-900 text-lg leading-tight line-through opacity-70">{street.name}</h3>
-            <p className="text-xs text-emerald-700">בוצע</p>
-          </div>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-600 font-bold"><CheckCircle2 size={20} /></div>
+          <div><h3 className="font-bold text-emerald-900 text-lg leading-tight line-through opacity-70">{street.name}</h3><p className="text-xs text-emerald-700">בוצע היום</p></div>
         </div>
-        <button onClick={() => onUndo(street.id)} className="p-2 text-emerald-400 hover:text-red-500 transition-colors bg-white rounded-full shadow-sm border border-emerald-100" title="בטל סימון">
-          <Undo2 size={20} />
-        </button>
+        <button onClick={() => onUndo(street.id)} className="p-2 text-emerald-400 hover:text-red-500 transition-colors bg-white rounded-full shadow-sm border border-emerald-100"><Undo2 size={20} /></button>
       </div>
     );
   }
 
+  // אם בוצע לאחרונה - ירוק בהיר (History)
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-3 transition-all hover:shadow-md border-r-4 border-r-transparent hover:border-r-indigo-400">
+    <div className={`rounded-xl p-4 border shadow-sm mb-3 transition-all border-r-4 ${isRecentlyDone ? 'border-r-green-500 bg-green-50/80' : 'border-r-transparent bg-white border-gray-100 hover:shadow-md'}`}>
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${theme.primary}`}>
-            <MapPin size={18} />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${isRecentlyDone ? 'bg-green-500' : theme.primary}`}>
+            {isRecentlyDone ? <History size={18} /> : <MapPin size={18} />}
           </div>
-          <h3 className="font-bold text-gray-800 text-lg leading-tight">{street.name}</h3>
+          <div>
+            <h3 className={`font-bold text-lg leading-tight ${isRecentlyDone ? 'text-green-900' : 'text-gray-800'}`}>{street.name}</h3>
+            {isRecentlyDone && (
+              <span className="text-xs font-bold text-green-700 flex items-center gap-1 mt-1 bg-white/50 px-2 py-0.5 rounded-md w-fit border border-green-200">
+                <History size={10} /> חולק לאחרונה
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex gap-2">
-        <button onClick={() => onStartTimer(street)} className="flex-1 bg-gray-50 text-gray-700 py-3 rounded-lg font-bold text-sm hover:bg-gray-100 border border-gray-200 transition-colors flex items-center justify-center gap-2">
-          <Clock size={16} /> מדוד זמן
+        <button onClick={() => onStartTimer(street)} className="flex-1 bg-white text-gray-700 py-3 rounded-lg font-bold text-sm hover:bg-gray-50 border border-gray-200 transition-colors flex items-center justify-center gap-2">
+          <Clock size={16} /> מדוד
         </button>
-        <button onClick={() => onDone(street.id)} className={`flex-1 ${theme.primary} text-white py-3 rounded-lg font-bold text-sm hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2`}>
-          <CheckCircle2 size={18} /> בוצע
+        <button onClick={() => onDone(street.id)} className={`flex-1 text-white py-3 rounded-lg font-bold text-sm hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 ${isRecentlyDone ? 'bg-green-600' : theme.primary}`}>
+          <CheckCircle2 size={18} /> {isRecentlyDone ? 'בצע שוב' : 'סמן כבוצע'}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// === וידג'ט חישוב זמן חכם (אופניים vs גשם) ===
+function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRainMode }: any) {
+  const [breakMinutes, setBreakMinutes] = useState(0);
+  const pendingStreets = streetsToShow.filter((s: any) => !s.isCompleted);
+  
+  const totalBuildingsLeft = pendingStreets.reduce((acc: number, street: any) => {
+    const count = Object.entries(STREET_COUNTS).find(([key]) => street.name.includes(key))?.[1];
+    return acc + (count !== undefined ? count : 10);
+  }, 0);
+
+  // חישוב: אופניים חשמליים (5 דק' לבניין) מול הליכה בגשם (9 דק')
+  const timePerBldg = isRainMode ? 9 : 5;
+  const timePerStreet = isRainMode ? 3 : 1;
+  
+  let minutesLeft = (totalBuildingsLeft * timePerBldg) + (pendingStreets.length * timePerStreet) + (regLeft * 2.5) + (pkgLeft * 3);
+  
+  // יום וילות - חישוב מיוחד
+  if (totalBuildingsLeft === 0 && pendingStreets.length > 0) {
+    const villaTime = isRainMode ? 15 : 4; 
+    minutesLeft = (pendingStreets.length * villaTime) + (regLeft * 2.5) + (pkgLeft * 3);
+  }
+
+  const totalMinutes = Math.ceil(minutesLeft + breakMinutes);
+  const finishTime = new Date();
+  finishTime.setMinutes(finishTime.getMinutes() + totalMinutes);
+  const timeString = finishTime.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+  if (pendingStreets.length === 0 && regLeft === 0 && pkgLeft === 0) return null;
+
+  return (
+    <div className={`rounded-xl p-4 shadow-lg mb-4 border animate-fade-in transition-colors duration-500 ${isRainMode ? 'bg-slate-800 border-slate-600' : 'bg-gray-900 border-gray-700'} text-white`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-full ${isRainMode ? 'bg-blue-500' : 'bg-yellow-500 text-black'}`}>
+             {isRainMode ? <CloudRain size={20} /> : <Bike size={20} />}
+          </div>
+          <div>
+            <p className="text-xs text-gray-300 font-medium">צפי סיום ({isRainMode ? 'גשם/הליכה' : 'אופניים חשמליים'})</p>
+            <p className={`text-2xl font-bold font-mono tracking-wider ${isRainMode ? 'text-blue-300' : 'text-yellow-400'}`}>{timeString}</p>
+            <p className="text-[10px] text-gray-400">{totalBuildingsLeft} בניינים | {regLeft} רשומים</p>
+          </div>
+        </div>
+        <div className="text-right"><p className="text-xs text-gray-400">{isRainMode ? 'הלכת' : 'רכבת'} היום</p><p className="font-bold text-green-400">{kmWalked} ק"מ</p></div>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={() => setBreakMinutes(prev => prev + 15)} className="flex-1 bg-white/10 hover:bg-white/20 text-white text-xs py-2 rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/10"><Coffee size={14} /> הפסקה (+15)</button>
+        {breakMinutes > 0 && <button onClick={() => setBreakMinutes(0)} className="bg-red-900/50 hover:bg-red-900 text-red-200 text-xs px-3 py-2 rounded-lg transition-colors">אפס</button>}
       </div>
     </div>
   );
@@ -172,52 +227,6 @@ function CargoTracker({ regTotal, setRegTotal, regDone, setRegDone, pkgTotal, se
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft }: any) {
-  const [breakMinutes, setBreakMinutes] = useState(0);
-  const pendingStreets = streetsToShow.filter((s: any) => !s.isCompleted);
-  
-  const totalBuildingsLeft = pendingStreets.reduce((acc: number, street: any) => {
-    const count = Object.entries(STREET_COUNTS).find(([key]) => street.name.includes(key))?.[1];
-    return acc + (count !== undefined ? count : 10);
-  }, 0);
-
-  const isBikeDay = totalBuildingsLeft < 20 && pendingStreets.length > 4;
-  let minutesLeft = 0;
-  
-  if (isBikeDay) {
-    minutesLeft = (pendingStreets.length * 4) + (regLeft * 2.5) + (pkgLeft * 3); 
-  } else {
-    minutesLeft = (totalBuildingsLeft * 7) + (pendingStreets.length * 1) + (regLeft * 2.5) + (pkgLeft * 3);
-  }
-
-  const totalMinutes = Math.ceil(minutesLeft + breakMinutes);
-  const finishTime = new Date();
-  finishTime.setMinutes(finishTime.getMinutes() + totalMinutes);
-  const timeString = finishTime.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-
-  if (pendingStreets.length === 0 && regLeft === 0 && pkgLeft === 0) return null;
-
-  return (
-    <div className="bg-gray-900 text-white rounded-xl p-4 shadow-lg mb-4 border border-gray-700 animate-fade-in">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="bg-gray-800 p-2 rounded-full"><Calculator className="text-yellow-400" size={20} /></div>
-          <div>
-            <p className="text-xs text-gray-400 font-medium">צפי סיום {isBikeDay && "(אופניים)"}</p>
-            <p className="text-2xl font-bold font-mono tracking-wider text-yellow-400">{timeString}</p>
-            <p className="text-[10px] text-gray-500">{totalBuildingsLeft} בניינים | {regLeft} רשומים | {pkgLeft} חב'</p>
-          </div>
-        </div>
-        <div className="text-right"><p className="text-xs text-gray-400">רכבת היום</p><p className="font-bold text-green-400">{kmWalked} ק"מ</p></div>
-      </div>
-      <div className="flex gap-2">
-        <button onClick={() => setBreakMinutes(prev => prev + 15)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-xs py-2 rounded-lg flex items-center justify-center gap-2 transition-colors border border-gray-600"><Coffee size={14} /> הפסקה (+15)</button>
-        {breakMinutes > 0 && <button onClick={() => setBreakMinutes(0)} className="bg-red-900/50 hover:bg-red-900 text-red-200 text-xs px-3 py-2 rounded-lg transition-colors">אפס</button>}
-      </div>
     </div>
   );
 }
@@ -340,6 +349,7 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
             <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">התקדמות</div>
           </div>
         </div>
+
         <div className={`${theme.cardBg} rounded-xl p-4 flex gap-3 items-start border ${theme.border}`}><Info className={`${theme.iconColor} shrink-0 mt-1`} size={18} /><p className={`text-sm leading-relaxed ${theme.textMain} font-medium`}>{currentSchedule.tips}</p></div>
       </div>
     </div>
@@ -356,6 +366,9 @@ export default function App() {
   const [sunMode, setSunMode] = useState(false);
   const [flashlight, setFlashlight] = useState(false);
   const [optimizedStreets, setOptimizedStreets] = useState<Street[]>([]);
+  
+  // מתג מצב גשם
+  const [isRainMode, setIsRainMode] = useState(false);
   
   const [regTotal, setRegTotal] = useState(0);
   const [regDone, setRegDone] = useState(0);
@@ -377,7 +390,6 @@ export default function App() {
   const theme = AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[45];
   const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
-  // === הלוגיקה החדשה: איחוד רשימות ===
   const streetsToShow = useMemo(() => {
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
     if (todayArea !== currentDaySchedule.area) return [];
@@ -405,40 +417,23 @@ export default function App() {
        return currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name));
     });
 
-    // הסרת כפילויות
-    const unique = new Map();
-    filtered.forEach(s => unique.set(s.id, s));
-    
-    // הוספת רחובות שהושלמו (לרשימת הירוקים)
-    const completedRelevant = allCompletedToday.filter(street => {
-       if (cycleDay === 12 && currentDaySchedule.area === 14) return street.name.includes("רוטשילד") || street.name.includes("קק") || street.name.includes("קרן קיימת") || street.name.includes("הדף היומי") || street.name.includes("גד מכנס");
-       if (cycleDay === 7 && currentDaySchedule.area === 14 && street.name.includes("רוטשילד")) {
-           const match = street.name.match(/(\d+)/);
-           if (match && parseInt(match[0]) % 2 === 0) return false;
-           return true;
-       }
-       if (cycleDay === 2 && street.name.includes("רוטשילד")) {
-           const match = street.name.match(/(\d+)/);
-           if (match && parseInt(match[0]) % 2 !== 0) return false;
-           return true;
-       }
-       return currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name));
-    }).map(s => ({...s, isCompleted: true}));
-
-    completedRelevant.forEach(s => unique.set(s.id, s));
-
-    // מיון: ממתינים למעלה, ירוקים למטה
-    return Array.from(unique.values()).sort((a, b) => {
-       const aDone = (a as any).isCompleted;
-       const bDone = (b as any).isCompleted;
-       return aDone === bDone ? 0 : aDone ? 1 : -1;
+    // מיון וסימון היסטוריה
+    const today = new Date();
+    const mapped = filtered.map(s => {
+      const isDoneToday = allCompletedToday.some(done => done.id === s.id);
+      return { ...s, isCompleted: isDoneToday };
     });
 
-  }, [pendingToday, allCompletedToday, currentDaySchedule, todayArea, optimizedStreets, cycleDay]);
+    // הוספת מה שכבר הושלם היום
+    allCompletedToday
+      .filter(street => currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name)))
+      .forEach(s => {
+         if (!mapped.some(m => m.id === s.id)) mapped.push({...s, isCompleted: true});
+      });
 
-  const completedCycleToday = useMemo(() => {
-    return allCompletedToday.filter(street => street.area === currentDaySchedule.area);
-  }, [allCompletedToday, currentDaySchedule]);
+    return mapped.sort((a, b) => (a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1));
+
+  }, [pendingToday, allCompletedToday, currentDaySchedule, todayArea, optimizedStreets, cycleDay]);
 
   const handleCompleteDelivery = (time: number) => {
     if (currentStreet) { markDelivered(currentStreet.id, time); setCurrentStreet(null); }
@@ -460,6 +455,10 @@ export default function App() {
     <div className={`min-h-screen transition-colors duration-500 bg-gradient-to-br ${sunMode ? 'from-white to-gray-100' : theme.gradient}`}>
       
       <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2">
+        <button onClick={() => setIsRainMode(!isRainMode)} className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-transform hover:scale-105 ${isRainMode ? 'bg-blue-500 text-white animate-pulse' : 'bg-yellow-500 text-white'}`} title="מצב גשם">
+          {isRainMode ? <Umbrella size={22} /> : <Bike size={22} />}
+        </button>
+        
         <button onClick={() => setFlashlight(true)} className="w-12 h-12 rounded-full bg-gray-800 text-white flex items-center justify-center shadow-lg border-2 border-white hover:scale-105 transition-transform">
           <Lightbulb size={20} />
         </button>
@@ -475,17 +474,26 @@ export default function App() {
         <MailSortingReminder currentArea={currentDaySchedule.area} />
         <Header />
         
+        {/* מתג מצב גשם בראש המסך לאינדיקציה */}
+        <div className={`px-4 py-2 flex justify-between items-center transition-colors ${isRainMode ? 'bg-slate-900 text-white' : 'bg-transparent text-gray-800'}`}>
+           <div className="flex items-center gap-2 text-sm font-bold">
+             {isRainMode ? <CloudRain size={18} className="text-blue-300"/> : <Bike size={18} className="text-green-600"/>}
+             {isRainMode ? "מצב גשם (הליכה)" : "מצב אופניים חשמליים"}
+           </div>
+           <button 
+             onClick={() => setIsRainMode(!isRainMode)} 
+             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isRainMode ? 'bg-blue-500' : 'bg-gray-600'}`}
+           >
+             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isRainMode ? 'translate-x-6' : 'translate-x-1'}`} />
+           </button>
+        </div>
+        
         <main className="max-w-7xl mx-auto px-4 py-6 pb-32">
           <TabBar current={tab} setTab={setTab} />
 
           {tab === "regular" && (
             <>
-              <CycleDashboard 
-                cycleDay={cycleDay} setCycleDay={setCycleDay} 
-                completedCount={streetsToShow.filter((s:any) => s.isCompleted).length} 
-                pendingCount={streetsToShow.filter((s:any) => !s.isCompleted).length} 
-                currentArea={todayArea} theme={theme} 
-              />
+              <CycleDashboard cycleDay={cycleDay} setCycleDay={setCycleDay} completedCount={completedCycleToday.length} pendingCount={streetsToShow.filter((s:any)=>!s.isCompleted).length} currentArea={todayArea} theme={theme} />
 
               {!isWeekend && (
                 <div className="animate-fade-in-up">
@@ -505,6 +513,7 @@ export default function App() {
                      kmWalked={kmWalked} 
                      regLeft={Math.max(0, regTotal - regDone)}
                      pkgLeft={Math.max(0, pkgTotal - pkgDone)}
+                     isRainMode={isRainMode}
                   />
 
                   <div className="flex justify-between items-center mb-4">
@@ -522,7 +531,7 @@ export default function App() {
                   ) : (
                      <div className="space-y-2">
                         {streetsToShow.length > 0 ? (
-                           streetsToShow.map(street => (
+                           streetsToShow.map((street: any) => (
                              <StreetRow 
                                key={street.id} 
                                street={street} 
@@ -530,7 +539,8 @@ export default function App() {
                                onDone={markDelivered} 
                                onUndo={undoDelivered}
                                onStartTimer={handleStartTimer} 
-                               isCompleted={(street as any).isCompleted} 
+                               isCompleted={street.isCompleted}
+                               lastDeliveredDate={street.lastDelivered}
                              />
                            ))
                         ) : (
