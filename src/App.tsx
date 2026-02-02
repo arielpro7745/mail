@@ -32,7 +32,7 @@ import {
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
   Building, MapPin, Layers, Package, Mail, Box, Lightbulb, Bike, CloudRain, History, Undo2, Clock, 
-  Umbrella, StickyNote, Edit3, Save, X, RefreshCw
+  Umbrella, StickyNote, Edit3, Save, X
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -79,10 +79,14 @@ const BUILDING_ALERTS: Record<string, string> = {
   "אורלוב": "48 עד 66 בלבד"
 };
 
+// === תיקון קריטי למסך לבן: הוספת fallback לאזור 45 ===
 const AREA_THEMES: Record<number, any> = {
   7: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" },
   14: { gradient: "from-red-50 via-rose-50 to-slate-50", primary: "bg-red-600", secondary: "bg-red-100", textMain: "text-red-900", textSub: "text-red-700", border: "border-red-200", accent: "text-red-600", cardBg: "bg-white", iconColor: "text-red-500", buttonHover: "hover:bg-red-700" },
-  12: { gradient: "from-emerald-50 via-teal-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" }
+  12: { gradient: "from-emerald-50 via-teal-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" },
+  
+  // זה התיקון! אם המערכת מחפשת את 45, היא תקבל את העיצוב של 7 במקום לקרוס
+  45: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" }
 };
 
 const calculateAutoCycleDay = () => {
@@ -191,7 +195,6 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
   );
 }
 
-// ... (שאר הקומפוננטות כמו EstimatedFinishWidget, CargoTracker נשארות ללא שינוי, לקיצור כאן אני שם רק את ההכרחיות)
 function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRainMode }: any) {
   const [breakMinutes, setBreakMinutes] = useState(0);
   const pendingStreets = streetsToShow.filter((s: any) => !s.isCompleted);
@@ -263,7 +266,6 @@ function CargoTracker({ regTotal, setRegTotal, regDone, setRegDone, pkgTotal, se
 }
 
 function RelayBoxWidget({ relays }: { relays: string[] }) {
-  // נשאר ללא שינוי
   return null;
 }
 
@@ -406,35 +408,32 @@ export default function App() {
     return schedule || SCHEDULE_16_DAYS[0];
   }, [cycleDay]);
   
-  // === תיקון מסך לבן: הצבע נקבע לפי האזור הנוכחי (todayArea) ===
+  // === הגנה מקריסה: שימוש באזור שנבחר בפועל + fallback ל-45 ===
   const theme = useMemo(() => {
-    // קודם כל נבדוק את האזור שנבחר בפועל
     const selectedTheme = AREA_THEMES[todayArea];
     if (selectedTheme) return selectedTheme;
 
-    // אם לא נמצא, נבדוק את הלו"ז
+    // גיבוי: נסה את האזור מהלו"ז
     const scheduleTheme = AREA_THEMES[currentDaySchedule.area];
     if (scheduleTheme) return scheduleTheme;
 
-    // ברירת מחדל לאזור 7 (כחול) למניעת קריסה
+    // אם כלום לא עובד - אזור 7 (כחול)
     return AREA_THEMES[7];
   }, [todayArea, currentDaySchedule]);
   
   const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
   const streetsToShow = useMemo(() => {
-    // 1. הגנה מפני קריסה
     if (!currentDaySchedule || !currentDaySchedule.streets) return [];
 
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
     
-    // אם האזור של היום (במציאות) לא תואם ליום בלו"ז (באפליקציה), אל תציג כלום
+    // אם האזור של היום לא תואם, מחזיר רשימה ריקה (אבל לא קורס)
     if (todayArea !== currentDaySchedule.area) return [];
     
     const filtered = list.filter(street => {
         if (!street || !street.name) return false;
 
-        // לוגיקת אזור 14 המפוצל (רוטשילד)
         if (currentDaySchedule.area === 14 && street.name.includes("רוטשילד")) {
            const match = street.name.match(/(\d+)/);
            const houseNum = match ? parseInt(match[0]) : 0;
@@ -447,7 +446,6 @@ export default function App() {
            }
         }
 
-        // סינון רגיל לפי שם עבור שאר הרחובות
         return currentDaySchedule.streets.some(scheduledName => 
             street.name.includes(scheduledName) || scheduledName.includes(street.name)
         );
