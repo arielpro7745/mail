@@ -32,7 +32,7 @@ import {
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
   Building, MapPin, Layers, Package, Mail, Box, Lightbulb, Bike, CloudRain, History, Undo2, Clock, 
-  Umbrella, StickyNote, Edit3, Save, X
+  Umbrella, StickyNote, Edit3, Save, X, RefreshCw
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -44,13 +44,10 @@ import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
 // === מילון בניינים ===
 const STREET_COUNTS: Record<string, number> = {
-  // אזור 12
   "שבדיה": 7, "האחים ראב": 8, "מנדלסון": 12,
   "חפץ מרדכי": 19, "חיים כהן": 29, "אנה פרנק": 17, "זכרון משה": 20, "הרב קוק": 30,
   "הכרם": 8, "התשעים ושלוש": 29, "דוד צבי פנקס": 23,
-  // אזור 14
   "רוטשילד": 45, "גד מכנס": 15, "קק\"ל": 12, "הדף היומי": 4,
-  // אזור 7
   "פינסקר": 35, "משה ברקוס": 5, "מקס ברוד": 4, "ברוידה": 6, 
   "חכם יוסף חיים": 3, "אחים רוזוב": 3, "עולי בבל": 4, 
   "אורלוב": 10, "ליברמן": 3, "האחים שטרייט": 5, "תל חי": 8
@@ -58,53 +55,22 @@ const STREET_COUNTS: Record<string, number> = {
 
 // === לו"ז 16 ימים - כל רחוב פעם אחת בלבד ===
 const SCHEDULE_16_DAYS = [
-  // יום 1: אזור 12 (התחלה)
-  { day: 1, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה"], tips: "מתחילים את הסבב עם 36 בניינים.", bldgCount: 36 },
-  
-  // יום 2: אזור 7 (חלק א)
-  { day: 2, area: 7, title: "7 - פינסקר התחלה וברקוס", streets: ["פינסקר 1-35", "משה ברקוס", "מקס ברוד"], tips: "פינסקר עד 35 והרחובות הקטנים שיוצאים ממנו.", bldgCount: 30 },
-  
-  // יום 3: אזור 14 (רוטשילד זוגי)
+  { day: 1, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה"], tips: "התחלה - 36 בניינים.", bldgCount: 36 },
+  { day: 2, area: 7, title: "7 - פינסקר התחלה וברקוס", streets: ["פינסקר 1-35", "משה ברקוס", "מקס ברוד"], tips: "פינסקר עד 35 והפניות.", bldgCount: 30 },
   { day: 3, area: 14, title: "14 - רוטשילד זוגי", streets: ["רוטשילד"], tips: "רק צד זוגי (110-182).", bldgCount: 30 },
-  
-  // יום 4: אזור 12 (חלק ב)
   { day: 4, area: 12, title: "12 - פנקס והכרם", streets: ["דוד צבי פנקס", "הכרם"], tips: "פנקס והכרם.", bldgCount: 31 },
-  
-  // יום 5: אזור 7 (חלק ב)
   { day: 5, area: 7, title: "7 - פינסקר אמצע וברוידה", streets: ["פינסקר 35-57", "ברוידה", "חכם יוסף חיים", "האחים רוזוב"], tips: "המשך פינסקר ומתחם ברוידה.", bldgCount: 35 },
-  
-  // יום 6: אזור 14 (רוטשילד אי-זוגי)
   { day: 6, area: 14, title: "14 - רוטשילד אי-זוגי", streets: ["רוטשילד"], tips: "רק צד אי-זוגי.", bldgCount: 25 },
-  
-  // יום 7: אזור 12 (חלק ג)
   { day: 7, area: 12, title: "12 - ה-93 והאחים ראב", streets: ["התשעים ושלוש", "האחים ראב"], tips: "ה-93 עמוס, ראב קליל.", bldgCount: 37 },
-  
-  // יום 8: אזור 7 (חלק ג)
   { day: 8, area: 7, title: "7 - אורלוב ועולי בבל", streets: ["עולי בבל", "אורלוב 48-66"], tips: "פינסקר 61 (עולי בבל) ואורלוב.", bldgCount: 20 },
-  
-  // יום 9: אזור 14 (שאריות א)
   { day: 9, area: 14, title: "14 - גד מכנס והדף היומי", streets: ["גד מכנס", "הדף היומי"], tips: "גד מכנס והדף היומי.", bldgCount: 20 },
-  
-  // יום 10: אזור 12 (חלק ד)
-  { day: 10, area: 12, title: "12 - הרב קוק", streets: ["הרב קוק"], tips: "רחוב אחד ארוך וקשה (30 בניינים).", bldgCount: 30 },
-  
-  // יום 11: אזור 7 (חלק ד)
-  { day: 11, area: 7, title: "7 - ליברמן ושטרייט", streets: ["ליברמן", "פינסקר 42-36", "האחים שטרייט"], tips: "יורדים חזרה בפינסקר + ליברמן.", bldgCount: 25 },
-  
-  // יום 12: אזור 14 (שאריות ב)
+  { day: 10, area: 12, title: "12 - הרב קוק", streets: ["הרב קוק"], tips: "רחוב אחד ארוך (30 בניינים).", bldgCount: 30 },
+  { day: 11, area: 7, title: "7 - ליברמן ושטרייט", streets: ["ליברמן", "פינסקר 42-36", "האחים שטרייט"], tips: "יורדים חזרה בפינסקר.", bldgCount: 25 },
   { day: 12, area: 14, title: "14 - קק\"ל וקרן קיימת", streets: ["קק\"ל", "קרן קיימת"], tips: "סוגרים את אזור 14.", bldgCount: 15 },
-  
-  // יום 13: אזור 12 (חלק ה)
   { day: 13, area: 12, title: "12 - אנה פרנק ומנדלסון", streets: ["אנה פרנק", "מנדלסון"], tips: "שני רחובות בינוניים.", bldgCount: 29 },
-  
-  // יום 14: אזור 7 (חלק ה - סיום)
   { day: 14, area: 7, title: "7 - תל חי וסוף פינסקר", streets: ["פינסקר 34-30", "תל חי", "פינסקר 28-2"], tips: "סיום אזור 7.", bldgCount: 25 },
-  
-  // יום 15: אזור 12 (חלק ו)
   { day: 15, area: 12, title: "12 - חפץ מרדכי", streets: ["חפץ מרדכי"], tips: "יום קליל יחסית.", bldgCount: 19 },
-  
-  // יום 16: אזור 12 (חלק ז - סיום)
-  { day: 16, area: 12, title: "12 - זכרון משה", streets: ["זכרון משה"], tips: "סוגרים את כל הסבב!", bldgCount: 20 }
+  { day: 16, area: 12, title: "12 - זכרון משה", streets: ["זכרון משה"], tips: "סוגרים את הסבב!", bldgCount: 20 }
 ];
 
 const BUILDING_ALERTS: Record<string, string> = {
@@ -225,7 +191,7 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
   );
 }
 
-// ... (רכיבי ווידג'טים נשארים אותו דבר)
+// ... (שאר הקומפוננטות כמו EstimatedFinishWidget, CargoTracker נשארות ללא שינוי, לקיצור כאן אני שם רק את ההכרחיות)
 function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRainMode }: any) {
   const [breakMinutes, setBreakMinutes] = useState(0);
   const pendingStreets = streetsToShow.filter((s: any) => !s.isCompleted);
@@ -297,8 +263,8 @@ function CargoTracker({ regTotal, setRegTotal, regDone, setRegDone, pkgTotal, se
 }
 
 function RelayBoxWidget({ relays }: { relays: string[] }) {
-  // ... (קוד קיים)
-  return null; // אם אין תיבות דואר כרגע
+  // נשאר ללא שינוי
+  return null;
 }
 
 function StickyNextStreet({ streets, theme }: { streets: Street[], theme: any }) {
@@ -374,8 +340,6 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
           </div>
         )}
 
-        {/* <RelayBoxWidget relays={currentSchedule.relays || []} /> */}
-
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
             <div className={`text-3xl font-black ${theme.textMain}`}>{currentSchedule.bldgCount || "?"}</div>
@@ -442,26 +406,35 @@ export default function App() {
     return schedule || SCHEDULE_16_DAYS[0];
   }, [cycleDay]);
   
+  // === תיקון מסך לבן: הצבע נקבע לפי האזור הנוכחי (todayArea) ===
   const theme = useMemo(() => {
-    if (!currentDaySchedule) return AREA_THEMES[7]; 
+    // קודם כל נבדוק את האזור שנבחר בפועל
+    const selectedTheme = AREA_THEMES[todayArea];
+    if (selectedTheme) return selectedTheme;
+
+    // אם לא נמצא, נבדוק את הלו"ז
     const scheduleTheme = AREA_THEMES[currentDaySchedule.area];
     if (scheduleTheme) return scheduleTheme;
+
+    // ברירת מחדל לאזור 7 (כחול) למניעת קריסה
     return AREA_THEMES[7];
-  }, [currentDaySchedule]);
+  }, [todayArea, currentDaySchedule]);
   
   const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
   const streetsToShow = useMemo(() => {
+    // 1. הגנה מפני קריסה
     if (!currentDaySchedule || !currentDaySchedule.streets) return [];
 
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
     
+    // אם האזור של היום (במציאות) לא תואם ליום בלו"ז (באפליקציה), אל תציג כלום
     if (todayArea !== currentDaySchedule.area) return [];
     
     const filtered = list.filter(street => {
         if (!street || !street.name) return false;
 
-        // לוגיקה מיוחדת לרוטשילד
+        // לוגיקת אזור 14 המפוצל (רוטשילד)
         if (currentDaySchedule.area === 14 && street.name.includes("רוטשילד")) {
            const match = street.name.match(/(\d+)/);
            const houseNum = match ? parseInt(match[0]) : 0;
@@ -474,7 +447,7 @@ export default function App() {
            }
         }
 
-        // סינון רגיל לפי שם
+        // סינון רגיל לפי שם עבור שאר הרחובות
         return currentDaySchedule.streets.some(scheduledName => 
             street.name.includes(scheduledName) || scheduledName.includes(street.name)
         );
@@ -507,7 +480,6 @@ export default function App() {
       if (a.isCompleted && !b.isCompleted) return 1;
       if (!a.isCompleted && b.isCompleted) return -1;
       
-      // מיון לפי הסדר המוגדר בלו"ז
       if (Array.isArray(currentDaySchedule.streets)) {
          const idxA = currentDaySchedule.streets.findIndex(name => a.name && a.name.includes(name));
          const idxB = currentDaySchedule.streets.findIndex(name => b.name && b.name.includes(name));
