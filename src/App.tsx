@@ -47,65 +47,89 @@ import UnknownResidents from "./components/UnknownResidents";
 import DailyTaskGenerator from "./components/DailyTaskGenerator";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === מילון בניינים מדויק לחישוב זמן ===
+// === מילון בניינים מעודכן (כולל אזור 7) ===
 const STREET_COUNTS: Record<string, number> = {
-  "דגל ראובן": 24, "ויצמן": 16, "יטקובסקי": 11, "אחים יטקובסקי": 11, "יטקובסקי אחים": 11,
-  "היבנר": 35, "ליסין": 2, "סנדרוב": 4, "ברטונוב": 9, "מירקין": 1, "מירקין מרדכי": 1,
-  "הפרטיזנים": 0, "שטרן": 0, "מרטין בובר": 0, "בובר": 0, "שבדיה": 7, "האחים ראב": 8, "מנדלסון": 12,
+  // אזור 12
+  "שבדיה": 7, "האחים ראב": 8, "מנדלסון": 12,
   "חפץ מרדכי": 19, "חיים כהן": 29, "אנה פרנק": 17, "זכרון משה": 20, "הרב קוק": 30,
-  "הכרם": 8, "התשעים ושלוש": 29, "דוד צבי פנקס": 23
+  "הכרם": 8, "התשעים ושלוש": 29, "דוד צבי פנקס": 23,
+  // אזור 14
+  "רוטשילד": 45, "גד מכנס": 15, "קק\"ל": 12, "הדף היומי": 4,
+  // אזור 7 החדש
+  "פינסקר": 35, "משה ברקוס": 5, "מקס ברוד": 4, "ברוידה": 6, 
+  "חכם יוסף חיים": 3, "אחים רוזוב": 3, "עולי בבל": 4, 
+  "אורלוב": 10, "ליברמן": 3, "האחים שטרייט": 5, "תל חי": 8
 };
 
-// === לו"ז 15 ימים ===
-const SCHEDULE_15_DAYS = [
-  { day: 1, area: 45, title: "היבנר סולו", color: "blue", bldgCount: 35, streets: ["היבנר"], relays: ["היבנר 25"], tips: "35 בניינים. נעל את האופניים ועבור בניין-בניין." },
-  { day: 2, area: 14, title: "רוטשילד זוגי", color: "red", bldgCount: 25, streets: ["הדף היומי", "רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "צד זוגי (110-182). בתי אבות בסוף." },
-  { day: 3, area: 12, title: "הרב קוק והכרם", color: "green", bldgCount: 38, streets: ["הרב קוק", "הכרם"], relays: ["התשעים ושלוש 19"], tips: "38 בניינים! יום קשה פיזית." },
-  { day: 4, area: 45, title: "דגל ראובן סולו", color: "blue", bldgCount: 24, streets: ["דגל ראובן"], relays: ["דגל ראובן 22"], tips: "דגל ראובן נקי. 24 בניינים." },
-  { day: 5, area: 12, title: "חיים כהן ושבדיה", color: "green", bldgCount: 36, streets: ["חיים כהן", "שבדיה"], relays: ["התשעים ושלוש 11"], tips: "חיים כהן צפוף (29 בניינים)." },
-  { day: 6, area: 45, title: "ויצמן ויטקובסקי", color: "blue", bldgCount: 27, streets: ["ויצמן", "יטקובסקי", "אחים יטקובסקי"], relays: ["ויצמן 33"], tips: "שני הרחובות עם הבניינים מחוברים. ויצמן (16) + יטקובסקי (11)." },
-  { day: 7, area: 14, title: "רוטשילד אי-זוגי", color: "red", bldgCount: 20, streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "אי-זוגי + קק\"ל." },
-  { day: 8, area: 12, title: "התשעים ושלוש וראב", color: "green", bldgCount: 37, streets: ["התשעים ושלוש", "האחים ראב"], relays: ["התשעים ושלוש 19"], tips: "ה-93 עמוס מאוד." },
-  { day: 9, area: 45, title: "היבנר (סיבוב שני)", color: "blue", bldgCount: 35, streets: ["היבנר"], relays: ["היבנר 25"], tips: "חוזרים למפלצת (שבוע אחרי הפעם הקודמת)." },
-  { day: 10, area: 12, title: "פנקס ומנדלסון", color: "green", bldgCount: 35, streets: ["דוד צבי פנקס", "מנדלסון"], relays: ["התשעים ושלוש 11"], tips: "פנקס ומנדלסון." },
-  { day: 11, area: 45, title: "🚴 יום האופניים (הקטנים)", color: "blue", bldgCount: 16, streets: ["ליסין", "סנדרוב", "ברטונוב", "מירקין", "הפרטיזנים", "שטרן", "מרטין בובר"], relays: ["ויצמן 33"], tips: "יום אופניים! כל הרחובות הקטנים במכה אחת. טסים מבית לבית." },
-  { day: 12, area: 14, title: "רוטשילד מלא", color: "red", bldgCount: 45, streets: ["רוטשילד", "קק\"ל", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "🚨 יום המרתון! כל המרכז." },
-  { day: 13, area: 12, title: "זכרון משה ואנה פרנק", color: "green", bldgCount: 37, streets: ["זכרון משה", "אנה פרנק"], relays: ["התשעים ושלוש 19"], tips: "צפוף." },
-  { day: 14, area: 12, title: "חפץ מרדכי (סגירה)", color: "green", bldgCount: 19, streets: ["חפץ מרדכי"], relays: ["התשעים ושלוש 11"], tips: "סגירת איזור 12." },
-  { day: 15, area: 45, title: "דגל ראובן (סיבוב שני)", color: "blue", bldgCount: 24, streets: ["דגל ראובן"], relays: ["דגל ראובן 22"], tips: "סוגרים את הסבב." }
+// === לו"ז 16 ימים (12 -> 7 -> 14) ===
+const SCHEDULE_16_DAYS = [
+  // מחזור 1
+  { day: 1, area: 12, title: "12 - סבב א'", color: "green", bldgCount: 67, streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], relays: ["התשעים ושלוש 11"], tips: "חיים כהן, שבדיה, פנקס והכרם." },
+  { day: 2, area: 7, title: "7 - כל האזור", color: "blue", bldgCount: 80, streets: ["פינסקר", "משה ברקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "אחים רוזוב", "עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], relays: ["פינסקר 35"], tips: "סדר: פינסקר 1-35 > ברקוס > מקס ברוד > פינסקר 35-57 > ברוידה > אורלוב > ליברמן > שטרייט > תל חי." },
+  { day: 3, area: 14, title: "14 - רוטשילד זוגי", color: "red", bldgCount: 30, streets: ["רוטשילד", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "רוטשילד זוגי + גד מכנס + הדף היומי." },
+  
+  // מחזור 2
+  { day: 4, area: 12, title: "12 - סבב ב'", color: "green", bldgCount: 75, streets: ["התשעים ושלוש", "הרב קוק", "אנה פרנק", "האחים ראב"], relays: ["התשעים ושלוש 19"], tips: "ה-93, הרב קוק, אנה פרנק וראב אחים." },
+  { day: 5, area: 7, title: "7 - סבב ב'", color: "blue", bldgCount: 80, streets: ["פינסקר", "אורלוב"], relays: ["פינסקר 35"], tips: "חזרה על אזור 7." },
+  { day: 6, area: 14, title: "14 - רוטשילד אי-זוגי", color: "red", bldgCount: 25, streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "רוטשילד אי-זוגי + קק''ל." },
+  
+  // מחזור 3
+  { day: 7, area: 12, title: "12 - סבב ג'", color: "green", bldgCount: 51, streets: ["חפץ מרדכי", "מנדלסון", "זכרון משה"], relays: ["התשעים ושלוש 11"], tips: "חפץ מרדכי, מנדלסון וזכרון משה." },
+  { day: 8, area: 7, title: "7 - סבב ג'", color: "blue", bldgCount: 80, streets: ["פינסקר", "אורלוב"], relays: ["פינסקר 35"], tips: "אזור 7." },
+  { day: 9, area: 14, title: "14 - רוטשילד זוגי", color: "red", bldgCount: 30, streets: ["רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "חוזרים לזוגי." },
+
+  // המשך הלופ...
+  { day: 10, area: 12, title: "12 - סבב א' (חוזר)", color: "green", bldgCount: 67, streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס"], relays: ["התשעים ושלוש 11"], tips: "מתחילים מחדש את 12." },
+  { day: 11, area: 7, title: "7 - סבב ד'", color: "blue", bldgCount: 80, streets: ["פינסקר"], relays: ["פינסקר 35"], tips: "אזור 7." },
+  { day: 12, area: 14, title: "14 - רוטשילד אי-זוגי", color: "red", bldgCount: 25, streets: ["רוטשילד", "קק\"ל"], relays: ["רוטשילד 132"], tips: "אי-זוגי." },
+  { day: 13, area: 12, title: "12 - סבב ב' (חוזר)", color: "green", bldgCount: 75, streets: ["התשעים ושלוש", "הרב קוק"], relays: ["התשעים ושלוש 19"], tips: "אמצע אזור 12." },
+  { day: 14, area: 7, title: "7 - סבב ה'", color: "blue", bldgCount: 80, streets: ["פינסקר"], relays: ["פינסקר 35"], tips: "אזור 7." },
+  { day: 15, area: 14, title: "14 - סגירה", color: "red", bldgCount: 45, streets: ["רוטשילד", "גד מכנס", "קק\"ל"], relays: ["רוטשילד 132"], tips: "סוגרים קצוות ב-14." },
+  { day: 16, area: 12, title: "12 - סבב ג' (חוזר)", color: "green", bldgCount: 51, streets: ["חפץ מרדכי", "זכרון משה"], relays: ["התשעים ושלוש 11"], tips: "סיום מחזור ה-16 יום." }
 ];
 
 const BUILDING_ALERTS: Record<string, string> = {
-  "היבנר": "⚠️ 35 בניינים!", "ויצמן": "בניין 33 עמוס!", "יטקובסקי": "37 עמוס!",
-  "אחים יטקובסקי": "37 עמוס!", "הרב קוק": "30 בניינים!", "חיים כהן": "29 בניינים!",
-  "התשעים ושלוש": "29 בניינים!", "רוטשילד": "כניסות מרובות ב-140-144."
+  "הרב קוק": "30 בניינים!", "חיים כהן": "29 בניינים!",
+  "התשעים ושלוש": "29 בניינים!", "פינסקר": "לשים לב לפנייה למשה ברקוס ולברוידה",
+  "אורלוב": "48 עד 66", "משה ברקוס": "אחרי פינסקר 35"
 };
 
+// === תמות (אזור 7 כחול) ===
 const AREA_THEMES: Record<number, any> = {
-  45: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" },
+  7: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" },
   14: { gradient: "from-red-50 via-rose-50 to-slate-50", primary: "bg-red-600", secondary: "bg-red-100", textMain: "text-red-900", textSub: "text-red-700", border: "border-red-200", accent: "text-red-600", cardBg: "bg-white", iconColor: "text-red-500", buttonHover: "hover:bg-red-700" },
   12: { gradient: "from-emerald-50 via-teal-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" }
 };
 
 const calculateAutoCycleDay = () => {
   try {
-    const anchorDate = new Date('2025-12-25T00:00:00'); 
-    const anchorCycleDay = 5; 
+    const anchorDate = new Date('2026-02-02T00:00:00'); // תאריך התחלה - יום שני 2/2/26 (אזור 12 סבב א)
+    const anchorCycleDay = 1; 
     const today = new Date();
     today.setHours(0,0,0,0);
-    if (today < anchorDate) return 5;
+    
+    // אם התאריך הנוכחי לפני תאריך העוגן (לא אמור לקרות)
+    if (today < anchorDate) return 1;
+
     let workDays = 0;
     let curr = new Date(anchorDate);
     while (curr < today) {
       curr.setDate(curr.getDate() + 1);
+      // ספירת ימי עבודה בלבד (ראשון-חמישי) לצורך התקדמות הלו"ז
+      // הערה: המשתמש ביקש ששישי ושבת "נחשבים" בלוח אבל לא עובדים.
+      // אם הכוונה שהלו"ז "קופא", נדלג עליהם בספירה.
+      // אם הכוונה שהלו"ז מתקדם גם בסופ"ש, נבטל את התנאי.
+      // לפי ההוראה "ימים שישי ושבת נחשבים אבל לא עובדים שם", נניח שהלופ מדלג עליהם בביצוע.
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
-    let cycle = (anchorCycleDay + workDays) % 15;
-    return cycle === 0 ? 15 : cycle;
-  } catch(e) { return 5; }
+    
+    let cycle = (anchorCycleDay + workDays) % 16;
+    return cycle === 0 ? 16 : cycle;
+  } catch(e) { return 1; }
 };
 
-// === כרטיס רחוב משולב: פתקים + היסטוריה ===
+// === רכיבים ===
+
 function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, isRecentlyDone, daysSinceLastDelivery, notes, onSaveNote }: any) {
   const [isEditing, setIsEditing] = useState(false);
   const [noteText, setNoteText] = useState(notes[street.name] || "");
@@ -116,7 +140,6 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
     setIsEditing(false);
   };
 
-  // אם בוצע היום - ירוק כהה
   if (isCompleted) {
     return (
       <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200 shadow-sm mb-3 flex items-center justify-between animate-fade-in opacity-80">
@@ -129,7 +152,6 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
     );
   }
 
-  // אם בוצע ב-16 הימים האחרונים - מסגרת ירוקה
   const cardStyle = isRecentlyDone 
     ? "border-l-4 border-l-green-500 bg-green-50/60 shadow-md" 
     : "bg-white hover:shadow-md border-r-4 border-r-transparent hover:border-r-indigo-400";
@@ -144,14 +166,12 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
           <div>
             <h3 className={`font-bold text-lg leading-tight ${isRecentlyDone ? 'text-green-900' : 'text-gray-800'}`}>{street.name}</h3>
             
-            {/* תגית היסטוריה */}
             {isRecentlyDone && (
               <span className="text-xs font-bold text-green-700 flex items-center gap-1 mt-1 bg-white/80 px-2 py-0.5 rounded-md w-fit border border-green-200">
                 <CheckCircle2 size={10} /> חולק לפני {daysSinceLastDelivery} ימים
               </span>
             )}
 
-            {/* תגית פתקים */}
             {hasNote && !isEditing && (
                <div onClick={() => setIsEditing(true)} className="mt-1 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded border border-yellow-200 flex items-center gap-1 cursor-pointer max-w-[200px] truncate">
                  <StickyNote size={10} /> {notes[street.name]}
@@ -165,7 +185,6 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
         </button>
       </div>
 
-      {/* אזור עריכה */}
       {isEditing && (
         <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-3 animate-fade-in">
           <label className="text-xs font-bold text-yellow-800 block mb-1">הערה לרחוב:</label>
@@ -194,12 +213,12 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
   );
 }
 
-// === וידג'ט חישוב זמן חכם (אופניים) ===
 function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRainMode }: any) {
   const [breakMinutes, setBreakMinutes] = useState(0);
   const pendingStreets = streetsToShow.filter((s: any) => !s.isCompleted);
   
   const totalBuildingsLeft = pendingStreets.reduce((acc: number, street: any) => {
+    // חיפוש חכם במילון (כולל התאמה חלקית לשמות)
     const count = Object.entries(STREET_COUNTS).find(([key]) => street.name.includes(key))?.[1];
     return acc + (count !== undefined ? count : 10);
   }, 0);
@@ -209,11 +228,6 @@ function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRa
   
   let minutesLeft = (totalBuildingsLeft * timePerBldg) + (pendingStreets.length * timePerStreet) + (regLeft * 2.5) + (pkgLeft * 3);
   
-  if (totalBuildingsLeft === 0 && pendingStreets.length > 0) {
-    const villaTime = isRainMode ? 15 : 4; 
-    minutesLeft = (pendingStreets.length * villaTime) + (regLeft * 2.5) + (pkgLeft * 3);
-  }
-
   const totalMinutes = Math.ceil(minutesLeft + breakMinutes);
   const finishTime = new Date();
   finishTime.setMinutes(finishTime.getMinutes() + totalMinutes);
@@ -319,7 +333,7 @@ function StickyNextStreet({ streets, theme }: { streets: Street[], theme: any })
 
 function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, currentArea, theme }: any) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const currentSchedule = SCHEDULE_15_DAYS.find(s => s.day === cycleDay) || SCHEDULE_15_DAYS[0];
+  const currentSchedule = SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0];
   const isWeekend = currentTime.getDay() === 5 || currentTime.getDay() === 6;
   const isAreaMismatch = currentArea !== currentSchedule.area;
 
@@ -328,15 +342,15 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
     return () => clearInterval(timer);
   }, []);
 
-  const nextDay = () => setCycleDay(cycleDay === 15 ? 1 : cycleDay + 1);
-  const prevDay = () => setCycleDay(cycleDay === 1 ? 15 : cycleDay - 1);
+  const nextDay = () => setCycleDay(cycleDay === 16 ? 1 : cycleDay + 1);
+  const prevDay = () => setCycleDay(cycleDay === 1 ? 16 : cycleDay - 1);
   const total = pendingCount + completedCount;
   const progress = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
   if (isWeekend) return (
     <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl p-8 mb-6 text-white shadow-2xl relative overflow-hidden">
       <h2 className="text-4xl font-bold mb-2">סופ"ש נעים! ☕</h2>
-      <p className="text-indigo-100 text-lg">ביום ראשון חוזרים ל: {SCHEDULE_15_DAYS.find(s => s.day === (cycleDay === 15 ? 1 : cycleDay + 1))?.title}</p>
+      <p className="text-indigo-100 text-lg">ביום ראשון חוזרים ל: {SCHEDULE_16_DAYS.find(s => s.day === (cycleDay === 16 ? 1 : cycleDay + 1))?.title}</p>
     </div>
   );
 
@@ -347,7 +361,7 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
         <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
           <div>
             <div className="inline-flex items-center gap-2 mb-2">
-               <span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm tracking-wide`}>יום {cycleDay} / 15</span>
+               <span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm tracking-wide`}>יום {cycleDay} / 16</span>
                <span className={`${theme.secondary} ${theme.textSub} text-xs font-bold px-3 py-1 rounded-full border ${theme.border} flex items-center gap-1`}>
                  <CalendarClock size={12} /> {currentTime.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
                </span>
@@ -431,12 +445,12 @@ export default function App() {
   }, [cycleDay]);
 
   const { isHolidayMode } = useHolidayMode();
-  const { todayArea, pendingToday, completedToday, markDelivered, undoDelivered, endDay, loading, allCompletedToday, streetsNeedingDelivery, overdueStreets, getStreetUrgencyLevel, getUrgencyColor, getUrgencyLabel } = useDistribution();
+  const { todayArea, pendingToday, completedToday, markDelivered, undoDelivered, endDay, loading, allCompletedToday } = useDistribution();
 
   useNotifications();
 
-  const currentDaySchedule = useMemo(() => SCHEDULE_15_DAYS.find(s => s.day === cycleDay) || SCHEDULE_15_DAYS[0], [cycleDay]);
-  const theme = AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[45];
+  const currentDaySchedule = useMemo(() => SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0], [cycleDay]);
+  const theme = AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[7];
   const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
   const streetsToShow = useMemo(() => {
@@ -444,25 +458,36 @@ export default function App() {
     if (todayArea !== currentDaySchedule.area) return [];
     
     const filtered = list.filter(street => {
-       if (cycleDay === 12 && currentDaySchedule.area === 14) {
-         return street.name.includes("רוטשילד") || street.name.includes("קק") || street.name.includes("קרן קיימת") || street.name.includes("הדף היומי") || street.name.includes("גד מכנס");
-       }
-       if (cycleDay === 7 && currentDaySchedule.area === 14) {
-         if (street.name.includes("קק") || street.name.includes("קרן קיימת")) return true;
-         if (street.name.includes("רוטשילד")) {
-           const match = street.name.match(/(\d+)/);
-           if (match) {
-             const num = parseInt(match[0]);
-             return num % 2 !== 0 && ((num >= 143 && num <= 179) || (num >= 109 && num <= 141));
+        // לוגיקת אזור 7 - לפי רשימת הרחובות הספציפית
+        if (currentDaySchedule.area === 7) {
+             return currentDaySchedule.streets.some(scheduledName => 
+                 street.name.includes(scheduledName) || scheduledName.includes(street.name)
+             );
+        }
+
+        // לוגיקת אזור 14 - זוגי/אי-זוגי
+        if (currentDaySchedule.area === 14) {
+           if (currentDaySchedule.title.includes("זוגי")) {
+              // רוטשילד זוגי + גד מכנס
+              if (street.name.includes("גד מכנס") || street.name.includes("הדף היומי")) return true;
+              if (street.name.includes("רוטשילד")) {
+                 const match = street.name.match(/(\d+)/);
+                 return match && parseInt(match[0]) % 2 === 0;
+              }
+              return false;
+           } else {
+              // אי-זוגי + קק"ל
+              if (street.name.includes("קק") || street.name.includes("קרן קיימת")) return true;
+              if (street.name.includes("רוטשילד")) {
+                 const match = street.name.match(/(\d+)/);
+                 return match && parseInt(match[0]) % 2 !== 0;
+              }
+              return false;
            }
-         }
-         return false;
-       }
-       if (cycleDay === 2 && street.name.includes("רוטשילד")) {
-         const match = street.name.match(/(\d+)/);
-         return match && parseInt(match[0]) % 2 === 0;
-       }
-       return currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name));
+        }
+
+        // ברירת מחדל לאזור 12 ולשאר (לפי רשימת הרחובות בלו"ז)
+        return currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name));
     });
 
     // סימון ומיון היסטוריה (16 יום)
@@ -490,7 +515,7 @@ export default function App() {
     allCompletedToday
       .filter(street => currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name)))
       .forEach(s => {
-         if (!mapped.some(m => m.id === s.id)) mapped.push({...s, isCompleted: true, isRecentlyDone: false});
+          if (!mapped.some(m => m.id === s.id)) mapped.push({...s, isCompleted: true, isRecentlyDone: false});
       });
 
     // מיון: קודם רגילים, אחר כך הירוקים (שבוצעו לאחרונה), בסוף אלו של היום
@@ -499,6 +524,12 @@ export default function App() {
       if (!a.isCompleted && b.isCompleted) return -1;
       if (a.isRecentlyDone && !b.isRecentlyDone) return 1;
       if (!a.isRecentlyDone && b.isRecentlyDone) return -1;
+      // באזור 7 ננסה לשמור על הסדר המקורי מהלו"ז אם אפשר
+      if (currentDaySchedule.area === 7) {
+         const idxA = currentDaySchedule.streets.findIndex(name => a.name.includes(name));
+         const idxB = currentDaySchedule.streets.findIndex(name => b.name.includes(name));
+         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      }
       return 0;
     });
 
@@ -561,7 +592,6 @@ export default function App() {
 
           {tab === "regular" && (
             <>
-              {/* תיקון: הוחלף completedCycleToday ב-completedToday */}
               <CycleDashboard cycleDay={cycleDay} setCycleDay={setCycleDay} completedCount={completedToday.length} pendingCount={streetsToShow.filter((s:any)=>!s.isCompleted).length} currentArea={todayArea} theme={theme} />
 
               {!isWeekend && (
@@ -616,7 +646,7 @@ export default function App() {
                              />
                            ))
                         ) : (
-                           <div className="text-center p-12"><CheckCircle2 size={48} className={`mx-auto mb-3 ${theme.iconColor}`} /><h3 className="text-2xl font-bold text-gray-800">הכל הושלם!</h3><p className="text-gray-500 text-sm mb-4">כל הכבוד, סיימת את המכסה להיום.</p><div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-4"><div className="bg-green-500 h-full w-full animate-pulse"></div></div><button onClick={() => setCycleDay(cycleDay === 15 ? 1 : cycleDay + 1)} className={`mt-2 ${theme.primary} text-white px-6 py-2 rounded-lg shadow-md hover:opacity-90 transition-all`}>עבור ליום הבא</button></div>
+                           <div className="text-center p-12"><CheckCircle2 size={48} className={`mx-auto mb-3 ${theme.iconColor}`} /><h3 className="text-2xl font-bold text-gray-800">הכל הושלם!</h3><p className="text-gray-500 text-sm mb-4">כל הכבוד, סיימת את המכסה להיום.</p><div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-4"><div className="bg-green-500 h-full w-full animate-pulse"></div></div><button onClick={() => setCycleDay(cycleDay === 16 ? 1 : cycleDay + 1)} className={`mt-2 ${theme.primary} text-white px-6 py-2 rounded-lg shadow-md hover:opacity-90 transition-all`}>עבור ליום הבא</button></div>
                         )}
                       </div>
                   )}
@@ -627,7 +657,6 @@ export default function App() {
                   
                   <div className="mt-8 text-center">
                     <button onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)} className="text-sm text-gray-400 hover:text-gray-600 underline">כלים מתקדמים</button>
-                    {/* תיקון: הוחלף completedCycleToday ב-completedToday */}
                     {showAdvancedFeatures && <div className="mt-4 space-y-4"><InteractiveMap buildings={[]} currentArea={todayArea} completedToday={completedToday} /><VoiceNotifications onStreetCompleted={(s) => console.log(s)} /><AdvancedStats /><AutoBackup /><NightModeScheduler /><GPSExporter buildings={[]} currentArea={todayArea} optimizedRoute={optimizedStreets} /></div>}
                   </div>
                 </div>
