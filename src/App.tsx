@@ -452,11 +452,18 @@ export default function App() {
   const currentDaySchedule = useMemo(() => SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0], [cycleDay]);
 const theme = (currentDaySchedule && AREA_THEMES[currentDaySchedule.area]) ? AREA_THEMES[currentDaySchedule.area] : AREA_THEMES[7];  const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
-  const streetsToShow = useMemo(() => {
+const streetsToShow = useMemo(() => {
+    // 1. הגנה מפני קריסה: אם אין לו"ז או רחובות מוגדרים, החזר רשימה ריקה
+    if (!currentDaySchedule || !currentDaySchedule.streets) return [];
+
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
+    
+    // אם האזור של היום (במציאות) לא תואם ליום בלו"ז (באפליקציה), אל תציג כלום
     if (todayArea !== currentDaySchedule.area) return [];
     
     const filtered = list.filter(street => {
+        if (!street || !street.name) return false; // הגנה נוספת
+
         // לוגיקת אזור 7 - לפי רשימת הרחובות הספציפית
         if (currentDaySchedule.area === 7) {
              return currentDaySchedule.streets.some(scheduledName => 
@@ -466,7 +473,7 @@ const theme = (currentDaySchedule && AREA_THEMES[currentDaySchedule.area]) ? ARE
 
         // לוגיקת אזור 14 - זוגי/אי-זוגי
         if (currentDaySchedule.area === 14) {
-           if (currentDaySchedule.title.includes("זוגי")) {
+           if (currentDaySchedule.title && currentDaySchedule.title.includes("זוגי")) {
               // רוטשילד זוגי + גד מכנס
               if (street.name.includes("גד מכנס") || street.name.includes("הדף היומי")) return true;
               if (street.name.includes("רוטשילד")) {
@@ -485,21 +492,18 @@ const theme = (currentDaySchedule && AREA_THEMES[currentDaySchedule.area]) ? ARE
            }
         }
 
-        // ברירת מחדל לאזור 12 ולשאר (לפי רשימת הרחובות בלו"ז)
+        // ברירת מחדל לאזור 12 ולשאר
         return currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name));
     });
 
-    // סימון ומיון היסטוריה (16 יום)
+    // סימון ומיון היסטוריה
     const today = new Date();
     const mapped = filtered.map(s => {
       const isDoneToday = allCompletedToday.some(done => done.id === s.id);
-      // חישוב ימים מאז החלוקה האחרונה
       let daysSince = null;
       if (s.lastDelivered && !isDoneToday) {
         daysSince = totalDaysBetween(new Date(s.lastDelivered), today);
       }
-      
-      // אם חולק בטווח של 16 ימים האחרונים (אבל לא היום) - סמן כירוק
       const isRecentlyDone = daysSince !== null && daysSince >= 1 && daysSince <= 16;
 
       return { 
@@ -510,24 +514,26 @@ const theme = (currentDaySchedule && AREA_THEMES[currentDaySchedule.area]) ? ARE
       };
     });
 
-    // הוספת מה שכבר הושלם היום
+    // הוספת מה שכבר הושלם היום (כדי שלא ייעלם מהרשימה)
     allCompletedToday
       .filter(street => currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name)))
       .forEach(s => {
           if (!mapped.some(m => m.id === s.id)) mapped.push({...s, isCompleted: true, isRecentlyDone: false});
       });
 
-    // מיון: קודם רגילים, אחר כך הירוקים (שבוצעו לאחרונה), בסוף אלו של היום
+    // מיון
     return mapped.sort((a, b) => {
       if (a.isCompleted && !b.isCompleted) return 1;
       if (!a.isCompleted && b.isCompleted) return -1;
-      if (a.isRecentlyDone && !b.isRecentlyDone) return 1;
-      if (!a.isRecentlyDone && b.isRecentlyDone) return -1;
-      // באזור 7 ננסה לשמור על הסדר המקורי מהלו"ז אם אפשר
+      
+      // באזור 7 נשמור על הסדר המקורי מהלו"ז
       if (currentDaySchedule.area === 7) {
          const idxA = currentDaySchedule.streets.findIndex(name => a.name.includes(name));
          const idxB = currentDaySchedule.streets.findIndex(name => b.name.includes(name));
-         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+         // הגנה: אם אחד הרחובות לא נמצא באינדקס, שים אותו בסוף
+         if (idxA === -1) return 1;
+         if (idxB === -1) return -1;
+         return idxA - idxB;
       }
       return 0;
     });
