@@ -450,8 +450,7 @@ export default function App() {
   useNotifications();
 
   const currentDaySchedule = useMemo(() => SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0], [cycleDay]);
-  const theme = AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[7];
-  const kmWalked = (completedToday.length * 0.5).toFixed(1);
+const theme = (currentDaySchedule && AREA_THEMES[currentDaySchedule.area]) ? AREA_THEMES[currentDaySchedule.area] : AREA_THEMES[7];  const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
   const streetsToShow = useMemo(() => {
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
