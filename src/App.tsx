@@ -64,28 +64,28 @@ const STREET_COUNTS: Record<string, number> = {
 // === לו"ז 16 ימים (12 -> 7 -> 14) ===
 const SCHEDULE_16_DAYS = [
   // מחזור 1
-  { day: 1, area: 12, title: "12 - סבב א'", color: "green", bldgCount: 67, streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], relays: ["התשעים ושלוש 11"], tips: "חיים כהן, שבדיה, פנקס והכרם." },
-  { day: 2, area: 7, title: "7 - כל האזור", color: "blue", bldgCount: 80, streets: ["פינסקר", "משה ברקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "אחים רוזוב", "עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], relays: ["פינסקר 35"], tips: "סדר: פינסקר 1-35 > ברקוס > מקס ברוד > פינסקר 35-57 > ברוידה > אורלוב > ליברמן > שטרייט > תל חי." },
-  { day: 3, area: 14, title: "14 - רוטשילד זוגי", color: "red", bldgCount: 30, streets: ["רוטשילד", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "רוטשילד זוגי + גד מכנס + הדף היומי." },
+  { day: 1, area: 12, title: "12 - סבב א'", areaName: "שכונת מפ''ם", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], relays: ["התשעים ושלוש 11"], tips: "חיים כהן, שבדיה, פנקס והכרם.", bldgCount: 67 },
+  { day: 2, area: 7, title: "7 - כל האזור", areaName: "מרכז העיר צפון", streets: ["פינסקר", "משה ברקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "אחים רוזוב", "עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], relays: ["פינסקר 35"], tips: "סדר: פינסקר 1-35 > ברקוס > מקס ברוד > פינסקר 35-57 > ברוידה > אורלוב > ליברמן > שטרייט > תל חי.", bldgCount: 80 },
+  { day: 3, area: 14, title: "14 - רוטשילד זוגי", areaName: "מרכז העיר", streets: ["רוטשילד", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "רוטשילד זוגי + גד מכנס + הדף היומי.", bldgCount: 30 },
   
   // מחזור 2
-  { day: 4, area: 12, title: "12 - סבב ב'", color: "green", bldgCount: 75, streets: ["התשעים ושלוש", "הרב קוק", "אנה פרנק", "האחים ראב"], relays: ["התשעים ושלוש 19"], tips: "ה-93, הרב קוק, אנה פרנק וראב אחים." },
-  { day: 5, area: 7, title: "7 - סבב ב'", color: "blue", bldgCount: 80, streets: ["פינסקר", "אורלוב"], relays: ["פינסקר 35"], tips: "חזרה על אזור 7." },
-  { day: 6, area: 14, title: "14 - רוטשילד אי-זוגי", color: "red", bldgCount: 25, streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "רוטשילד אי-זוגי + קק''ל." },
+  { day: 4, area: 12, title: "12 - סבב ב'", areaName: "שכונת מפ''ם", streets: ["התשעים ושלוש", "הרב קוק", "אנה פרנק", "האחים ראב"], relays: ["התשעים ושלוש 19"], tips: "ה-93, הרב קוק, אנה פרנק וראב אחים.", bldgCount: 75 },
+  { day: 5, area: 7, title: "7 - סבב ב'", areaName: "מרכז העיר צפון", streets: ["פינסקר", "אורלוב"], relays: ["פינסקר 35"], tips: "חזרה על אזור 7.", bldgCount: 80 },
+  { day: 6, area: 14, title: "14 - רוטשילד אי-זוגי", areaName: "מרכז העיר", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "רוטשילד אי-זוגי + קק''ל.", bldgCount: 25 },
   
   // מחזור 3
-  { day: 7, area: 12, title: "12 - סבב ג'", color: "green", bldgCount: 51, streets: ["חפץ מרדכי", "מנדלסון", "זכרון משה"], relays: ["התשעים ושלוש 11"], tips: "חפץ מרדכי, מנדלסון וזכרון משה." },
-  { day: 8, area: 7, title: "7 - סבב ג'", color: "blue", bldgCount: 80, streets: ["פינסקר", "אורלוב"], relays: ["פינסקר 35"], tips: "אזור 7." },
-  { day: 9, area: 14, title: "14 - רוטשילד זוגי", color: "red", bldgCount: 30, streets: ["רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "חוזרים לזוגי." },
+  { day: 7, area: 12, title: "12 - סבב ג'", areaName: "שכונת מפ''ם", streets: ["חפץ מרדכי", "מנדלסון", "זכרון משה"], relays: ["התשעים ושלוש 11"], tips: "חפץ מרדכי, מנדלסון וזכרון משה.", bldgCount: 51 },
+  { day: 8, area: 7, title: "7 - סבב ג'", areaName: "מרכז העיר צפון", streets: ["פינסקר", "אורלוב"], relays: ["פינסקר 35"], tips: "אזור 7.", bldgCount: 80 },
+  { day: 9, area: 14, title: "14 - רוטשילד זוגי", areaName: "מרכז העיר", streets: ["רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "חוזרים לזוגי.", bldgCount: 30 },
 
   // המשך הלופ...
-  { day: 10, area: 12, title: "12 - סבב א' (חוזר)", color: "green", bldgCount: 67, streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס"], relays: ["התשעים ושלוש 11"], tips: "מתחילים מחדש את 12." },
-  { day: 11, area: 7, title: "7 - סבב ד'", color: "blue", bldgCount: 80, streets: ["פינסקר"], relays: ["פינסקר 35"], tips: "אזור 7." },
-  { day: 12, area: 14, title: "14 - רוטשילד אי-זוגי", color: "red", bldgCount: 25, streets: ["רוטשילד", "קק\"ל"], relays: ["רוטשילד 132"], tips: "אי-זוגי." },
-  { day: 13, area: 12, title: "12 - סבב ב' (חוזר)", color: "green", bldgCount: 75, streets: ["התשעים ושלוש", "הרב קוק"], relays: ["התשעים ושלוש 19"], tips: "אמצע אזור 12." },
-  { day: 14, area: 7, title: "7 - סבב ה'", color: "blue", bldgCount: 80, streets: ["פינסקר"], relays: ["פינסקר 35"], tips: "אזור 7." },
-  { day: 15, area: 14, title: "14 - סגירה", color: "red", bldgCount: 45, streets: ["רוטשילד", "גד מכנס", "קק\"ל"], relays: ["רוטשילד 132"], tips: "סוגרים קצוות ב-14." },
-  { day: 16, area: 12, title: "12 - סבב ג' (חוזר)", color: "green", bldgCount: 51, streets: ["חפץ מרדכי", "זכרון משה"], relays: ["התשעים ושלוש 11"], tips: "סיום מחזור ה-16 יום." }
+  { day: 10, area: 12, title: "12 - סבב א' (חוזר)", areaName: "שכונת מפ''ם", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס"], relays: ["התשעים ושלוש 11"], tips: "מתחילים מחדש את 12.", bldgCount: 67 },
+  { day: 11, area: 7, title: "7 - סבב ד'", areaName: "מרכז העיר צפון", streets: ["פינסקר"], relays: ["פינסקר 35"], tips: "אזור 7.", bldgCount: 80 },
+  { day: 12, area: 14, title: "14 - רוטשילד אי-זוגי", areaName: "מרכז העיר", streets: ["רוטשילד", "קק\"ל"], relays: ["רוטשילד 132"], tips: "אי-זוגי.", bldgCount: 25 },
+  { day: 13, area: 12, title: "12 - סבב ב' (חוזר)", areaName: "שכונת מפ''ם", streets: ["התשעים ושלוש", "הרב קוק"], relays: ["התשעים ושלוש 19"], tips: "אמצע אזור 12.", bldgCount: 75 },
+  { day: 14, area: 7, title: "7 - סבב ה'", areaName: "מרכז העיר צפון", streets: ["פינסקר"], relays: ["פינסקר 35"], tips: "אזור 7.", bldgCount: 80 },
+  { day: 15, area: 14, title: "14 - סגירה", areaName: "מרכז העיר", streets: ["רוטשילד", "גד מכנס", "קק\"ל"], relays: ["רוטשילד 132"], tips: "סוגרים קצוות ב-14.", bldgCount: 45 },
+  { day: 16, area: 12, title: "12 - סבב ג' (חוזר)", areaName: "שכונת מפ''ם", streets: ["חפץ מרדכי", "זכרון משה"], relays: ["התשעים ושלוש 11"], tips: "סיום מחזור ה-16 יום.", bldgCount: 51 }
 ];
 
 const BUILDING_ALERTS: Record<string, string> = {
@@ -96,7 +96,7 @@ const BUILDING_ALERTS: Record<string, string> = {
 
 // === תמות (אזור 7 כחול) ===
 const AREA_THEMES: Record<number, any> = {
-  // ברירת מחדל לאזור 7 (כחול)
+  // אזור 7 (כחול) - חדש
   7: { 
     gradient: "from-blue-50 via-indigo-50 to-slate-50", 
     primary: "bg-blue-600", 
@@ -165,10 +165,6 @@ const calculateAutoCycleDay = () => {
     while (curr < today) {
       curr.setDate(curr.getDate() + 1);
       // ספירת ימי עבודה בלבד (ראשון-חמישי) לצורך התקדמות הלו"ז
-      // הערה: המשתמש ביקש ששישי ושבת "נחשבים" בלוח אבל לא עובדים.
-      // אם הכוונה שהלו"ז "קופא", נדלג עליהם בספירה.
-      // אם הכוונה שהלו"ז מתקדם גם בסופ"ש, נבטל את התנאי.
-      // לפי ההוראה "ימים שישי ושבת נחשבים אבל לא עובדים שם", נניח שהלופ מדלג עליהם בביצוע.
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
     
@@ -499,9 +495,13 @@ export default function App() {
   useNotifications();
 
   const currentDaySchedule = useMemo(() => SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0], [cycleDay]);
-const theme = (currentDaySchedule && AREA_THEMES[currentDaySchedule.area]) ? AREA_THEMES[currentDaySchedule.area] : AREA_THEMES[7];  const kmWalked = (completedToday.length * 0.5).toFixed(1);
+  
+  // תיקון: אם לא מוצא צבע לאזור, לוקח את צבע ברירת המחדל (כחול) כדי למנוע קריסה
+  const theme = (currentDaySchedule && AREA_THEMES[currentDaySchedule.area]) ? AREA_THEMES[currentDaySchedule.area] : AREA_THEMES[7];
+  
+  const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
-const streetsToShow = useMemo(() => {
+  const streetsToShow = useMemo(() => {
     // 1. הגנה מפני קריסה: אם אין לו"ז או רחובות מוגדרים, החזר רשימה ריקה
     if (!currentDaySchedule || !currentDaySchedule.streets) return [];
 
@@ -576,13 +576,15 @@ const streetsToShow = useMemo(() => {
       if (!a.isCompleted && b.isCompleted) return -1;
       
       // באזור 7 נשמור על הסדר המקורי מהלו"ז
-      if (currentDaySchedule.area === 7) {
-         const idxA = currentDaySchedule.streets.findIndex(name => a.name.includes(name));
-         const idxB = currentDaySchedule.streets.findIndex(name => b.name.includes(name));
-         // הגנה: אם אחד הרחובות לא נמצא באינדקס, שים אותו בסוף
-         if (idxA === -1) return 1;
-         if (idxB === -1) return -1;
-         return idxA - idxB;
+      if (currentDaySchedule.area === 7 && Array.isArray(currentDaySchedule.streets)) {
+         const idxA = currentDaySchedule.streets.findIndex(name => a.name && a.name.includes(name));
+         const idxB = currentDaySchedule.streets.findIndex(name => b.name && b.name.includes(name));
+         
+         // אם שניהם נמצאו ברשימה, מיין לפי המיקום
+         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+         // אם אחד לא נמצא, זרוק אותו לסוף
+         if (idxA !== -1) return -1;
+         if (idxB !== -1) return 1;
       }
       return 0;
     });
