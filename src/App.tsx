@@ -96,9 +96,58 @@ const BUILDING_ALERTS: Record<string, string> = {
 
 // === תמות (אזור 7 כחול) ===
 const AREA_THEMES: Record<number, any> = {
-  7: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" },
-  14: { gradient: "from-red-50 via-rose-50 to-slate-50", primary: "bg-red-600", secondary: "bg-red-100", textMain: "text-red-900", textSub: "text-red-700", border: "border-red-200", accent: "text-red-600", cardBg: "bg-white", iconColor: "text-red-500", buttonHover: "hover:bg-red-700" },
-  12: { gradient: "from-emerald-50 via-teal-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" }
+  // ברירת מחדל לאזור 7 (כחול)
+  7: { 
+    gradient: "from-blue-50 via-indigo-50 to-slate-50", 
+    primary: "bg-blue-600", 
+    secondary: "bg-blue-100", 
+    textMain: "text-blue-900", 
+    textSub: "text-blue-700", 
+    border: "border-blue-200", 
+    accent: "text-blue-600", 
+    cardBg: "bg-white", 
+    iconColor: "text-blue-500", 
+    buttonHover: "hover:bg-blue-700" 
+  },
+  // אזור 14 (אדום)
+  14: { 
+    gradient: "from-red-50 via-rose-50 to-slate-50", 
+    primary: "bg-red-600", 
+    secondary: "bg-red-100", 
+    textMain: "text-red-900", 
+    textSub: "text-red-700", 
+    border: "border-red-200", 
+    accent: "text-red-600", 
+    cardBg: "bg-white", 
+    iconColor: "text-red-500", 
+    buttonHover: "hover:bg-red-700" 
+  },
+  // אזור 12 (ירוק)
+  12: { 
+    gradient: "from-emerald-50 via-teal-50 to-slate-50", 
+    primary: "bg-emerald-600", 
+    secondary: "bg-emerald-100", 
+    textMain: "text-emerald-900", 
+    textSub: "text-emerald-700", 
+    border: "border-emerald-200", 
+    accent: "text-emerald-600", 
+    cardBg: "bg-white", 
+    iconColor: "text-emerald-500", 
+    buttonHover: "hover:bg-emerald-700" 
+  },
+  // גיבוי לאזור 45 הישן (למקרה שנשאר בזיכרון) - כחול
+  45: { 
+    gradient: "from-blue-50 via-indigo-50 to-slate-50", 
+    primary: "bg-blue-600", 
+    secondary: "bg-blue-100", 
+    textMain: "text-blue-900", 
+    textSub: "text-blue-700", 
+    border: "border-blue-200", 
+    accent: "text-blue-600", 
+    cardBg: "bg-white", 
+    iconColor: "text-blue-500", 
+    buttonHover: "hover:bg-blue-700" 
+  }
 };
 
 const calculateAutoCycleDay = () => {
