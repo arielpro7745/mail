@@ -4,17 +4,16 @@ import TabBar from "./components/TabBar";
 import { useDistribution } from "./hooks/useDistribution";
 import { useNotifications } from "./hooks/useNotifications";
 import { AreaToggle } from "./components/AreaToggle";
-import { Street } from "./types";
-import { totalDaysBetween } from "./utils/dates";
-import { 
-  AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
-  CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
-  Building, MapPin, Layers, Package, Mail, Box, Lightbulb, Bike, CloudRain, History, Undo2, Clock, 
-  Umbrella, StickyNote, Edit3, Save, X, RefreshCw
-} from "lucide-react";
+import StreetTable from "./components/StreetTable";
+import Notifications from "./components/Notifications";
 import BuildingManager from "./components/BuildingManager";
+import CompletedToday from "./components/CompletedToday";
+import WalkingOrder from "./components/WalkingOrder";
+import LoadingSpinner from "./components/LoadingSpinner";
+import DeliveryTimer from "./components/DeliveryTimer";
 import TaskManager from "./components/TaskManager";
 import Reports from "./components/Reports";
+import PhoneDirectory from "./components/PhoneDirectory";
 import DataExport from "./components/DataExport";
 import { FirebaseSetupGuide } from "./components/FirebaseSetupGuide";
 import InteractiveMap from "./components/InteractiveMap";
@@ -25,81 +24,156 @@ import NightModeScheduler from "./components/NightModeScheduler";
 import GPSExporter from "./components/GPSExporter";
 import WhatsAppManager from "./components/WhatsAppManager";
 import HolidayManager from "./components/HolidayManager";
+import HolidayModeIndicator from "./components/HolidayModeIndicator";
+import HolidayAdjustedStreetTable from "./components/HolidayAdjustedStreetTable";
 import MailSortingReminder from "./components/MailSortingReminder";
 import { useHolidayMode } from "./hooks/useHolidayMode";
+import { Street } from "./types";
+import { totalDaysBetween } from "./utils/dates";
+import { getAreaColor } from "./utils/areaColors";
+import { 
+  AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
+  CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
+  Building, MapPin, Eye, Zap, Layers, Package, Calculator, Plus, Minus, 
+  Mail, Box, Truck, Lightbulb, Bike, CloudRain, History, Undo2, Clock, 
+  Umbrella, StickyNote, Edit3, Save, X
+} from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
 import Gamification from "./components/Gamification";
 import PersonalJournal from "./components/PersonalJournal";
 import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
+import DailyTaskGenerator from "./components/DailyTaskGenerator";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
-import DeliveryTimer from "./components/DeliveryTimer";
-import WalkingOrder from "./components/WalkingOrder";
-import LoadingSpinner from "./components/LoadingSpinner";
 
-// === נתונים בטוחים ===
+// === מילון בניינים מעודכן (כולל אזור 7) ===
 const STREET_COUNTS: Record<string, number> = {
+  // אזור 12
   "שבדיה": 7, "האחים ראב": 8, "מנדלסון": 12,
   "חפץ מרדכי": 19, "חיים כהן": 29, "אנה פרנק": 17, "זכרון משה": 20, "הרב קוק": 30,
   "הכרם": 8, "התשעים ושלוש": 29, "דוד צבי פנקס": 23,
+  // אזור 14
   "רוטשילד": 45, "גד מכנס": 15, "קק\"ל": 12, "הדף היומי": 4,
+  // אזור 7 החדש
   "פינסקר": 35, "משה ברקוס": 5, "מקס ברוד": 4, "ברוידה": 6, 
   "חכם יוסף חיים": 3, "אחים רוזוב": 3, "עולי בבל": 4, 
   "אורלוב": 10, "ליברמן": 3, "האחים שטרייט": 5, "תל חי": 8
 };
 
+// === לו"ז 16 ימים (12 -> 7 -> 14) ===
 const SCHEDULE_16_DAYS = [
-  { day: 1, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה"], tips: "התחלה - 36 בניינים.", bldgCount: 36 },
-  { day: 2, area: 7, title: "7 - פינסקר התחלה וברקוס", streets: ["פינסקר 1-35", "משה ברקוס", "מקס ברוד"], tips: "פינסקר עד 35 והפניות.", bldgCount: 30 },
-  { day: 3, area: 14, title: "14 - רוטשילד זוגי", streets: ["רוטשילד"], tips: "רק צד זוגי (110-182).", bldgCount: 30 },
-  { day: 4, area: 12, title: "12 - פנקס והכרם", streets: ["דוד צבי פנקס", "הכרם"], tips: "פנקס והכרם.", bldgCount: 31 },
-  { day: 5, area: 7, title: "7 - פינסקר אמצע וברוידה", streets: ["פינסקר 35-57", "ברוידה", "חכם יוסף חיים", "האחים רוזוב"], tips: "המשך פינסקר ומתחם ברוידה.", bldgCount: 35 },
-  { day: 6, area: 14, title: "14 - רוטשילד אי-זוגי", streets: ["רוטשילד"], tips: "רק צד אי-זוגי.", bldgCount: 25 },
-  { day: 7, area: 12, title: "12 - ה-93 והאחים ראב", streets: ["התשעים ושלוש", "האחים ראב"], tips: "ה-93 עמוס, ראב קליל.", bldgCount: 37 },
-  { day: 8, area: 7, title: "7 - אורלוב ועולי בבל", streets: ["עולי בבל", "אורלוב 48-66"], tips: "פינסקר 61 (עולי בבל) ואורלוב.", bldgCount: 20 },
-  { day: 9, area: 14, title: "14 - גד מכנס והדף היומי", streets: ["גד מכנס", "הדף היומי"], tips: "גד מכנס והדף היומי.", bldgCount: 20 },
-  { day: 10, area: 12, title: "12 - הרב קוק", streets: ["הרב קוק"], tips: "רחוב אחד ארוך (30 בניינים).", bldgCount: 30 },
-  { day: 11, area: 7, title: "7 - ליברמן ושטרייט", streets: ["ליברמן", "פינסקר 42-36", "האחים שטרייט"], tips: "יורדים חזרה בפינסקר.", bldgCount: 25 },
-  { day: 12, area: 14, title: "14 - קק\"ל וקרן קיימת", streets: ["קק\"ל", "קרן קיימת"], tips: "סוגרים את אזור 14.", bldgCount: 15 },
-  { day: 13, area: 12, title: "12 - אנה פרנק ומנדלסון", streets: ["אנה פרנק", "מנדלסון"], tips: "שני רחובות בינוניים.", bldgCount: 29 },
-  { day: 14, area: 7, title: "7 - תל חי וסוף פינסקר", streets: ["פינסקר 34-30", "תל חי", "פינסקר 28-2"], tips: "סיום אזור 7.", bldgCount: 25 },
-  { day: 15, area: 12, title: "12 - חפץ מרדכי", streets: ["חפץ מרדכי"], tips: "יום קליל יחסית.", bldgCount: 19 },
-  { day: 16, area: 12, title: "12 - זכרון משה", streets: ["זכרון משה"], tips: "סוגרים את הסבב!", bldgCount: 20 }
+  // מחזור 1
+  { day: 1, area: 12, title: "12 - סבב א'", areaName: "שכונת מפ''ם", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], relays: ["התשעים ושלוש 11"], tips: "חיים כהן, שבדיה, פנקס והכרם.", bldgCount: 67 },
+  { day: 2, area: 7, title: "7 - כל האזור", areaName: "מרכז העיר צפון", streets: ["פינסקר", "משה ברקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "אחים רוזוב", "עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], relays: ["פינסקר 35"], tips: "סדר: פינסקר 1-35 > ברקוס > מקס ברוד > פינסקר 35-57 > ברוידה > אורלוב > ליברמן > שטרייט > תל חי.", bldgCount: 80 },
+  { day: 3, area: 14, title: "14 - רוטשילד זוגי", areaName: "מרכז העיר", streets: ["רוטשילד", "גד מכנס", "הדף היומי"], relays: ["רוטשילד 132"], tips: "רוטשילד זוגי + גד מכנס + הדף היומי.", bldgCount: 30 },
+  
+  // מחזור 2
+  { day: 4, area: 12, title: "12 - סבב ב'", areaName: "שכונת מפ''ם", streets: ["התשעים ושלוש", "הרב קוק", "אנה פרנק", "האחים ראב"], relays: ["התשעים ושלוש 19"], tips: "ה-93, הרב קוק, אנה פרנק וראב אחים.", bldgCount: 75 },
+  { day: 5, area: 7, title: "7 - סבב ב'", areaName: "מרכז העיר צפון", streets: ["פינסקר", "אורלוב"], relays: ["פינסקר 35"], tips: "חזרה על אזור 7.", bldgCount: 80 },
+  { day: 6, area: 14, title: "14 - רוטשילד אי-זוגי", areaName: "מרכז העיר", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], relays: ["רוטשילד 132"], tips: "רוטשילד אי-זוגי + קק''ל.", bldgCount: 25 },
+  
+  // מחזור 3
+  { day: 7, area: 12, title: "12 - סבב ג'", areaName: "שכונת מפ''ם", streets: ["חפץ מרדכי", "מנדלסון", "זכרון משה"], relays: ["התשעים ושלוש 11"], tips: "חפץ מרדכי, מנדלסון וזכרון משה.", bldgCount: 51 },
+  { day: 8, area: 7, title: "7 - סבב ג'", areaName: "מרכז העיר צפון", streets: ["פינסקר", "אורלוב"], relays: ["פינסקר 35"], tips: "אזור 7.", bldgCount: 80 },
+  { day: 9, area: 14, title: "14 - רוטשילד זוגי", areaName: "מרכז העיר", streets: ["רוטשילד", "גד מכנס"], relays: ["רוטשילד 132"], tips: "חוזרים לזוגי.", bldgCount: 30 },
+
+  // המשך הלופ...
+  { day: 10, area: 12, title: "12 - סבב א' (חוזר)", areaName: "שכונת מפ''ם", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס"], relays: ["התשעים ושלוש 11"], tips: "מתחילים מחדש את 12.", bldgCount: 67 },
+  { day: 11, area: 7, title: "7 - סבב ד'", areaName: "מרכז העיר צפון", streets: ["פינסקר"], relays: ["פינסקר 35"], tips: "אזור 7.", bldgCount: 80 },
+  { day: 12, area: 14, title: "14 - רוטשילד אי-זוגי", areaName: "מרכז העיר", streets: ["רוטשילד", "קק\"ל"], relays: ["רוטשילד 132"], tips: "אי-זוגי.", bldgCount: 25 },
+  { day: 13, area: 12, title: "12 - סבב ב' (חוזר)", areaName: "שכונת מפ''ם", streets: ["התשעים ושלוש", "הרב קוק"], relays: ["התשעים ושלוש 19"], tips: "אמצע אזור 12.", bldgCount: 75 },
+  { day: 14, area: 7, title: "7 - סבב ה'", areaName: "מרכז העיר צפון", streets: ["פינסקר"], relays: ["פינסקר 35"], tips: "אזור 7.", bldgCount: 80 },
+  { day: 15, area: 14, title: "14 - סגירה", areaName: "מרכז העיר", streets: ["רוטשילד", "גד מכנס", "קק\"ל"], relays: ["רוטשילד 132"], tips: "סוגרים קצוות ב-14.", bldgCount: 45 },
+  { day: 16, area: 12, title: "12 - סבב ג' (חוזר)", areaName: "שכונת מפ''ם", streets: ["חפץ מרדכי", "זכרון משה"], relays: ["התשעים ושלוש 11"], tips: "סיום מחזור ה-16 יום.", bldgCount: 51 }
 ];
 
 const BUILDING_ALERTS: Record<string, string> = {
   "הרב קוק": "30 בניינים!", "חיים כהן": "29 בניינים!",
-  "התשעים ושלוש": "29 בניינים!", "פינסקר": "שים לב לחלוקה למקטעים",
-  "אורלוב": "48 עד 66 בלבד"
+  "התשעים ושלוש": "29 בניינים!", "פינסקר": "לשים לב לפנייה למשה ברקוס ולברוידה",
+  "אורלוב": "48 עד 66", "משה ברקוס": "אחרי פינסקר 35"
 };
 
+// === תמות (אזור 7 כחול) ===
 const AREA_THEMES: Record<number, any> = {
-  7: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" },
-  14: { gradient: "from-red-50 via-rose-50 to-slate-50", primary: "bg-red-600", secondary: "bg-red-100", textMain: "text-red-900", textSub: "text-red-700", border: "border-red-200", accent: "text-red-600", cardBg: "bg-white", iconColor: "text-red-500", buttonHover: "hover:bg-red-700" },
-  12: { gradient: "from-emerald-50 via-teal-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" },
-  45: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" }
+  // אזור 7 (כחול) - חדש
+  7: { 
+    gradient: "from-blue-50 via-indigo-50 to-slate-50", 
+    primary: "bg-blue-600", 
+    secondary: "bg-blue-100", 
+    textMain: "text-blue-900", 
+    textSub: "text-blue-700", 
+    border: "border-blue-200", 
+    accent: "text-blue-600", 
+    cardBg: "bg-white", 
+    iconColor: "text-blue-500", 
+    buttonHover: "hover:bg-blue-700" 
+  },
+  // אזור 14 (אדום)
+  14: { 
+    gradient: "from-red-50 via-rose-50 to-slate-50", 
+    primary: "bg-red-600", 
+    secondary: "bg-red-100", 
+    textMain: "text-red-900", 
+    textSub: "text-red-700", 
+    border: "border-red-200", 
+    accent: "text-red-600", 
+    cardBg: "bg-white", 
+    iconColor: "text-red-500", 
+    buttonHover: "hover:bg-red-700" 
+  },
+  // אזור 12 (ירוק)
+  12: { 
+    gradient: "from-emerald-50 via-teal-50 to-slate-50", 
+    primary: "bg-emerald-600", 
+    secondary: "bg-emerald-100", 
+    textMain: "text-emerald-900", 
+    textSub: "text-emerald-700", 
+    border: "border-emerald-200", 
+    accent: "text-emerald-600", 
+    cardBg: "bg-white", 
+    iconColor: "text-emerald-500", 
+    buttonHover: "hover:bg-emerald-700" 
+  },
+  // גיבוי לאזור 45 הישן (למקרה שנשאר בזיכרון) - כחול
+  45: { 
+    gradient: "from-blue-50 via-indigo-50 to-slate-50", 
+    primary: "bg-blue-600", 
+    secondary: "bg-blue-100", 
+    textMain: "text-blue-900", 
+    textSub: "text-blue-700", 
+    border: "border-blue-200", 
+    accent: "text-blue-600", 
+    cardBg: "bg-white", 
+    iconColor: "text-blue-500", 
+    buttonHover: "hover:bg-blue-700" 
+  }
 };
 
 const calculateAutoCycleDay = () => {
   try {
-    const anchorDate = new Date('2026-02-02T00:00:00'); 
+    const anchorDate = new Date('2026-02-02T00:00:00'); // תאריך התחלה - יום שני 2/2/26 (אזור 12 סבב א)
     const anchorCycleDay = 1; 
     const today = new Date();
     today.setHours(0,0,0,0);
+    
+    // אם התאריך הנוכחי לפני תאריך העוגן (לא אמור לקרות)
     if (today < anchorDate) return 1;
+
     let workDays = 0;
     let curr = new Date(anchorDate);
     while (curr < today) {
       curr.setDate(curr.getDate() + 1);
+      // ספירת ימי עבודה בלבד (ראשון-חמישי) לצורך התקדמות הלו"ז
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
+    
     let cycle = (anchorCycleDay + workDays) % 16;
     return cycle === 0 ? 16 : cycle;
   } catch(e) { return 1; }
 };
 
-// === רכיבים פנימיים (StreetCard, Widgets) ===
+// === רכיבים ===
 
 function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, isRecentlyDone, daysSinceLastDelivery, notes, onSaveNote }: any) {
   const [isEditing, setIsEditing] = useState(false);
@@ -136,11 +210,13 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
           </div>
           <div>
             <h3 className={`font-bold text-lg leading-tight ${isRecentlyDone ? 'text-green-900' : 'text-gray-800'}`}>{street.name}</h3>
+            
             {isRecentlyDone && (
               <span className="text-xs font-bold text-green-700 flex items-center gap-1 mt-1 bg-white/80 px-2 py-0.5 rounded-md w-fit border border-green-200">
                 <CheckCircle2 size={10} /> חולק לפני {daysSinceLastDelivery} ימים
               </span>
             )}
+
             {hasNote && !isEditing && (
                <div onClick={() => setIsEditing(true)} className="mt-1 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded border border-yellow-200 flex items-center gap-1 cursor-pointer max-w-[200px] truncate">
                  <StickyNote size={10} /> {notes[street.name]}
@@ -148,6 +224,7 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
             )}
           </div>
         </div>
+        
         <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${hasNote ? 'text-yellow-500' : 'text-gray-300'}`}>
           {isEditing ? <X size={20} /> : <Edit3 size={20} />}
         </button>
@@ -186,13 +263,16 @@ function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRa
   const pendingStreets = streetsToShow.filter((s: any) => !s.isCompleted);
   
   const totalBuildingsLeft = pendingStreets.reduce((acc: number, street: any) => {
+    // חיפוש חכם במילון (כולל התאמה חלקית לשמות)
     const count = Object.entries(STREET_COUNTS).find(([key]) => street.name.includes(key))?.[1];
     return acc + (count !== undefined ? count : 10);
   }, 0);
 
   const timePerBldg = isRainMode ? 9 : 5; 
   const timePerStreet = isRainMode ? 3 : 1; 
+  
   let minutesLeft = (totalBuildingsLeft * timePerBldg) + (pendingStreets.length * timePerStreet) + (regLeft * 2.5) + (pkgLeft * 3);
+  
   const totalMinutes = Math.ceil(minutesLeft + breakMinutes);
   const finishTime = new Date();
   finishTime.setMinutes(finishTime.getMinutes() + totalMinutes);
@@ -208,12 +288,12 @@ function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRa
              {isRainMode ? <CloudRain size={20} /> : <Bike size={20} />}
           </div>
           <div>
-            <p className="text-xs text-gray-300 font-medium">צפי סיום</p>
+            <p className="text-xs text-gray-300 font-medium">צפי סיום ({isRainMode ? 'גשם' : 'אופניים'})</p>
             <p className={`text-2xl font-bold font-mono tracking-wider ${isRainMode ? 'text-blue-300' : 'text-yellow-400'}`}>{timeString}</p>
-            <p className="text-[10px] text-gray-400">{totalBuildingsLeft} בניינים</p>
+            <p className="text-[10px] text-gray-400">{totalBuildingsLeft} בניינים | {regLeft} רשומים</p>
           </div>
         </div>
-        <div className="text-right"><p className="text-xs text-gray-400">{isRainMode ? 'הלכת' : 'רכבת'}</p><p className="font-bold text-green-400">{kmWalked} ק"מ</p></div>
+        <div className="text-right"><p className="text-xs text-gray-400">{isRainMode ? 'הלכת' : 'רכבת'} היום</p><p className="font-bold text-green-400">{kmWalked} ק"מ</p></div>
       </div>
       <div className="flex gap-2">
         <button onClick={() => setBreakMinutes(prev => prev + 15)} className="flex-1 bg-white/10 hover:bg-white/20 text-white text-xs py-2 rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/10"><Coffee size={14} /> הפסקה (+15)</button>
@@ -249,11 +329,59 @@ function CargoTracker({ regTotal, setRegTotal, regDone, setRegDone, pkgTotal, se
   );
 }
 
+function RelayBoxWidget({ relays }: { relays: string[] }) {
+  const [collected, setCollected] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem("collectedRelays");
+    return saved ? JSON.parse(saved) : {};
+  });
+  if (!relays || relays.length === 0) return null;
+  const toggleCollected = (relay: string) => {
+    const newCollected = { ...collected, [relay]: !collected[relay] };
+    setCollected(newCollected);
+    localStorage.setItem("collectedRelays", JSON.stringify(newCollected));
+  };
+  return (
+    <div className="mb-4 p-4 rounded-xl border-l-4 border-purple-500 bg-white shadow-sm animate-fade-in">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="bg-purple-100 p-2 rounded-full shrink-0"><Package className="text-purple-600" size={20} /></div>
+        <div><h3 className="font-bold text-gray-800 text-lg">נקודות איסוף שקים</h3><p className="text-xs text-gray-500">נווט לתיבה לאיסוף סחורה</p></div>
+      </div>
+      <div className="space-y-2">
+        {relays.map((relay, idx) => (
+          <div key={idx} className={`flex items-center justify-between p-3 rounded-lg border transition-all ${collected[relay] ? 'bg-green-50 border-green-200' : 'bg-purple-50 border-purple-100 hover:bg-purple-100'}`}>
+             <a href={`https://waze.com/ul?q=${encodeURIComponent(relay + ' פתח תקווה')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 flex-1 group"><Navigation2 size={18} className={`${collected[relay] ? 'text-green-500' : 'text-purple-500 group-hover:scale-110 transition-transform'}`} /><span className={`font-bold text-base ${collected[relay] ? 'text-green-800 line-through opacity-70' : 'text-purple-900'}`}>{relay}</span></a>
+             <button onClick={() => toggleCollected(relay)} className={`text-xs px-3 py-1 rounded-full font-bold border ${collected[relay] ? 'bg-white text-green-600 border-green-200' : 'bg-white text-gray-500 border-gray-200 hover:text-purple-600'}`}>{collected[relay] ? 'נאסף' : 'סמן'}</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StickyNextStreet({ streets, theme }: { streets: Street[], theme: any }) {
+  const pendingStreets = streets.filter((s: any) => !s.isCompleted);
+  if (pendingStreets.length === 0) return null;
+  const nextStreet = pendingStreets[0];
+  const alertInfo = Object.entries(BUILDING_ALERTS).find(([key]) => nextStreet.name.includes(key));
+  return (
+    <div className={`fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t ${theme.border} shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-40 transform transition-transform duration-300 animate-slide-up`}>
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-full ${theme.primary} flex items-center justify-center text-white shadow-md animate-pulse`}><Navigation2 size={20} /></div>
+          <div><p className="text-xs text-gray-500 font-medium uppercase tracking-wider">היעד הבא</p><p className={`font-bold text-lg ${theme.textMain}`}>{nextStreet.name}</p>{alertInfo && <p className="text-xs text-orange-600 font-medium truncate max-w-[200px]">{alertInfo[1]}</p>}</div>
+        </div>
+        <div className="flex gap-2"><a href={`https://waze.com/ul?q=${encodeURIComponent(nextStreet.name + ' פתח תקווה')}`} target="_blank" rel="noopener noreferrer" className={`p-2 rounded-full ${theme.secondary} ${theme.accent}`}><Zap size={20} /></a></div>
+      </div>
+    </div>
+  );
+}
+
 function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, currentArea, theme }: any) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const currentSchedule = SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0];
   const isWeekend = currentTime.getDay() === 5 || currentTime.getDay() === 6;
-  
+  const isAreaMismatch = currentArea !== currentSchedule.area;
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
@@ -292,6 +420,18 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
           </div>
         </div>
 
+        {isAreaMismatch && (
+          <div className="bg-red-50 border-r-4 border-red-500 p-4 mb-5 rounded-lg flex items-start gap-4 shadow-sm animate-pulse">
+             <div className="bg-red-100 p-2 rounded-full"><AlertTriangle className="text-red-600" size={24} /></div>
+             <div>
+               <p className="font-bold text-red-800 text-lg">אזור לא תואם</p>
+               <p className="text-red-700">היום <strong>אזור {currentSchedule.area}</strong>. אתה ב-<strong>{currentArea}</strong>.<br/><button onClick={() => document.getElementById('area-toggle-btn')?.click()} className="underline font-bold hover:text-red-900 mt-1">לחץ להחלפה</button></p>
+             </div>
+          </div>
+        )}
+
+        <RelayBoxWidget relays={currentSchedule.relays || []} />
+
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
             <div className={`text-3xl font-black ${theme.textMain}`}>{currentSchedule.bldgCount || "?"}</div>
@@ -314,26 +454,6 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
   );
 }
 
-// === פונקציית איפוס חירום ===
-function ErrorFallback({ reset }: { reset: () => void }) {
-  return (
-    <div className="min-h-screen bg-red-50 flex items-center justify-center p-6 text-center">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md">
-        <AlertTriangle size={64} className="mx-auto text-red-500 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">משהו השתבש בטעינה</h2>
-        <p className="text-gray-600 mb-6">המערכת זיהתה נתונים ישנים או חסרים (כנראה אזור 45 שנמחק).</p>
-        <button 
-          onClick={reset}
-          className="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg flex items-center justify-center gap-2"
-        >
-          <RefreshCw size={20} /> אפס מערכת ותקן
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// === MAIN APP ===
 export default function App() {
   const [tab, setTab] = useState<string>("regular");
   const [currentStreet, setCurrentStreet] = useState<Street | null>(null);
@@ -351,6 +471,7 @@ export default function App() {
   const [pkgTotal, setPkgTotal] = useState(0);
   const [pkgDone, setPkgDone] = useState(0);
 
+  // ניהול פתקים
   const [streetNotes, setStreetNotes] = useState<Record<string, string>>(() => {
     const saved = localStorage.getItem("streetNotes");
     return saved ? JSON.parse(saved) : {};
@@ -368,52 +489,63 @@ export default function App() {
     localStorage.setItem("currentCycleDay", cycleDay.toString());
   }, [cycleDay]);
 
-  const { todayArea, pendingToday, completedToday, markDelivered, undoDelivered, endDay, loading, allCompletedToday, setManualArea } = useDistribution();
+  const { isHolidayMode } = useHolidayMode();
+  const { todayArea, pendingToday, completedToday, markDelivered, undoDelivered, endDay, loading, allCompletedToday } = useDistribution();
 
   useNotifications();
 
-  // === SAFE MODE: אם משהו קריטי חסר, מציג איפוס ===
-  const forceReset = () => {
-    localStorage.clear();
-    setManualArea(7); // דריסה לאזור 7
-    window.location.reload();
-  };
-
-  const currentDaySchedule = useMemo(() => {
-    return SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0];
-  }, [cycleDay]);
+  const currentDaySchedule = useMemo(() => SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0], [cycleDay]);
   
-  const theme = useMemo(() => {
-    // מנגנון הגנה: אם האזור לא קיים, מחזיר כחול (אזור 7)
-    const t = AREA_THEMES[todayArea] || AREA_THEMES[currentDaySchedule.area] || AREA_THEMES[7];
-    return t;
-  }, [todayArea, currentDaySchedule]);
+  // תיקון: אם לא מוצא צבע לאזור, לוקח את צבע ברירת המחדל (כחול) כדי למנוע קריסה
+  const theme = (currentDaySchedule && AREA_THEMES[currentDaySchedule.area]) ? AREA_THEMES[currentDaySchedule.area] : AREA_THEMES[7];
   
   const kmWalked = (completedToday.length * 0.5).toFixed(1);
 
   const streetsToShow = useMemo(() => {
+    // 1. הגנה מפני קריסה: אם אין לו"ז או רחובות מוגדרים, החזר רשימה ריקה
     if (!currentDaySchedule || !currentDaySchedule.streets) return [];
-    
-    // אם האזור לא תואם, מחזיר רשימה ריקה כדי לא לקרוס, אבל מציג הודעה למשתמש
-    if (todayArea !== currentDaySchedule.area) return [];
-    
+
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
     
+    // אם האזור של היום (במציאות) לא תואם ליום בלו"ז (באפליקציה), אל תציג כלום
+    if (todayArea !== currentDaySchedule.area) return [];
+    
     const filtered = list.filter(street => {
-        if (!street || !street.name) return false;
+        if (!street || !street.name) return false; // הגנה נוספת
 
-        if (currentDaySchedule.area === 14 && street.name.includes("רוטשילד")) {
-           const match = street.name.match(/(\d+)/);
-           const houseNum = match ? parseInt(match[0]) : 0;
-           if (currentDaySchedule.title.includes("זוגי")) return houseNum % 2 === 0;
-           if (currentDaySchedule.title.includes("אי-זוגי")) return houseNum % 2 !== 0;
+        // לוגיקת אזור 7 - לפי רשימת הרחובות הספציפית
+        if (currentDaySchedule.area === 7) {
+             return currentDaySchedule.streets.some(scheduledName => 
+                 street.name.includes(scheduledName) || scheduledName.includes(street.name)
+             );
         }
 
-        return currentDaySchedule.streets.some(scheduledName => 
-            street.name.includes(scheduledName) || scheduledName.includes(street.name)
-        );
+        // לוגיקת אזור 14 - זוגי/אי-זוגי
+        if (currentDaySchedule.area === 14) {
+           if (currentDaySchedule.title && currentDaySchedule.title.includes("זוגי")) {
+              // רוטשילד זוגי + גד מכנס
+              if (street.name.includes("גד מכנס") || street.name.includes("הדף היומי")) return true;
+              if (street.name.includes("רוטשילד")) {
+                 const match = street.name.match(/(\d+)/);
+                 return match && parseInt(match[0]) % 2 === 0;
+              }
+              return false;
+           } else {
+              // אי-זוגי + קק"ל
+              if (street.name.includes("קק") || street.name.includes("קרן קיימת")) return true;
+              if (street.name.includes("רוטשילד")) {
+                 const match = street.name.match(/(\d+)/);
+                 return match && parseInt(match[0]) % 2 !== 0;
+              }
+              return false;
+           }
+        }
+
+        // ברירת מחדל לאזור 12 ולשאר
+        return currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name));
     });
 
+    // סימון ומיון היסטוריה
     const today = new Date();
     const mapped = filtered.map(s => {
       const isDoneToday = allCompletedToday.some(done => done.id === s.id);
@@ -421,27 +553,38 @@ export default function App() {
       if (s.lastDelivered && !isDoneToday) {
         daysSince = totalDaysBetween(new Date(s.lastDelivered), today);
       }
+      const isRecentlyDone = daysSince !== null && daysSince >= 1 && daysSince <= 16;
+
       return { 
         ...s, 
         isCompleted: isDoneToday, 
-        isRecentlyDone: daysSince !== null && daysSince >= 1 && daysSince <= 16,
+        isRecentlyDone: isRecentlyDone,
         daysSinceLastDelivery: daysSince
       };
     });
 
+    // הוספת מה שכבר הושלם היום (כדי שלא ייעלם מהרשימה)
     allCompletedToday
       .filter(street => currentDaySchedule.streets.some(scheduledName => street.name.includes(scheduledName) || scheduledName.includes(street.name)))
       .forEach(s => {
           if (!mapped.some(m => m.id === s.id)) mapped.push({...s, isCompleted: true, isRecentlyDone: false});
       });
 
+    // מיון
     return mapped.sort((a, b) => {
       if (a.isCompleted && !b.isCompleted) return 1;
       if (!a.isCompleted && b.isCompleted) return -1;
-      if (Array.isArray(currentDaySchedule.streets)) {
+      
+      // באזור 7 נשמור על הסדר המקורי מהלו"ז
+      if (currentDaySchedule.area === 7 && Array.isArray(currentDaySchedule.streets)) {
          const idxA = currentDaySchedule.streets.findIndex(name => a.name && a.name.includes(name));
          const idxB = currentDaySchedule.streets.findIndex(name => b.name && b.name.includes(name));
+         
+         // אם שניהם נמצאו ברשימה, מיין לפי המיקום
          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+         // אם אחד לא נמצא, זרוק אותו לסוף
+         if (idxA !== -1) return -1;
+         if (idxB !== -1) return 1;
       }
       return 0;
     });
@@ -454,9 +597,6 @@ export default function App() {
   const handleStartTimer = (street: Street) => { setCurrentStreet(street); };
 
   if (loading) return <LoadingSpinner />;
-
-  // אם הנתונים שבורים והדף לבן - זה יציל אותך
-  if (!todayArea || !theme) return <ErrorFallback reset={forceReset} />;
 
   if (flashlight) {
     return (
@@ -474,6 +614,7 @@ export default function App() {
         <button onClick={() => setIsRainMode(!isRainMode)} className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-transform hover:scale-105 ${isRainMode ? 'bg-blue-500 text-white animate-pulse' : 'bg-yellow-500 text-white'}`} title="מצב גשם">
           {isRainMode ? <Umbrella size={22} /> : <Bike size={22} />}
         </button>
+        
         <button onClick={() => setFlashlight(true)} className="w-12 h-12 rounded-full bg-gray-800 text-white flex items-center justify-center shadow-lg border-2 border-white hover:scale-105 transition-transform">
           <Lightbulb size={20} />
         </button>
@@ -494,7 +635,10 @@ export default function App() {
              {isRainMode ? <CloudRain size={18} className="text-blue-300"/> : <Bike size={18} className="text-green-600"/>}
              {isRainMode ? "מצב גשם (הליכה)" : "מצב אופניים חשמליים ⚡"}
            </div>
-           <button onClick={() => setIsRainMode(!isRainMode)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isRainMode ? 'bg-blue-500' : 'bg-gray-600'}`}>
+           <button 
+             onClick={() => setIsRainMode(!isRainMode)} 
+             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isRainMode ? 'bg-blue-500' : 'bg-gray-600'}`}
+           >
              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isRainMode ? 'translate-x-6' : 'translate-x-1'}`} />
            </button>
         </div>
@@ -519,7 +663,13 @@ export default function App() {
                       pkgTotal={pkgTotal} setPkgTotal={setPkgTotal} pkgDone={pkgDone} setPkgDone={setPkgDone}
                   />
 
-                  <EstimatedFinishWidget streetsToShow={streetsToShow} kmWalked={kmWalked} regLeft={Math.max(0, regTotal - regDone)} pkgLeft={Math.max(0, pkgTotal - pkgDone)} isRainMode={isRainMode} />
+                  <EstimatedFinishWidget 
+                      streetsToShow={streetsToShow} 
+                      kmWalked={kmWalked} 
+                      regLeft={Math.max(0, regTotal - regDone)}
+                      pkgLeft={Math.max(0, pkgTotal - pkgDone)}
+                      isRainMode={isRainMode}
+                  />
 
                   <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-bold text-gray-800">המשימות להיום</h2>
