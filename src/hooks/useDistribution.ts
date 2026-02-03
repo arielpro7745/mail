@@ -2,82 +2,102 @@ import { useEffect, useState } from "react";
 import { 
   collection, 
   doc, 
-  getDocs, 
   setDoc, 
   updateDoc, 
-  onSnapshot, 
-  getDoc 
+  onSnapshot 
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { streets as initialStreets } from "../data/streets"; // וודא שקובץ זה מכיל את הרשימה המעודכנת
 import { Street, Area } from "../types";
-import { pickForToday } from "../utils/schedule";
-import { optimizeRoute } from "../utils/routeOptimizer";
 import { isSameDay } from "../utils/isSameDay";
-import { totalDaysBetween } from "../utils/dates";
+import { optimizeRoute } from "../utils/routeOptimizer";
+import { pickForToday } from "../utils/schedule";
 import { useSettings } from "./useSettings";
-import { getNextArea } from "../utils/areaColors";
 
 const STREETS_COLLECTION = "streets";
 const SETTINGS_COLLECTION = "settings";
 const GENERAL_SETTINGS_DOC = "general";
 
+// === רשימת חירום: רחובות שחייבים להיות ב-DB ===
+const EMERGENCY_STREETS: Street[] = [
+  { id: "borla_7", name: "בורלא", area: 7 },
+  { id: "marcus_7", name: "משה מרקוס", area: 7 },
+  { id: "brod_7", name: "מקס ברוד", area: 7 },
+  { id: "broida_7", name: "ברוידה", area: 7 },
+  { id: "joseph_haim_7", name: "חכם יוסף חיים", area: 7 },
+  { id: "rozov_7", name: "האחים רוזוב", area: 7 },
+  { id: "oli_bavel_7", name: "עולי בבל", area: 7 },
+  { id: "orlov_7", name: "אורלוב", area: 7 },
+  { id: "liberman_7", name: "ליברמן", area: 7 },
+  { id: "streit_7", name: "האחים שטרייט", area: 7 },
+  { id: "tel_hai_7", name: "תל חי", area: 7 },
+  { id: "pinsker_7", name: "פינסקר", area: 7 },
+  { id: "barcus_7", name: "משה ברקוס", area: 7 }
+];
+
 export function useDistribution() {
   const [data, setData] = useState<Street[]>([]);
-  const [todayArea, setTodayArea] = useState<Area>(12); // ברירת מחדל בטוחה עד שה-Firebase נטען
+  // ברירת מחדל בטוחה (7) למניעת קריסה בטעינה
+  const [todayArea, setTodayArea] = useState<Area>(7); 
   const [loading, setLoading] = useState(true);
   const { settings } = useSettings();
 
-  // === 1. טעינת והאזנה לרחובות מ-Firebase ===
-  useEffect(() => {
-    // מאזין לשינויים ברחובות בזמן אמת
-    const unsubscribeStreets = onSnapshot(collection(db, STREETS_COLLECTION), async (snapshot) => {
-      if (snapshot.empty) {
-        console.log("⚠️ מסד הנתונים ריק, מאתחל נתונים ראשוניים...");
-        await initializeStreets();
-        return;
-      }
+  const updateAreaInFirebase = async (newArea: number) => {
+    try {
+      await setDoc(doc(db, SETTINGS_COLLECTION, GENERAL_SETTINGS_DOC), { 
+        currentArea: newArea,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+      // עדכון מקומי מיידי
+      setTodayArea(newArea as Area);
+    } catch (e) { console.error("Error updating area:", e); }
+  };
 
+  useEffect(() => {
+    // 1. טעינת רחובות + תיקון נתונים חסרים
+    const unsubscribeStreets = onSnapshot(collection(db, STREETS_COLLECTION), async (snapshot) => {
       const firebaseStreets: Street[] = [];
+      const existingIds = new Set<string>();
+
       snapshot.forEach((doc) => {
-        const streetData = doc.data();
+        const d = doc.data();
+        existingIds.add(doc.id);
         firebaseStreets.push({ 
-          id: doc.id, 
-          ...streetData,
-          // מוודא ששדות קריטיים קיימים
-          lastDelivered: streetData.lastDelivered || "",
-          deliveryTimes: streetData.deliveryTimes || [],
+            id: doc.id, 
+            name: d.name || "ללא שם",
+            area: d.area || 7,
+            ...d 
         } as Street);
       });
 
-      // בדיקה אם חסרים רחובות (למשל אם הוספת את אזור 7 בקוד אבל הוא לא ב-DB)
-      await checkForMissingStreets(firebaseStreets);
+      // בדיקה אם חסרים רחובות קריטיים
+      const missing = EMERGENCY_STREETS.filter(s => !existingIds.has(s.id));
+      if (missing.length > 0) {
+        console.log(`🛠️ מתקן ${missing.length} רחובות חסרים...`);
+        missing.forEach(s => {
+            setDoc(doc(db, STREETS_COLLECTION, s.id), { ...s, lastDelivered: "", deliveryTimes: [] }).catch(console.error);
+            firebaseStreets.push(s); // הוספה זמנית לתצוגה
+        });
+      }
 
       setData(firebaseStreets);
       setLoading(false);
-    }, (error) => {
-      console.error("❌ שגיאה בטעינת רחובות מ-Firebase:", error);
+    }, (err) => {
+      console.error("Firebase Error:", err);
       setLoading(false);
     });
 
-    // מאזין לשינויים באזור הנוכחי (Current Area)
+    // 2. טעינת אזור + תיקון באג 45
     const unsubscribeArea = onSnapshot(doc(db, SETTINGS_COLLECTION, GENERAL_SETTINGS_DOC), (docSnap) => {
       if (docSnap.exists()) {
-        const savedArea = docSnap.data().currentArea;
-        
-        // --- תיקון אוטומטי למסך לבן ---
-        // אם בבסיס הנתונים שמור 45, נשנה אותו מיד ל-7
-        if (savedArea === 45) {
-          console.log("התגלה אזור מיושן (45), מתקן ל-7...");
+        const saved = docSnap.data().currentArea;
+        if (saved === 45) {
+          console.log("Detecting old area 45, fixing to 7...");
           updateAreaInFirebase(7);
-          setTodayArea(7);
         } else {
-          setTodayArea(savedArea);
+          setTodayArea(saved);
         }
       } else {
-        // אם אין הגדרה, ניצור אחת עם ברירת מחדל (12)
-        updateAreaInFirebase(12);
-        setTodayArea(12);
+        updateAreaInFirebase(7);
       }
     });
 
@@ -87,130 +107,46 @@ export function useDistribution() {
     };
   }, []);
 
-  // === פונקציות עזר ל-Firebase ===
-
-  // אתחול ראשוני של רחובות
-  const initializeStreets = async () => {
-    const batch = initialStreets.map(street => 
-      setDoc(doc(db, STREETS_COLLECTION, street.id), street)
-    );
-    await Promise.all(batch);
-    console.log("✅ כל הרחובות הועלו ל-Firebase בהצלחה");
-  };
-
-  // הוספת רחובות חדשים שנוספו לקוד אך חסרים ב-DB
-  const checkForMissingStreets = async (currentStreets: Street[]) => {
-    const existingIds = new Set(currentStreets.map(s => s.id));
-    const missing = initialStreets.filter(s => !existingIds.has(s.id));
-
-    if (missing.length > 0) {
-      console.log(`📥 מוסיף ${missing.length} רחובות חדשים ל-Firebase...`);
-      const updates = missing.map(street => 
-        setDoc(doc(db, STREETS_COLLECTION, street.id), street)
-      );
-      await Promise.all(updates);
-    }
-  };
-
-  // עדכון האזור ב-Firebase
-  const updateAreaInFirebase = async (newArea: number) => {
-    try {
-      await setDoc(doc(db, SETTINGS_COLLECTION, GENERAL_SETTINGS_DOC), { 
-        currentArea: newArea,
-        lastUpdated: new Date().toISOString()
-      }, { merge: true });
-      console.log("🌎 אזור עודכן ב-Firebase:", newArea);
-    } catch (e) {
-      console.error("שגיאה בעדכון אזור:", e);
-    }
-  };
-
-  // === לוגיקה עסקית (חישובים, מיון וסינון) ===
-
+  // לוגיקה
   const today = new Date();
-  const areaStreets = data.filter(s => s.area === todayArea);
+  const filterArea = todayArea === 45 ? 7 : todayArea;
+  const areaStreets = data.filter(s => s.area === filterArea);
   
-  // רחובות שחולקו היום
-  const completedToday = areaStreets.filter(
-    s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)
-  );
-  
-  // רחובות שצריכים חלוקה
-  const streetsNeedingDelivery = areaStreets.filter(s => {
-    if (s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)) return false;
-    return true;
-  });
+  const completedToday = areaStreets.filter(s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today));
+  const streetsNeedingDelivery = areaStreets.filter(s => !(s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)));
 
-  // מיון חכם לפי דחיפות
-  const sortedStreets = [...streetsNeedingDelivery].sort((a, b) => {
-    // 1. רחובות שלא חולקו מעולם - ראשונים
-    if (!a.lastDelivered && !b.lastDelivered) return a.name.localeCompare(b.name);
-    if (!a.lastDelivered) return -1;
-    if (!b.lastDelivered) return 1;
-    
-    // 2. מיון לפי זמן (הכי ישן קודם)
-    const aTime = new Date(a.lastDelivered).getTime();
-    const bTime = new Date(b.lastDelivered).getTime();
-    if (aTime !== bTime) return aTime - bTime; // ישן יותר = מספר קטן יותר = ראשון
-    
-    // 3. שם רחוב
-    return a.name.localeCompare(b.name);
-  });
+  let pendingToday = streetsNeedingDelivery.sort((a, b) => a.name.localeCompare(b.name));
 
-  let pendingToday = sortedStreets;
-
-  // אופטימיזציה של המסלול (אם מופעל בהגדרות)
-  if (settings.optimizeRoutes && pendingToday.length > 0) {
-    pendingToday = optimizeRoute(pendingToday, todayArea);
+  if (settings?.optimizeRoutes && pendingToday.length > 0) {
+    try { pendingToday = optimizeRoute(pendingToday, filterArea); } catch(e){}
   }
 
   const recommended = pickForToday(pendingToday);
 
-  // === פעולות משתמש (Actions) ===
-
+  // Actions
   const markDelivered = async (id: string, deliveryTime?: number) => {
-    const streetRef = doc(db, STREETS_COLLECTION, id);
-    const updates: any = {
-      lastDelivered: new Date().toISOString(),
-    };
-
-    // אם נשלח זמן ביצוע, נעדכן ממוצעים
-    if (deliveryTime) {
-      // אנחנו צריכים את המידע הנוכחי כדי לעדכן את המערך, אז נשתמש ב-data המקומי
-      const currentStreet = data.find(s => s.id === id);
-      if (currentStreet) {
-        const newTimes = [...(currentStreet.deliveryTimes || []), deliveryTime];
-        const avg = Math.round(newTimes.reduce((a, b) => a + b, 0) / newTimes.length);
-        updates.deliveryTimes = newTimes;
-        updates.averageTime = avg;
-      }
-    }
-
     try {
-      await updateDoc(streetRef, updates);
-    } catch (error) {
-      console.error("שגיאה בסימון חלוקה:", error);
-    }
+        const updates: any = { lastDelivered: new Date().toISOString() };
+        if (deliveryTime) {
+            const current = data.find(s => s.id === id);
+            if (current) {
+                const times = [...(current.deliveryTimes || []), deliveryTime];
+                updates.deliveryTimes = times;
+                updates.averageTime = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+            }
+        }
+        await updateDoc(doc(db, STREETS_COLLECTION, id), updates);
+    } catch (e) { console.error(e); }
   };
 
   const undoDelivered = async (id: string) => {
-    try {
-      await updateDoc(doc(db, STREETS_COLLECTION, id), {
-        lastDelivered: "" // איפוס תאריך אחרון
-      });
-    } catch (error) {
-      console.error("שגיאה בביטול חלוקה:", error);
-    }
+    try { await updateDoc(doc(db, STREETS_COLLECTION, id), { lastDelivered: "" }); } catch(e){}
   };
 
   const endDay = async () => {
-    const nextArea = getNextArea(todayArea);
-    await updateAreaInFirebase(nextArea);
-  };
-
-  // פונקציה לאיפוס מלא של האזור (שימוש ידני דרך ההגדרות אם צריך)
-  const resetCycle = async () => {
-     console.log("פונקציית איפוס לא מופעלת כרגע כדי למנוע מחיקת מידע בטעות");
+    const nextMap: Record<number, number> = { 14: 12, 12: 7, 7: 14 };
+    const next = nextMap[todayArea] || 7;
+    await updateAreaInFirebase(next);
   };
 
   return {
@@ -222,11 +158,8 @@ export function useDistribution() {
     undoDelivered,
     endDay,
     loading,
-    resetCycle,
     allCompletedToday: completedToday,
-    streetsNeedingDelivery: streetsNeedingDelivery.length,
-    allStreets: data,
-    // הוספתי את הפונקציה הזו כדי שתוכל להשתמש בה בכפתורים הידניים שיצרנו קודם
-    setManualArea: updateAreaInFirebase 
+    setManualArea: updateAreaInFirebase, // חובה לכפתורים
+    allStreets: data
   };
 }
