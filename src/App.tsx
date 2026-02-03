@@ -19,6 +19,7 @@ import GPSExporter from "./components/GPSExporter";
 import WhatsAppManager from "./components/WhatsAppManager";
 import HolidayManager from "./components/HolidayManager";
 import MailSortingReminder from "./components/MailSortingReminder";
+import BuildingManager from "./components/BuildingManager";
 import { useHolidayMode } from "./hooks/useHolidayMode";
 import { Street } from "./types";
 import { totalDaysBetween } from "./utils/dates";
@@ -35,7 +36,6 @@ import PersonalJournal from "./components/PersonalJournal";
 import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
-import BuildingManager from "./components/BuildingManager";
 
 // === מילון בניינים מעודכן ===
 const STREET_COUNTS: Record<string, number> = {
@@ -53,55 +53,56 @@ const STREET_COUNTS: Record<string, number> = {
   "אורלוב": 10, "ליברמן": 3, "האחים שטרייט": 5, "תל חי": 8, "משה מרקוס": 5, "בורלא": 4
 };
 
-// === לו"ז 16 ימים - סדר: 14 -> 12 -> 7 ===
+// === לו"ז 16 ימים מעודכן ומדויק ===
+// סדר: 14 -> 12 -> 7
 const SCHEDULE_16_DAYS = [
-  // --- יום 1: אזור 14 (סבב א') ---
-  { day: 1, area: 14, title: "14 - הדף היומי, גד מכנס, רוטשילד זוגי", streets: ["הדף היומי", "גד מכנס", "רוטשילד"], subType: "14_even", tips: "הדף היומי, גד מכנס (בניין 4), ורוטשילד זוגי (110-182).", bldgCount: 25 },
-
-  // --- יום 2: אזור 12 (סבב א') ---
-  { day: 2, area: 12, title: "12 - חיים כהן, שבדיה, פנקס", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], subType: "12_A", tips: "חיים כהן, שבדיה, פנקס, הכרם.", bldgCount: 45 },
+  // יום 1: אזור 14 (חלק א')
+  { day: 1, area: 14, title: "14 - הדף היומי ורוטשילד זוגי", streets: ["הדף היומי", "גד מכנס", "רוטשילד"], subType: "14_even", tips: "הדף היומי, גד מכנס 4, רוטשילד זוגי (110-182).", bldgCount: 25 },
   
-  // --- יום 3: אזור 7 (סבב א') ---
-  { day: 3, area: 7, title: "7 - פינסקר זוגי", streets: ["פינסקר"], subType: "7_even", tips: "פינסקר צד זוגי בלבד.", bldgCount: 30 },
+  // יום 2: אזור 12 (חלק א')
+  { day: 2, area: 12, title: "12 - חיים כהן, שבדיה", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], subType: "12_part1", tips: "חיים כהן, שבדיה, פנקס, הכרם.", bldgCount: 40 },
 
-  // --- יום 4: אזור 14 (סבב ב') ---
-  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "רוטשילד אי-זוגי (109-179) וקק\"ל (בפנייה של 143/141).", bldgCount: 30 },
+  // יום 3: אזור 7 (חלק א')
+  { day: 3, area: 7, title: "7 - פינסקר זוגי", streets: ["פינסקר"], subType: "7_even", tips: "פינסקר זוגי בלבד.", bldgCount: 30 },
 
-  // --- יום 5: אזור 12 (סבב ב') ---
-  { day: 5, area: 12, title: "12 - ה-93 והרב קוק", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_B", tips: "ה-93, הרב קוק, ראב אחים וחפץ מרדכי.", bldgCount: 50 },
+  // יום 4: אזור 14 (חלק ב')
+  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "רוטשילד אי-זוגי (179-109), קק\"ל.", bldgCount: 25 },
 
-  // --- יום 6: אזור 7 (סבב ב') ---
-  { day: 6, area: 7, title: "7 - פינסקר אי-זוגי", streets: ["פינסקר"], subType: "7_odd", tips: "פינסקר צד אי-זוגי בלבד.", bldgCount: 30 },
+  // יום 5: אזור 12 (חלק ב')
+  { day: 5, area: 12, title: "12 - ה-93, הרב קוק", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_part2", tips: "ה-93, הרב קוק, ראב אחים, חפץ מרדכי.", bldgCount: 45 },
 
-  // --- יום 7: אזור 14 (חוזר לסבב א') ---
+  // יום 6: אזור 7 (חלק ב')
+  { day: 6, area: 7, title: "7 - פינסקר אי-זוגי", streets: ["פינסקר"], subType: "7_odd", tips: "פינסקר אי-זוגי בלבד.", bldgCount: 30 },
+
+  // יום 7: אזור 14 (חזרה לחלק א')
   { day: 7, area: 14, title: "14 - הדף היומי ורוטשילד זוגי", streets: ["הדף היומי", "גד מכנס", "רוטשילד"], subType: "14_even", tips: "סבב חוזר: הדף היומי, גד מכנס 4, רוטשילד זוגי.", bldgCount: 25 },
 
-  // --- יום 8: אזור 12 (סבב ג') ---
-  { day: 8, area: 12, title: "12 - אנה פרנק, מנדלסון, רוטשילד 100", streets: ["אנה פרנק", "מנדלסון", "זכרון משה", "רוטשילד"], subType: "12_C", tips: "אנה פרנק, מנדלסון, זכרון משה ורוטשילד 100 בלבד.", bldgCount: 35 },
+  // יום 8: אזור 12 (חלק ג')
+  { day: 8, area: 12, title: "12 - אנה פרנק, מנדלסון", streets: ["אנה פרנק", "מנדלסון", "רוטשילד", "זכרון משה"], subType: "12_part3", tips: "אנה פרנק, מנדלסון, רוטשילד 100, זכרון משה.", bldgCount: 35 },
 
-  // --- יום 9: אזור 7 (סבב ג' - הקטנים) ---
-  { day: 9, area: 7, title: "7 - מתחם ברוידה ומרקוס", streets: ["משה מרקוס", "משה ברקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "האחים רוזוב", "בורלא"], subType: "7_small_1", tips: "משה מרקוס, מקס ברוד, ברוידה, יוסף חיים, רוזוב, בורלא.", bldgCount: 28 },
+  // יום 9: אזור 7 (חלק ג')
+  { day: 9, area: 7, title: "7 - מרקוס, ברוידה, בורלא", streets: ["משה מרקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "האחים רוזוב", "בורלא"], subType: "7_small_1", tips: "משה מרקוס, מקס ברוד, ברוידה, יוסף חיים, רוזוב, בורלא.", bldgCount: 25 },
 
-  // --- יום 10: אזור 14 (חוזר לסבב ב') ---
-  { day: 10, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "סבב חוזר: רוטשילד אי-זוגי וקק\"ל.", bldgCount: 30 },
+  // יום 10: אזור 14 (חזרה לחלק ב')
+  { day: 10, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "סבב חוזר: רוטשילד אי-זוגי וקק\"ל.", bldgCount: 25 },
 
-  // --- יום 11: אזור 12 (חוזר לסבב א') ---
-  { day: 11, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], subType: "12_A", tips: "סבב חוזר: חיים כהן, שבדיה, פנקס, הכרם.", bldgCount: 45 },
+  // יום 11: אזור 12 (חזרה לחלק א')
+  { day: 11, area: 12, title: "12 - חיים כהן, שבדיה", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], subType: "12_part1", tips: "סבב חוזר: חיים כהן, שבדיה, פנקס, הכרם.", bldgCount: 40 },
 
-  // --- יום 12: אזור 7 (סבב ד' - אורלוב והסביבה) ---
-  { day: 12, area: 7, title: "7 - אורלוב ועולי בבל", streets: ["עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], subType: "7_small_2", tips: "עולי בבל, אורלוב 48-66, ליברמן, שטרייט, תל חי.", bldgCount: 30 },
+  // יום 12: אזור 7 (חלק ד')
+  { day: 12, area: 7, title: "7 - עולי בבל, אורלוב", streets: ["עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], subType: "7_small_2", tips: "עולי בבל, אורלוב, ליברמן, שטרייט, תל חי.", bldgCount: 30 },
 
-  // --- יום 13: אזור 14 (חוזר לסבב א') ---
-  { day: 13, area: 14, title: "14 - הדף היומי ורוטשילד זוגי", streets: ["הדף היומי", "גד מכנס", "רוטשילד"], subType: "14_even", tips: "סבב חוזר: רוטשילד זוגי.", bldgCount: 25 },
+  // יום 13: אזור 14 (חזרה לחלק א')
+  { day: 13, area: 14, title: "14 - הדף היומי ורוטשילד זוגי", streets: ["הדף היומי", "גד מכנס", "רוטשילד"], subType: "14_even", tips: "סבב חוזר.", bldgCount: 25 },
 
-  // --- יום 14: אזור 12 (חוזר לסבב ב') ---
-  { day: 14, area: 12, title: "12 - ה-93 והרב קוק", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_B", tips: "סבב חוזר: ה-93 והרב קוק.", bldgCount: 50 },
+  // יום 14: אזור 12 (חזרה לחלק ב')
+  { day: 14, area: 12, title: "12 - ה-93, הרב קוק", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_part2", tips: "סבב חוזר.", bldgCount: 45 },
 
-  // --- יום 15: אזור 7 (חוזר לסבב א') ---
+  // יום 15: אזור 7 (חזרה לחלק א')
   { day: 15, area: 7, title: "7 - פינסקר זוגי", streets: ["פינסקר"], subType: "7_even", tips: "סבב חוזר: פינסקר זוגי.", bldgCount: 30 },
 
-  // --- יום 16: אזור 14 (חוזר לסבב ב') ---
-  { day: 16, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "סבב חוזר: רוטשילד אי-זוגי.", bldgCount: 30 }
+  // יום 16: אזור 14 (חזרה לחלק ב')
+  { day: 16, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "סבב חוזר.", bldgCount: 25 }
 ];
 
 const BUILDING_ALERTS: Record<string, string> = {
@@ -113,7 +114,9 @@ const BUILDING_ALERTS: Record<string, string> = {
 const AREA_THEMES: Record<number, any> = {
   7: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" },
   14: { gradient: "from-emerald-50 via-green-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" },
-  12: { gradient: "from-red-50 via-rose-50 to-slate-50", primary: "bg-red-600", secondary: "bg-red-100", textMain: "text-red-900", textSub: "text-red-700", border: "border-red-200", accent: "text-red-600", cardBg: "bg-white", iconColor: "text-red-500", buttonHover: "hover:bg-red-700" }
+  12: { gradient: "from-red-50 via-rose-50 to-slate-50", primary: "bg-red-600", secondary: "bg-red-100", textMain: "text-red-900", textSub: "text-red-700", border: "border-red-200", accent: "text-red-600", cardBg: "bg-white", iconColor: "text-red-500", buttonHover: "hover:bg-red-700" },
+  // שמרנו את 45 כדי למנוע קריסה למשתמשים שנתקעו על האזור הישן עד שיחליפו ידנית
+  45: { gradient: "from-gray-50 via-slate-50 to-zinc-50", primary: "bg-gray-600", secondary: "bg-gray-100", textMain: "text-gray-900", textSub: "text-gray-700", border: "border-gray-200", accent: "text-gray-600", cardBg: "bg-white", iconColor: "text-gray-500", buttonHover: "hover:bg-gray-700" }
 };
 
 const calculateAutoCycleDay = () => {
@@ -126,10 +129,11 @@ const calculateAutoCycleDay = () => {
 
     let workDays = 0;
     let curr = new Date(anchorDate);
-    // סופרים ימי עבודה בלבד
-    while (curr < today) {
+    let safety = 0;
+    while (curr < today && safety < 10000) {
       curr.setDate(curr.getDate() + 1);
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
+      safety++;
     }
     
     let cycle = (1 + workDays) % 16;
@@ -141,8 +145,12 @@ const calculateAutoCycleDay = () => {
 
 function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, isRecentlyDone, daysSinceLastDelivery, notes, onSaveNote }: any) {
   const [isEditing, setIsEditing] = useState(false);
-  const [noteText, setNoteText] = useState(notes[street.name] || "");
-  const hasNote = !!notes[street.name];
+  // הגנה מפני קריסה אם street לא תקין
+  const [noteText, setNoteText] = useState(notes && street?.name ? notes[street.name] || "" : "");
+  
+  if (!street || !street.name) return null;
+
+  const hasNote = notes && !!notes[street.name];
 
   const handleSave = () => {
     onSaveNote(street.name, noteText);
@@ -224,9 +232,14 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
 
 function EstimatedFinishWidget({ streetsToShow, kmWalked, regLeft, pkgLeft, isRainMode }: any) {
   const [breakMinutes, setBreakMinutes] = useState(0);
+  
+  // הגנה מקריסה אם אין רשימה
+  if (!streetsToShow) return null;
+
   const pendingStreets = streetsToShow.filter((s: any) => !s.isCompleted);
   
   const totalBuildingsLeft = pendingStreets.reduce((acc: number, street: any) => {
+    if (!street || !street.name) return acc;
     const count = Object.entries(STREET_COUNTS).find(([key]) => street.name.includes(key))?.[1];
     return acc + (count !== undefined ? count : 10);
   }, 0);
@@ -294,8 +307,10 @@ function CargoTracker({ regTotal, setRegTotal, regDone, setRegDone, pkgTotal, se
 
 function RelayBoxWidget({ relays }: { relays: string[] }) {
   const [collected, setCollected] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem("collectedRelays");
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem("collectedRelays");
+      return saved ? JSON.parse(saved) : {};
+    } catch(e) { return {}; }
   });
   if (!relays || relays.length === 0) return null;
   const toggleCollected = (relay: string) => {
@@ -322,9 +337,12 @@ function RelayBoxWidget({ relays }: { relays: string[] }) {
 }
 
 function StickyNextStreet({ streets, theme }: { streets: Street[], theme: any }) {
+  if (!streets || streets.length === 0) return null;
   const pendingStreets = streets.filter((s: any) => !s.isCompleted);
   if (pendingStreets.length === 0) return null;
   const nextStreet = pendingStreets[0];
+  if (!nextStreet || !nextStreet.name) return null;
+  
   const alertInfo = Object.entries(BUILDING_ALERTS).find(([key]) => nextStreet.name.includes(key));
   return (
     <div className={`fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t ${theme.border} shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-40 transform transition-transform duration-300 animate-slide-up`}>
@@ -436,8 +454,10 @@ export default function App() {
   const [pkgDone, setPkgDone] = useState(0);
 
   const [streetNotes, setStreetNotes] = useState<Record<string, string>>(() => {
-    const saved = localStorage.getItem("streetNotes");
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem("streetNotes");
+      return saved ? JSON.parse(saved) : {};
+    } catch(e) { return {}; }
   });
 
   const saveNote = (streetName: string, note: string) => {
@@ -453,7 +473,17 @@ export default function App() {
   }, [cycleDay]);
 
   const { isHolidayMode } = useHolidayMode();
-  const { todayArea, pendingToday, completedToday, markDelivered, undoDelivered, endDay, loading, allCompletedToday, setManualArea } = useDistribution();
+  
+  // הגנה: שימוש בערכי ברירת מחדל אם ההוק מחזיר undefined (למניעת מסך לבן)
+  const distHook = useDistribution();
+  const todayArea = distHook?.todayArea || 14;
+  const pendingToday = distHook?.pendingToday || [];
+  const completedToday = distHook?.completedToday || [];
+  const markDelivered = distHook?.markDelivered || (() => {});
+  const undoDelivered = distHook?.undoDelivered || (() => {});
+  const endDay = distHook?.endDay || (() => {});
+  const loading = distHook?.loading || false;
+  const allCompletedToday = distHook?.allCompletedToday || [];
 
   useNotifications();
 
@@ -465,20 +495,21 @@ export default function App() {
   const theme = useMemo(() => {
     const selectedTheme = AREA_THEMES[todayArea];
     if (selectedTheme) return selectedTheme;
-    const scheduleTheme = AREA_THEMES[currentDaySchedule.area];
-    if (scheduleTheme) return scheduleTheme;
+    
+    // אם הגענו לפה, זה אומר שיש אזור לא מוכר. נחזיר ברירת מחדל בטוחה.
     return AREA_THEMES[7];
-  }, [todayArea, currentDaySchedule]);
+  }, [todayArea]);
   
-  const kmWalked = (completedToday.length * 0.5).toFixed(1);
+  const kmWalked = ((completedToday || []).length * 0.5).toFixed(1);
 
   const streetsToShow = useMemo(() => {
     if (!currentDaySchedule || !currentDaySchedule.streets) return [];
 
     const list = optimizedStreets.length > 0 ? optimizedStreets : pendingToday;
     
-    // סינון בטיחותי
-    if (todayArea !== currentDaySchedule.area) return [];
+    // סינון בטיחותי: אם האזור של היום (במציאות) לא תואם ליום בלו"ז (באפליקציה), אל תציג כלום
+    // חריג: אם אנחנו במעבר מאזור 45, נאפשר להציג כדי לא לתקוע את המשתמש
+    if (todayArea !== currentDaySchedule.area && todayArea !== 45) return [];
     
     const filtered = list.filter(street => {
         if (!street || !street.name) return false;
@@ -489,20 +520,29 @@ export default function App() {
            const houseNum = match ? parseInt(match[0]) : 0;
            const sub = currentDaySchedule.subType;
            
-           // באיזור 12 מציגים רק את רוטשילד 100
-           if (sub === "12_C") return houseNum === 100;
+           // באיזור 12 (חלק ג) מציגים רק את רוטשילד 100
+           if (sub === "12_part3") return houseNum === 100;
            
-           // באיזור 14 - זוגי (110-182)
+           // באיזור 14 - חלק א (זוגי 110-182)
            if (sub === "14_even") {
               return houseNum % 2 === 0 && houseNum >= 110 && houseNum <= 182;
            }
-           // באיזור 14 - אי-זוגי (109-179)
+           // באיזור 14 - חלק ב (אי-זוגי 109-179)
            if (sub === "14_odd") {
               return houseNum % 2 !== 0 && houseNum >= 109 && houseNum <= 179;
            }
 
            // אם זה רוטשילד אבל לא תואם לאף כלל היום - הסתר אותו
            return false;
+        }
+        
+        // === לוגיקה לגד מכנס (רק 4) ===
+        if (street.name.includes("גד מכנס")) {
+            const match = street.name.match(/(\d+)/);
+            const houseNum = match ? parseInt(match[0]) : 0;
+            // אם יש מספר והוא לא 4 - אל תציג. אם אין מספר (רק שם הרחוב), תציג.
+            if (houseNum > 0 && houseNum !== 4) return false;
+            return true;
         }
 
         // === לוגיקה חכמה לפינסקר ===
