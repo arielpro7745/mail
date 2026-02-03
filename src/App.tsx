@@ -32,7 +32,7 @@ import {
   AlertTriangle, Sun, Coffee, Calendar, ArrowRight, ArrowLeft, Info, 
   CalendarClock, Cloud, CheckCircle2, Navigation2, ChevronUp, ChevronDown,
   Building, MapPin, Layers, Package, Mail, Box, Lightbulb, Bike, CloudRain, History, Undo2, Clock, 
-  Umbrella, StickyNote, Edit3, Save, X
+  Umbrella, StickyNote, Edit3, Save, X, Zap
 } from "lucide-react";
 import AIPredictions from "./components/AIPredictions";
 import WeatherAlerts from "./components/WeatherAlerts";
@@ -42,88 +42,93 @@ import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === מילון בניינים מעודכן ===
+// === מילון בניינים מעודכן (כולל אזור 7 החדש) ===
 const STREET_COUNTS: Record<string, number> = {
-  // אזור 12
+  // אזור 12 (אדום)
   "שבדיה": 7, "האחים ראב": 8, "מנדלסון": 12,
   "חפץ מרדכי": 19, "חיים כהן": 29, "אנה פרנק": 17, "זכרון משה": 20, "הרב קוק": 30,
   "הכרם": 8, "התשעים ושלוש": 29, "דוד צבי פנקס": 23,
-  // אזור 14
+  
+  // אזור 14 (ירוק)
   "רוטשילד": 45, "גד מכנס": 15, "קק\"ל": 12, "הדף היומי": 4, "קרן קיימת": 12,
-  // אזור 7
-  "פינסקר": 35, "משה ברקוס": 5, "מקס ברוד": 4, "ברוידה": 6, 
-  "חכם יוסף חיים": 3, "אחים רוזוב": 3, "עולי בבל": 4, 
+  
+  // אזור 7 (כחול - חדש)
+  "פינסקר": 60, "משה ברקוס": 5, "מקס ברוד": 4, "ברוידה": 6, 
+  "חכם יוסף חיים": 3, "האחים רוזוב": 3, "עולי בבל": 4, 
   "אורלוב": 10, "ליברמן": 3, "האחים שטרייט": 5, "תל חי": 8, "משה מרקוס": 5
 };
 
-// === לו"ז 16 ימים - השיטה המאוזנת (פעם אחת כל רחוב) ===
+// === לו"ז 16 ימי עבודה ===
+// הסבב: 14 -> 12 -> 7
+// יום 1 (אתמול 2/2): 14
+// יום 2 (היום 3/2): 12
+// יום 3 (מחר 4/2): 7
 const SCHEDULE_16_DAYS = [
-  // --- יום 1: אזור 12 (ירוק) ---
-  { day: 1, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה"], tips: "התחלה קלילה בחיים כהן.", bldgCount: 36 },
+  // --- יום 1: אזור 14 (ירוק) - חלק א' ---
+  { day: 1, area: 14, title: "14 - רוטשילד זוגי + גד מכנס", streets: ["רוטשילד", "גד מכנס", "הדף היומי"], tips: "רוטשילד צד זוגי (110-144), גד מכנס והדף היומי.", bldgCount: 30 },
+
+  // --- יום 2: אזור 12 (אדום) - חלק א' ---
+  { day: 2, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], tips: "חיים כהן, שבדיה, פנקס והכרם.", bldgCount: 45 },
   
-  // --- יום 2: אזור 7 (כחול) ---
-  { day: 2, area: 7, title: "7 - פינסקר אי-זוגי", streets: ["פינסקר 1-35", "פינסקר 35-57"], tips: "רק צד אי-זוגי של פינסקר.", bldgCount: 30 },
-  
-  // --- יום 3: אזור 14 (אדום) ---
-  { day: 3, area: 14, title: "14 - רוטשילד זוגי (חלק א)", streets: ["רוטשילד"], tips: "מספרים 110-144 (בערך).", bldgCount: 20 },
-  
-  // --- יום 4: אזור 12 (ירוק) ---
-  { day: 4, area: 12, title: "12 - פנקס והכרם", streets: ["דוד צבי פנקס", "הכרם"], tips: "פנקס לכל אורכו והכרם.", bldgCount: 31 },
-  
-  // --- יום 5: אזור 7 (כחול) ---
-  { day: 5, area: 7, title: "7 - פינסקר זוגי", streets: ["פינסקר 28-2", "פינסקר 42-36", "פינסקר 34-30"], tips: "רק צד זוגי של פינסקר.", bldgCount: 30 },
-  
-  // --- יום 6: אזור 14 (אדום) ---
-  { day: 6, area: 14, title: "14 - רוטשילד אי-זוגי (חלק א)", streets: ["רוטשילד"], tips: "מספרים 109-141.", bldgCount: 20 },
-  
-  // --- יום 7: אזור 12 (ירוק) ---
-  { day: 7, area: 12, title: "12 - ה-93 והאחים ראב", streets: ["התשעים ושלוש", "האחים ראב"], tips: "ה-93 הוא רחוב עמוס.", bldgCount: 37 },
-  
-  // --- יום 8: אזור 7 (כחול) ---
-  { day: 8, area: 7, title: "7 - מתחם ברוידה", streets: ["מקס ברוד", "משה ברקוס", "משה מרקוס", "ברוידה", "חכם יוסף חיים", "האחים רוזוב"], tips: "כל הרחובות הקטנים סביב ברוידה.", bldgCount: 25 },
-  
-  // --- יום 9: אזור 14 (אדום) ---
-  { day: 9, area: 14, title: "14 - גד מכנס והדף היומי", streets: ["גד מכנס", "הדף היומי"], tips: "גד מכנס והדף היומי.", bldgCount: 20 },
-  
-  // --- יום 10: אזור 12 (ירוק) ---
-  { day: 10, area: 12, title: "12 - הרב קוק", streets: ["הרב קוק"], tips: "רחוב אחד ארוך וקשה.", bldgCount: 30 },
-  
-  // --- יום 11: אזור 7 (כחול) ---
-  { day: 11, area: 7, title: "7 - אורלוב ועולי בבל", streets: ["עולי בבל", "אורלוב 48-66"], tips: "אורלוב ועולי בבל.", bldgCount: 25 },
-  
-  // --- יום 12: אזור 14 (אדום) ---
-  { day: 12, area: 14, title: "14 - רוטשילד (המשך)", streets: ["רוטשילד"], tips: "השלמות רוטשילד (סוף הרחוב).", bldgCount: 25 },
-  
-  // --- יום 13: אזור 12 (ירוק) ---
-  { day: 13, area: 12, title: "12 - אנה פרנק ומנדלסון", streets: ["אנה פרנק", "מנדלסון"], tips: "שני רחובות בינוניים.", bldgCount: 29 },
-  
-  // --- יום 14: אזור 7 (כחול) ---
-  { day: 14, area: 7, title: "7 - סיום (ליברמן/שטרייט)", streets: ["ליברמן", "האחים שטרייט", "תל חי"], tips: "סיום אזור 7.", bldgCount: 20 },
-  
-  // --- יום 15: אזור 14 (אדום) ---
-  { day: 15, area: 14, title: "14 - קק\"ל וקרן קיימת", streets: ["קק\"ל", "קרן קיימת"], tips: "סיום אזור 14.", bldgCount: 24 },
-  
-  // --- יום 16: אזור 12 (ירוק) ---
-  { day: 16, area: 12, title: "12 - חפץ מרדכי וזכרון", streets: ["חפץ מרדכי", "זכרון משה"], tips: "סוגרים את כל הסבב!", bldgCount: 39 }
+  // --- יום 3: אזור 7 (כחול) - חלק א' ---
+  { day: 3, area: 7, title: "7 - פינסקר (1-35) ומקס ברוד", streets: ["פינסקר 1-35", "משה ברקוס", "מקס ברוד"], tips: "פינסקר 1 עד 35 (אי-זוגי), פנייה לברקוס ומקס ברוד.", bldgCount: 25 },
+
+  // --- יום 4: אזור 14 (ירוק) - חלק ב' ---
+  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי + קק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], tips: "רוטשילד צד אי-זוגי ורחוב קק\"ל.", bldgCount: 30 },
+
+  // --- יום 5: אזור 12 (אדום) - חלק ב' ---
+  { day: 5, area: 12, title: "12 - ה-93 והרב קוק", streets: ["התשעים ושלוש", "הרב קוק", "אנה פרנק", "האחים ראב"], tips: "ה-93, הרב קוק, אנה פרנק וראב אחים.", bldgCount: 50 },
+
+  // --- יום 6: אזור 7 (כחול) - חלק ב' ---
+  { day: 6, area: 7, title: "7 - פינסקר (35-57) וברוידה", streets: ["פינסקר 35-57", "ברוידה", "חכם יוסף חיים", "האחים רוזוב"], tips: "פינסקר 35 עד 57, פנייה לברוידה (כולל יוסף חיים ורוזוב).", bldgCount: 30 },
+
+  // --- יום 7: אזור 14 (ירוק) - חוזר לחלק א' ---
+  { day: 7, area: 14, title: "14 - רוטשילד זוגי + גד מכנס", streets: ["רוטשילד", "גד מכנס", "הדף היומי"], tips: "סבב חוזר: רוטשילד זוגי.", bldgCount: 30 },
+
+  // --- יום 8: אזור 12 (אדום) - חלק ג' ---
+  { day: 8, area: 12, title: "12 - חפץ מרדכי וזכרון", streets: ["חפץ מרדכי", "מנדלסון", "זכרון משה"], tips: "חפץ מרדכי, מנדלסון וזכרון משה.", bldgCount: 40 },
+
+  // --- יום 9: אזור 7 (כחול) - חלק ג' ---
+  { day: 9, area: 7, title: "7 - פינסקר (61) ואורלוב", streets: ["פינסקר 61", "עולי בבל", "אורלוב"], tips: "פינסקר 61 (פנייה לעולי בבל) ואורלוב 48-66.", bldgCount: 25 },
+
+  // --- יום 10: אזור 14 (ירוק) - חוזר לחלק ב' ---
+  { day: 10, area: 14, title: "14 - רוטשילד אי-זוגי + קק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], tips: "סבב חוזר: רוטשילד אי-זוגי וקק\"ל.", bldgCount: 30 },
+
+  // --- יום 11: אזור 12 (אדום) - חוזר לחלק א' ---
+  { day: 11, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], tips: "סבב חוזר: חיים כהן ושבדיה.", bldgCount: 45 },
+
+  // --- יום 12: אזור 7 (כחול) - חלק ד' ---
+  { day: 12, area: 7, title: "7 - ליברמן ופינסקר (42-36)", streets: ["ליברמן", "פינסקר 42-36", "האחים שטרייט"], tips: "ליברמן, פינסקר 42 עד 36, האחים שטרייט.", bldgCount: 20 },
+
+  // --- יום 13: אזור 14 (ירוק) - חוזר לחלק א' ---
+  { day: 13, area: 14, title: "14 - רוטשילד זוגי + גד מכנס", streets: ["רוטשילד", "גד מכנס", "הדף היומי"], tips: "סבב חוזר: רוטשילד זוגי.", bldgCount: 30 },
+
+  // --- יום 14: אזור 12 (אדום) - חוזר לחלק ב' ---
+  { day: 14, area: 12, title: "12 - ה-93 והרב קוק", streets: ["התשעים ושלוש", "הרב קוק", "אנה פרנק", "האחים ראב"], tips: "סבב חוזר: ה-93 והרב קוק.", bldgCount: 50 },
+
+  // --- יום 15: אזור 7 (כחול) - חלק ה' ---
+  { day: 15, area: 7, title: "7 - פינסקר (34-2) ותל חי", streets: ["פינסקר 34-30", "תל חי", "פינסקר 28-2"], tips: "פינסקר 34 עד 30, תל חי, ולסיום פינסקר 28 עד 2.", bldgCount: 25 },
+
+  // --- יום 16: אזור 12 (אדום) - חוזר לחלק ג' ---
+  { day: 16, area: 12, title: "12 - חפץ מרדכי וזכרון", streets: ["חפץ מרדכי", "מנדלסון", "זכרון משה"], tips: "סוגרים את המחזור עם חפץ מרדכי וזכרון משה.", bldgCount: 40 }
 ];
 
 const BUILDING_ALERTS: Record<string, string> = {
   "הרב קוק": "30 בניינים!", "חיים כהן": "29 בניינים!",
-  "התשעים ושלוש": "29 בניינים!", "פינסקר": "שים לב לחלוקה למקטעים",
-  "אורלוב": "48 עד 66 בלבד"
+  "התשעים ושלוש": "29 בניינים!", "פינסקר": "שים לב לחלוקה למקטעים בטיפ!",
+  "אורלוב": "48 עד 66 בלבד", "רוטשילד": "שים לב לזוגי/אי-זוגי"
 };
 
+// === צבעים: 7 כחול, 14 ירוק, 12 אדום ===
 const AREA_THEMES: Record<number, any> = {
   7: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" },
-  14: { gradient: "from-red-50 via-rose-50 to-slate-50", primary: "bg-red-600", secondary: "bg-red-100", textMain: "text-red-900", textSub: "text-red-700", border: "border-red-200", accent: "text-red-600", cardBg: "bg-white", iconColor: "text-red-500", buttonHover: "hover:bg-red-700" },
-  12: { gradient: "from-emerald-50 via-teal-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" },
-  45: { gradient: "from-blue-50 via-indigo-50 to-slate-50", primary: "bg-blue-600", secondary: "bg-blue-100", textMain: "text-blue-900", textSub: "text-blue-700", border: "border-blue-200", accent: "text-blue-600", cardBg: "bg-white", iconColor: "text-blue-500", buttonHover: "hover:bg-blue-700" }
+  14: { gradient: "from-emerald-50 via-green-50 to-slate-50", primary: "bg-emerald-600", secondary: "bg-emerald-100", textMain: "text-emerald-900", textSub: "text-emerald-700", border: "border-emerald-200", accent: "text-emerald-600", cardBg: "bg-white", iconColor: "text-emerald-500", buttonHover: "hover:bg-emerald-700" },
+  12: { gradient: "from-red-50 via-rose-50 to-slate-50", primary: "bg-red-600", secondary: "bg-red-100", textMain: "text-red-900", textSub: "text-red-700", border: "border-red-200", accent: "text-red-600", cardBg: "bg-white", iconColor: "text-red-500", buttonHover: "hover:bg-red-700" }
 };
 
 const calculateAutoCycleDay = () => {
   try {
-    const anchorDate = new Date('2026-02-02T00:00:00'); 
-    const anchorCycleDay = 1; 
+    const anchorDate = new Date('2026-02-02T00:00:00'); // יום שני 2.2 = יום 1
     const today = new Date();
     today.setHours(0,0,0,0);
     
@@ -131,12 +136,13 @@ const calculateAutoCycleDay = () => {
 
     let workDays = 0;
     let curr = new Date(anchorDate);
+    // סופרים ימי עבודה בלבד כדי לא לדלג על משימות
     while (curr < today) {
       curr.setDate(curr.getDate() + 1);
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
     
-    let cycle = (anchorCycleDay + workDays) % 16;
+    let cycle = (1 + workDays) % 16;
     return cycle === 0 ? 16 : cycle;
   } catch(e) { return 1; }
 };
@@ -466,7 +472,6 @@ export default function App() {
     return schedule || SCHEDULE_16_DAYS[0];
   }, [cycleDay]);
   
-  // הגנה: אם לא מוצא צבע לאזור, לוקח את צבע ברירת המחדל (כחול) כדי למנוע קריסה
   const theme = useMemo(() => {
     const selectedTheme = AREA_THEMES[todayArea];
     if (selectedTheme) return selectedTheme;
@@ -501,21 +506,27 @@ export default function App() {
            }
         }
 
-        // לוגיקה חכמה לפינסקר (זוגי/אי-זוגי)
+        // לוגיקה חכמה לפינסקר (לפי ימים ומספרים בלו"ז)
         if (currentDaySchedule.area === 7 && street.name.includes("פינסקר")) {
-           // אם זה פינסקר ספציפי (למשל "פינסקר 1-35")
-           if (currentDaySchedule.streets.some(s => street.name.includes(s))) return true;
+             // אם זה פינסקר ספציפי (למשל "פינסקר 1-35" - בדיקה טקסטואלית פשוטה האם הופיע בלו"ז)
+             if (currentDaySchedule.streets.some(s => street.name.includes(s))) return true;
 
-           // אם הכותרת אומרת "אי-זוגי"
-           const match = street.name.match(/(\d+)/);
-           const houseNum = match ? parseInt(match[0]) : 0;
-           if (currentDaySchedule.title.includes("אי-זוגי")) return houseNum % 2 !== 0;
-           if (currentDaySchedule.title.includes("זוגי")) return houseNum % 2 === 0;
+             // אם לא זוהה לפי שם, מנסים לפי מספרים
+             const match = street.name.match(/(\d+)/);
+             const houseNum = match ? parseInt(match[0]) : 0;
+             
+             // זיהוי לפי הטיפים והכותרת
+             if (currentDaySchedule.title.includes("1-35") && houseNum >= 1 && houseNum <= 35) return true;
+             if (currentDaySchedule.title.includes("35-57") && houseNum >= 35 && houseNum <= 57) return true;
+             if (currentDaySchedule.title.includes("42-36") && houseNum <= 42 && houseNum >= 36) return true;
+             if (currentDaySchedule.title.includes("34-30") && houseNum <= 34 && houseNum >= 30) return true;
+             if (currentDaySchedule.title.includes("28-2") && houseNum <= 28 && houseNum >= 2) return true;
+             if (currentDaySchedule.title.includes("61") && houseNum === 61) return true;
         }
 
         // ברירת מחדל: סינון לפי שם
         return currentDaySchedule.streets.some(scheduledName => 
-            street.name.includes(scheduledName) || scheduledName.includes(street.name)
+             street.name.includes(scheduledName) || scheduledName.includes(street.name)
         );
     });
 
