@@ -37,24 +37,56 @@ import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === לו"ז 16 ימים המדויק שלך ===
+// === לו"ז 16 ימים נקי (ללא מספרי בתים) ===
+// המערכת יודעת לסנן לבד לפי הכותרת (זוגי/אי-זוגי וכו')
 const SCHEDULE_16_DAYS = [
-  { day: 1, area: 14, title: "14 - הדף היומי ורוטשילד זוגי", streets: ["הדף היומי", "גד מכנס", "רוטשילד"], subType: "14_even", tips: "הדף היומי, גד מכנס 4, רוטשילד זוגי (110-182).", bldgCount: 25 },
-  { day: 2, area: 12, title: "12 - חיים כהן, שבדיה", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], subType: "12_part1", tips: "חיים כהן, שבדיה, פנקס, הכרם.", bldgCount: 40 },
-  { day: 3, area: 7, title: "7 - פינסקר זוגי", streets: ["פינסקר"], subType: "7_even", tips: "פינסקר זוגי בלבד.", bldgCount: 30 },
-  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "רוטשילד אי-זוגי (179-109), קק\"ל.", bldgCount: 25 },
-  { day: 5, area: 12, title: "12 - ה-93, הרב קוק", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_part2", tips: "ה-93, הרב קוק, ראב אחים, חפץ מרדכי.", bldgCount: 45 },
-  { day: 6, area: 7, title: "7 - פינסקר אי-זוגי", streets: ["פינסקר"], subType: "7_odd", tips: "פינסקר אי-זוגי בלבד.", bldgCount: 30 },
-  { day: 7, area: 14, title: "14 - סבב חוזר א'", streets: ["הדף היומי", "גד מכנס", "רוטשילד"], subType: "14_even", tips: "סבב חוזר: הדף היומי, גד מכנס 4, רוטשילד זוגי.", bldgCount: 25 },
-  { day: 8, area: 12, title: "12 - אנה פרנק, מנדלסון", streets: ["אנה פרנק", "מנדלסון", "רוטשילד", "זכרון משה"], subType: "12_part3", tips: "אנה פרנק, מנדלסון, רוטשילד 100 (רק הוא!), זכרון משה.", bldgCount: 35 },
-  { day: 9, area: 7, title: "7 - מרקוס, ברוידה, בורלא", streets: ["משה מרקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "האחים רוזוב", "בורלא"], subType: "7_small_1", tips: "משה מרקוס, מקס ברוד, ברוידה, יוסף חיים, רוזוב, בורלא.", bldgCount: 25 },
-  { day: 10, area: 14, title: "14 - סבב חוזר ב'", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "סבב חוזר: רוטשילד אי-זוגי וקק\"ל.", bldgCount: 25 },
-  { day: 11, area: 12, title: "12 - סבב חוזר א'", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], subType: "12_part1", tips: "סבב חוזר.", bldgCount: 40 },
-  { day: 12, area: 7, title: "7 - עולי בבל, אורלוב", streets: ["עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], subType: "7_small_2", tips: "עולי בבל, אורלוב, ליברמן, שטרייט, תל חי.", bldgCount: 30 },
-  { day: 13, area: 14, title: "14 - סבב חוזר א'", streets: ["הדף היומי", "גד מכנס", "רוטשילד"], subType: "14_even", tips: "סבב חוזר.", bldgCount: 25 },
-  { day: 14, area: 12, title: "12 - סבב חוזר ב'", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_part2", tips: "סבב חוזר.", bldgCount: 45 },
-  { day: 15, area: 7, title: "7 - סבב חוזר א'", streets: ["פינסקר"], subType: "7_even", tips: "סבב חוזר.", bldgCount: 30 },
-  { day: 16, area: 14, title: "14 - סבב חוזר ב'", streets: ["רוטשילד", "קק\"ל", "קרן קיימת"], subType: "14_odd", tips: "סבב חוזר.", bldgCount: 25 }
+  // --- יום 1: אזור 14 ---
+  { day: 1, area: 14, title: "14 - הדף היומי ורוטשילד זוגי", streets: ["הדף היומי", "גד מכנס", "רוטשילד זוגי"], tips: "הדף היומי, גד מכנס (4), רוטשילד זוגי.", bldgCount: 25 },
+  
+  // --- יום 2: אזור 12 ---
+  { day: 2, area: 12, title: "12 - חיים כהן, שבדיה, פנקס", streets: ["חיים כהן", "שבדיה", "פנקס", "הכרם"], tips: "חיים כהן, שבדיה, פנקס, הכרם.", bldgCount: 40 },
+
+  // --- יום 3: אזור 7 ---
+  { day: 3, area: 7, title: "7 - פינסקר זוגי", streets: ["פינסקר זוגי"], tips: "פינסקר צד זוגי בלבד.", bldgCount: 30 },
+
+  // --- יום 4: אזור 14 ---
+  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל", "קרן קיימת"], tips: "רוטשילד אי-זוגי וקק\"ל.", bldgCount: 25 },
+
+  // --- יום 5: אזור 12 ---
+  { day: 5, area: 12, title: "12 - ה-93, הרב קוק", streets: ["התשעים ושלוש", "הרב קוק", "ראב אחים", "חפץ מרדכי"], tips: "ה-93, הרב קוק, ראב אחים, חפץ מרדכי.", bldgCount: 45 },
+
+  // --- יום 6: אזור 7 ---
+  { day: 6, area: 7, title: "7 - פינסקר אי-זוגי", streets: ["פינסקר אי-זוגי"], tips: "פינסקר צד אי-זוגי בלבד.", bldgCount: 30 },
+
+  // --- יום 7: אזור 14 (סבב חוזר) ---
+  { day: 7, area: 14, title: "14 - סבב חוזר: דף יומי ורוטשילד זוגי", streets: ["הדף היומי", "גד מכנס", "רוטשילד זוגי"], tips: "סבב חוזר.", bldgCount: 25 },
+
+  // --- יום 8: אזור 12 ---
+  { day: 8, area: 12, title: "12 - אנה פרנק, מנדלסון, רוטשילד 100", streets: ["אנה פרנק", "מנדלסון", "רוטשילד 100", "זכרון משה"], tips: "כולל רוטשילד 100 בלבד.", bldgCount: 35 },
+
+  // --- יום 9: אזור 7 ---
+  { day: 9, area: 7, title: "7 - מרקוס, ברוידה, בורלא", streets: ["משה מרקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "האחים רוזוב", "בורלא"], tips: "כל הרחובות הקטנים באזור 7.", bldgCount: 25 },
+
+  // --- יום 10: אזור 14 (סבב חוזר) ---
+  { day: 10, area: 14, title: "14 - סבב חוזר: רוטשילד אי-זוגי", streets: ["רוטשילד אי-זוגי", "קק\"ל", "קרן קיימת"], tips: "סבב חוזר.", bldgCount: 25 },
+
+  // --- יום 11: אזור 12 (סבב חוזר) ---
+  { day: 11, area: 12, title: "12 - סבב חוזר: חיים כהן", streets: ["חיים כהן", "שבדיה", "פנקס", "הכרם"], tips: "סבב חוזר.", bldgCount: 40 },
+
+  // --- יום 12: אזור 7 ---
+  { day: 12, area: 7, title: "7 - אורלוב, עולי בבל", streets: ["עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], tips: "עולי בבל, אורלוב, ליברמן, שטרייט, תל חי.", bldgCount: 30 },
+
+  // --- יום 13: אזור 14 (סבב חוזר) ---
+  { day: 13, area: 14, title: "14 - סבב חוזר: דף יומי", streets: ["הדף היומי", "גד מכנס", "רוטשילד זוגי"], tips: "סבב חוזר.", bldgCount: 25 },
+
+  // --- יום 14: אזור 12 (סבב חוזר) ---
+  { day: 14, area: 12, title: "12 - סבב חוזר: ה-93", streets: ["התשעים ושלוש", "הרב קוק", "ראב אחים", "חפץ מרדכי"], tips: "סבב חוזר.", bldgCount: 45 },
+
+  // --- יום 15: אזור 7 (סבב חוזר) ---
+  { day: 15, area: 7, title: "7 - סבב חוזר: פינסקר זוגי", streets: ["פינסקר זוגי"], tips: "סבב חוזר.", bldgCount: 30 },
+
+  // --- יום 16: אזור 14 (סבב חוזר) ---
+  { day: 16, area: 14, title: "14 - סבב חוזר: רוטשילד אי-זוגי", streets: ["רוטשילד אי-זוגי", "קק\"ל", "קרן קיימת"], tips: "סבב חוזר.", bldgCount: 25 }
 ];
 
 const AREA_THEMES: Record<number, any> = {
@@ -81,7 +113,6 @@ const calculateAutoCycleDay = () => {
   } catch(e) { return 1; }
 };
 
-// רכיבים פנימיים
 function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, isRecentlyDone, daysSinceLastDelivery, notes, onSaveNote }: any) {
   const [isEditing, setIsEditing] = useState(false);
   const [noteText, setNoteText] = useState(notes && street?.name ? notes[street.name] || "" : "");
@@ -149,41 +180,48 @@ export default function App() {
 
   const { isHolidayMode } = useHolidayMode();
   const distHook = useDistribution();
-  // הגנה: אם הנתונים חסרים, השתמש בערכי ברירת מחדל
   const { todayArea = 7, pendingToday = [], completedToday = [], markDelivered = ()=>{}, undoDelivered = ()=>{}, endDay = ()=>{}, loading = true, allCompletedToday = [], setManualArea = ()=>{} } = distHook || {};
 
   useNotifications();
 
   const currentDaySchedule = useMemo(() => SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0], [cycleDay]);
-  // הגנה: אם האזור לא קיים בערכת הנושא (כמו 45), נשתמש ב-7
   const theme = useMemo(() => AREA_THEMES[todayArea] || AREA_THEMES[7], [todayArea]);
 
+  // === מנוע סינון חכם לרחובות ===
   const streetsToShow = useMemo(() => {
-    // מציג רחובות רק אם האזור תואם או אם המשתמש תקוע באזור 45
     if (todayArea !== currentDaySchedule.area && todayArea !== 45) return []; 
     
     return pendingToday.filter(street => {
        if (!street || !street.name) return false;
-       if (street.name.includes("רוטשילד")) {
-          const num = parseInt(street.name.match(/(\d+)/)?.[0] || "0");
-          const sub = currentDaySchedule.subType;
-          if (sub === "12_part3") return num === 100; 
-          if (sub === "14_even") return num % 2 === 0 && num >= 110 && num <= 182; 
-          if (sub === "14_odd") return num % 2 !== 0 && num >= 109 && num <= 179;
-          return false;
-       }
-       if (street.name.includes("גד מכנס")) {
-          const num = parseInt(street.name.match(/(\d+)/)?.[0] || "0");
-          return num === 0 || num === 4;
-       }
-       if (currentDaySchedule.area === 7 && street.name.includes("פינסקר")) {
-          const num = parseInt(street.name.match(/(\d+)/)?.[0] || "0");
-          if (num === 0) return true;
-          if (currentDaySchedule.subType === "7_even") return num % 2 === 0;
-          if (currentDaySchedule.subType === "7_odd") return num % 2 !== 0;
-          return false;
-       }
-       return currentDaySchedule.streets.some(s => street.name.includes(s) || s.includes(street.name));
+       
+       // === לוגיקה חכמה לתרגום שמות ===
+       return currentDaySchedule.streets.some(def => {
+           const num = parseInt(street.name.match(/(\d+)/)?.[0] || "0");
+
+           // 1. טיפול ברוטשילד (זוגי/אי-זוגי/100)
+           if (def.includes("רוטשילד")) {
+                if (!street.name.includes("רוטשילד")) return false;
+                if (def.includes("זוגי") && !def.includes("אי")) return num > 0 && num % 2 === 0;
+                if (def.includes("אי-זוגי")) return num > 0 && num % 2 !== 0;
+                if (def.includes("100")) return num === 100;
+                return true; // אם סתם כתוב רוטשילד
+           }
+           // 2. טיפול בפינסקר (זוגי/אי-זוגי)
+           if (def.includes("פינסקר")) {
+                if (!street.name.includes("פינסקר")) return false;
+                if (def.includes("זוגי") && !def.includes("אי")) return num > 0 && num % 2 === 0;
+                if (def.includes("אי-זוגי")) return num > 0 && num % 2 !== 0;
+                return true;
+           }
+           // 3. טיפול בגד מכנס (רק 4)
+           if (def === "גד מכנס") {
+               if (street.name.includes("גד מכנס")) return num === 0 || num === 4;
+               return false;
+           }
+           
+           // 4. ברירת מחדל - התאמת שם רגילה
+           return street.name.includes(def) || def.includes(street.name);
+       });
     }).map(s => ({...s, isCompleted: allCompletedToday.some(d => d.id === s.id)}));
   }, [pendingToday, allCompletedToday, currentDaySchedule, todayArea]);
 
