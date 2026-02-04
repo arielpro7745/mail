@@ -286,4 +286,3 @@ export default function App() {
     </div>
   );
 }
-```</candidate>
