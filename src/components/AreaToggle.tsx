@@ -12,9 +12,10 @@ interface AreaToggleProps {
   area: Area;
   onEnd: () => void;
   onChange?: (newArea: number) => void;
+  lastSplitAt?: string | null;
 }
 
-export function AreaToggle({ area, onEnd, onChange }: AreaToggleProps) {
+export function AreaToggle({ area, onEnd, onChange, lastSplitAt }: AreaToggleProps) {
   // אם מגיע אזור לא מוכר, נציג אותו כ-7
   const displayArea = SAFE_COLORS[area] ? area : 7;
   const colors = SAFE_COLORS[displayArea];
@@ -40,7 +41,7 @@ export function AreaToggle({ area, onEnd, onChange }: AreaToggleProps) {
              <h2 className="text-xl font-black text-gray-800">יום חלוקה פעיל</h2>
              <p className="text-gray-400 text-sm">לחץ לסיום המעבר לאזור הבא</p>
           </div>
-          
+
           <button 
             onClick={onEnd}
             className={`flex flex-col items-center justify-center w-16 h-16 rounded-2xl ${colors.bg} text-white shadow-lg hover:scale-105 transition-transform`}
@@ -48,6 +49,10 @@ export function AreaToggle({ area, onEnd, onChange }: AreaToggleProps) {
             <RotateCcw size={20} className="mb-1" />
             <span className="text-[10px] font-bold">סיים</span>
           </button>
+        </div>
+
+        <div className="px-5 pb-4 text-xs text-gray-500">
+          חלוקה אחרונה: {lastSplitAt ? new Date(lastSplitAt).toLocaleString('he-IL') : 'עדיין לא עודכן'}
         </div>
       </div>
 
