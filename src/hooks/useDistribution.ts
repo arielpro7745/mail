@@ -16,6 +16,8 @@ import { useSettings } from "./useSettings";
 const STREETS_COLLECTION = "streets";
 const SETTINGS_COLLECTION = "settings";
 const GENERAL_SETTINGS_DOC = "general";
+const AREA_SPLIT_HISTORY_COLLECTION = "areaSplitHistory";
+const AREA_SPLIT_HISTORY_DOC = "latest";
 
 // === רשימת חירום: רחובות שחייבים להיות ב-DB ===
 const EMERGENCY_STREETS: Street[] = [
@@ -39,6 +41,7 @@ export function useDistribution() {
   // ברירת מחדל בטוחה (7) למניעת קריסה בטעינה
   const [todayArea, setTodayArea] = useState<Area>(7); 
   const [loading, setLoading] = useState(true);
+  const [lastAreaSplitAt, setLastAreaSplitAt] = useState<string | null>(null);
   const { settings } = useSettings();
 
   const updateAreaInFirebase = async (newArea: number) => {
@@ -101,9 +104,18 @@ export function useDistribution() {
       }
     });
 
+    const unsubscribeSplitHistory = onSnapshot(doc(db, AREA_SPLIT_HISTORY_COLLECTION, AREA_SPLIT_HISTORY_DOC), (docSnap) => {
+      if (docSnap.exists()) {
+        setLastAreaSplitAt(docSnap.data().lastSplitAt || null);
+      } else {
+        setLastAreaSplitAt(null);
+      }
+    });
+
     return () => {
       unsubscribeStreets();
       unsubscribeArea();
+      unsubscribeSplitHistory();
     };
   }, []);
 
@@ -111,7 +123,7 @@ export function useDistribution() {
   const today = new Date();
   const filterArea = todayArea === 45 ? 7 : todayArea;
   const areaStreets = data.filter(s => s.area === filterArea);
-  
+
   const completedToday = areaStreets.filter(s => s.lastDelivered && isSameDay(new Date(s.lastDelivered), today));
   const streetsNeedingDelivery = areaStreets.filter(s => !(s.lastDelivered && isSameDay(new Date(s.lastDelivered), today)));
 
@@ -146,6 +158,18 @@ export function useDistribution() {
   const endDay = async () => {
     const nextMap: Record<number, number> = { 14: 12, 12: 7, 7: 14 };
     const next = nextMap[todayArea] || 7;
+    const now = new Date().toISOString();
+
+    try {
+      await setDoc(doc(db, AREA_SPLIT_HISTORY_COLLECTION, AREA_SPLIT_HISTORY_DOC), {
+        lastSplitAt: now,
+        previousArea: todayArea,
+        nextArea: next
+      }, { merge: true });
+    } catch (e) {
+      console.error("Error recording split history:", e);
+    }
+
     await updateAreaInFirebase(next);
   };
 
@@ -158,6 +182,7 @@ export function useDistribution() {
     undoDelivered,
     endDay,
     loading,
+    lastAreaSplitAt,
     allCompletedToday: completedToday,
     setManualArea: updateAreaInFirebase, // חובה לכפתורים
     allStreets: data
