@@ -37,55 +37,34 @@ import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === לו"ז 16 ימים מסונכרן לתאריך הנוכחי ===
-const SCHEDULE_16_DAYS = [
+// === לו"ז 9 ימים (3 אזורים × 3 חלקים) ===
+const SCHEDULE_9_DAYS = [
   // --- יום 1: אזור 14 (ירוק) ---
   { day: 1, area: 14, title: "14 - הדף היומי וגד מכנס 4", streets: ["הדף היומי", "גד מכנס 4", "רוטשילד זוגי"], subType: "14_even", tips: "הדף היומי, גד מכנס 4, רוטשילד זוגי.", bldgCount: 20 },
 
-  // --- יום 2: אזור 12 (אדום) - חלק 1 ---
+  // --- יום 2: אזור 12 (אדום) - חלק 1/3 ---
   { day: 2, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה"], subType: "12_A", tips: "חיים כהן, שבדיה.", bldgCount: 36 },
 
-  // --- יום 3: אזור 7 (כחול) - חלק 1 ---
+  // --- יום 3: אזור 7 (כחול) - חלק 1/3 ---
   { day: 3, area: 7, title: "7 - פינסקר זוגי", streets: ["פינסקר זוגי"], subType: "7_even", tips: "פינסקר זוגי (2-42).", bldgCount: 30 },
 
   // --- יום 4: אזור 14 (ירוק) - היום! (04/02) ---
   { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל"], subType: "14_odd", tips: "רוטשילד אי-זוגי וקק\"ל.", bldgCount: 25 },
 
-  // --- יום 5: אזור 12 (אדום) - מחר! (05/02) ---
+  // --- יום 5: אזור 12 (אדום) - חלק 2/3 ---
   { day: 5, area: 12, title: "12 - פנקס והכרם", streets: ["דוד צבי פנקס", "הכרם"], subType: "12_B", tips: "דוד צבי פנקס, הכרם.", bldgCount: 30 },
 
-  // --- יום 6: אזור 7 (כחול) - חלק 2 ---
+  // --- יום 6: אזור 7 (כחול) - חלק 2/3 ---
   { day: 6, area: 7, title: "7 - פינסקר אי-זוגי", streets: ["פינסקר אי-זוגי"], subType: "7_odd", tips: "פינסקר צד אי-זוגי (1-63).", bldgCount: 30 },
 
-  // --- יום 7: אזור 14 (ירוק) - סבב חוזר ---
-  { day: 7, area: 14, title: "14 - הדף היומי וגד מכנס 4", streets: ["הדף היומי", "גד מכנס 4", "רוטשילד זוגי"], subType: "14_even", tips: "סבב חוזר: הדף היומי, גד מכנס 4.", bldgCount: 20 },
+  // --- יום 7: אזור 14 (ירוק) - חלק 3/3 ---
+  { day: 7, area: 14, title: "14 - הדף היומי, גד מכנס 4, רוטשילד זוגי + קק\"ל", streets: ["הדף היומי", "גד מכנס 4", "רוטשילד זוגי", "קק\"ל"], subType: "14_mix", tips: "חלק שלישי: שילוב להשלמה.", bldgCount: 24 },
 
-  // --- יום 8: אזור 12 (אדום) - חלק 3 ---
-  { day: 8, area: 12, title: "12 - ה-93 והרב קוק", streets: ["התשעים ושלוש", "הרב קוק"], subType: "12_C", tips: "התשעים ושלוש, הרב קוק.", bldgCount: 45 },
+  // --- יום 8: אזור 12 (אדום) - חלק 3/3 ---
+  { day: 8, area: 12, title: "12 - ה-93, הרב קוק, האחים ראב וחפץ מרדכי", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_C", tips: "חלק שלישי: השלמות לאזור 12.", bldgCount: 45 },
 
-  // --- יום 9: אזור 7 (כחול) - חלק 3 ---
-  { day: 9, area: 7, title: "7 - מרקוס, ברוד, ברוידה", streets: ["משה מרקוס", "מקס ברוד", "ברוידה"], subType: "7_small_1", tips: "משה מרקוס, מקס ברוד, ברוידה.", bldgCount: 15 },
-
-  // --- יום 10: אזור 14 (ירוק) - סבב חוזר ---
-  { day: 10, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל"], subType: "14_odd", tips: "סבב חוזר.", bldgCount: 25 },
-
-  // --- יום 11: אזור 12 (אדום) - חלק 4 ---
-  { day: 11, area: 12, title: "12 - ראב אחים וחפץ מרדכי", streets: ["האחים ראב", "חפץ מרדכי"], subType: "12_part4", tips: "הועברו לכאן: האחים ראב, חפץ מרדכי.", bldgCount: 25 },
-
-  // --- יום 12: אזור 7 (כחול) - חלק 4 ---
-  { day: 12, area: 7, title: "7 - יוסף חיים, רוזוב, בורלא, עולי בבל", streets: ["חכם יוסף חיים", "האחים רוזוב", "בורלא", "עולי בבל"], subType: "7_small_2", tips: "הועברו לכאן: יוסף חיים, רוזוב, בורלא, עולי בבל.", bldgCount: 20 },
-
-  // --- יום 13: אזור 14 (ירוק) - סבב חוזר ---
-  { day: 13, area: 14, title: "14 - הדף היומי וגד מכנס 4", streets: ["הדף היומי", "גד מכנס 4", "רוטשילד זוגי"], subType: "14_even", tips: "סבב חוזר.", bldgCount: 20 },
-
-  // --- יום 14: אזור 12 (אדום) - חלק 5 (סיום האזור) ---
-  { day: 14, area: 12, title: "12 - אנה פרנק, מנדלסון", streets: ["אנה פרנק", "מנדלסון", "רוטשילד 100", "זכרון משה"], subType: "12_part5", tips: "הועברו לכאן: אנה פרנק, מנדלסון, רוטשילד 100, זכרון משה.", bldgCount: 35 },
-
-  // --- יום 15: אזור 7 (כחול) - חלק 5 (סיום האזור) ---
-  { day: 15, area: 7, title: "7 - אורלוב, ליברמן, תל חי", streets: ["אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], subType: "7_small_3", tips: "הועברו לכאן: אורלוב, ליברמן, האחים שטרייט, תל חי.", bldgCount: 25 },
-
-  // --- יום 16: אזור 14 (ירוק) - סבב חוזר ---
-  { day: 16, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל"], subType: "14_odd", tips: "סבב חוזר אחרון.", bldgCount: 25 }
+  // --- יום 9: אזור 7 (כחול) - חלק 3/3 ---
+  { day: 9, area: 7, title: "7 - מרקוס, ברוד, ברוידה, יוסף חיים ורוזוב", streets: ["משה מרקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "האחים רוזוב"], subType: "7_small_1", tips: "חלק שלישי: השלמות לאזור 7.", bldgCount: 24 }
 ];
 
 const AREA_THEMES: Record<number, any> = {
@@ -109,8 +88,8 @@ const calculateAutoCycleDay = () => {
       curr.setDate(curr.getDate() + 1);
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
-    let cycle = (1 + workDays) % 16;
-    return cycle === 0 ? 16 : cycle;
+    let cycle = (1 + workDays) % 9;
+    return cycle === 0 ? 9 : cycle;
   } catch(e) { return 1; }
 };
 
@@ -148,7 +127,7 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
 }
 
 function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, currentArea, theme }: any) {
-  const currentSchedule = SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0];
+  const currentSchedule = SCHEDULE_9_DAYS.find(s => s.day === cycleDay) || SCHEDULE_9_DAYS[0];
   const isWeekend = new Date().getDay() === 5 || new Date().getDay() === 6;
   if (isWeekend) return <div className="bg-purple-600 rounded-3xl p-8 mb-6 text-white">סופ"ש נעים!</div>;
 
@@ -156,8 +135,8 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
     <div className={`rounded-3xl p-6 mb-6 shadow-xl relative overflow-hidden bg-white ${theme.border}`}>
       <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${theme.gradient}`}></div>
       <div className="flex justify-between items-start mb-6">
-        <div><span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full`}>יום {cycleDay} / 16</span><h2 className={`text-2xl font-bold mt-2 ${theme.textMain}`}>{currentSchedule.title}</h2></div>
-        <div className="flex bg-gray-50 rounded-xl p-1"><button onClick={()=>setCycleDay(cycleDay===1?16:cycleDay-1)} className="p-2"><ArrowRight/></button><div className="px-4 self-center font-bold">יום {cycleDay}</div><button onClick={()=>setCycleDay(cycleDay===16?1:cycleDay+1)} className="p-2"><ArrowLeft/></button></div>
+        <div><span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full`}>יום {cycleDay} / 9</span><h2 className={`text-2xl font-bold mt-2 ${theme.textMain}`}>{currentSchedule.title}</h2></div>
+        <div className="flex bg-gray-50 rounded-xl p-1"><button onClick={()=>setCycleDay(cycleDay===1?9:cycleDay-1)} className="p-2"><ArrowRight/></button><div className="px-4 self-center font-bold">יום {cycleDay}</div><button onClick={()=>setCycleDay(cycleDay===9?1:cycleDay+1)} className="p-2"><ArrowLeft/></button></div>
       </div>
       {currentArea !== currentSchedule.area && currentArea !== 45 && <div className="bg-red-50 text-red-800 p-4 mb-4 rounded-lg font-bold">שים לב: האזור באפליקציה ({currentArea}) לא תואם ללו"ז ({currentSchedule.area})</div>}
       <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded border"><Info size={16} className="inline ml-1"/>{currentSchedule.tips}</div>
@@ -176,24 +155,24 @@ export default function App() {
   const [streetNotes, setStreetNotes] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem("streetNotes") || "{}"); } catch { return {}; } });
 
   const saveNote = (streetName: string, note: string) => { const u = { ...streetNotes, [streetName]: note }; setStreetNotes(u); localStorage.setItem("streetNotes", JSON.stringify(u)); };
-  
+
   useEffect(() => { const day = new Date().getDay(); setIsWeekend(day === 5 || day === 6); }, [cycleDay]);
 
   const { isHolidayMode } = useHolidayMode();
   const distHook = useDistribution();
-  const { todayArea = 7, pendingToday = [], completedToday = [], markDelivered = ()=>{}, undoDelivered = ()=>{}, endDay = ()=>{}, loading = true, allCompletedToday = [], setManualArea = ()=>{} } = distHook || {};
+  const { todayArea = 7, pendingToday = [], completedToday = [], markDelivered = ()=>{}, undoDelivered = ()=>{}, endDay = ()=>{}, loading = true, allCompletedToday = [], setManualArea = ()=>{}, lastAreaSplitAt = null } = distHook || {};
 
   useNotifications();
 
-  const currentDaySchedule = useMemo(() => SCHEDULE_16_DAYS.find(s => s.day === cycleDay) || SCHEDULE_16_DAYS[0], [cycleDay]);
+  const currentDaySchedule = useMemo(() => SCHEDULE_9_DAYS.find(s => s.day === cycleDay) || SCHEDULE_9_DAYS[0], [cycleDay]);
   const theme = useMemo(() => AREA_THEMES[todayArea] || AREA_THEMES[7], [todayArea]);
 
   // === מנוע סינון חכם ומדויק ===
   const streetsToShow = useMemo(() => {
     if (todayArea !== currentDaySchedule.area && todayArea !== 45) return []; 
-    
+
     const uniqueMap = new Map();
-    
+
     const filtered = pendingToday.filter(street => {
        if (!street || !street.name) return false;
        const num = parseInt(street.name.match(/(\d+)/)?.[0] || "0");
@@ -219,7 +198,7 @@ export default function App() {
                 if (def.includes("אי-זוגי")) return num > 0 && num % 2 !== 0;
                 return true;
            }
-           
+
            return street.name.includes(def) || def.includes(street.name);
        });
     });
@@ -259,26 +238,26 @@ export default function App() {
             {!isWeekend && (
               <>
                  <div className="flex justify-between items-center mb-4"><h2 className="font-bold">המשימות להיום</h2><button onClick={() => setCycleDay(calculateAutoCycleDay())} className="text-xs underline">סנכרן</button></div>
-                 
+
                  {todayArea !== currentDaySchedule.area && todayArea !== 45 ? 
                     <div className="bg-white p-6 rounded text-center border-dashed border-2">
                        <h3 className="font-bold text-red-600">אזור לא תואם</h3>
                        <p>נא לעבור לאזור {currentDaySchedule.area}</p>
-                       <div className="mt-4"><AreaToggle area={todayArea} onEnd={endDay} onChange={setManualArea} /></div>
+                       <div className="mt-4"><AreaToggle area={todayArea} onEnd={endDay} onChange={setManualArea} lastSplitAt={lastAreaSplitAt} /></div>
                     </div> 
                  : 
                  (streetsToShow.length > 0 ? streetsToShow.map((s: any) => <StreetCard key={s.id} street={s} theme={theme} onDone={(id:string)=>markDelivered(id,0)} onUndo={undoDelivered} onStartTimer={setCurrentStreet} isCompleted={s.isCompleted} notes={streetNotes} onSaveNote={saveNote}/>) : <div className="text-center mt-10 text-gray-500">אין רחובות להצגה או סיימת הכל!</div>)}
-                 
-                 <div className="mt-8 opacity-70"><AreaToggle area={todayArea} onEnd={endDay} onChange={setManualArea} /></div>
-                 
+
+                 <div className="mt-8 opacity-70"><AreaToggle area={todayArea} onEnd={endDay} onChange={setManualArea} lastSplitAt={lastAreaSplitAt} /></div>
+
                  {currentStreet && <DeliveryTimer streetName={currentStreet.name} onComplete={(t) => {markDelivered(currentStreet.id, t); setCurrentStreet(null);}} />}
-                 
+
                  <div className="mt-10 text-center"><button onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)} className="underline text-gray-400">כלים מתקדמים</button>{showAdvancedFeatures && <div className="mt-4"><AutoBackup/><NightModeScheduler/></div>}</div>
               </>
             )}
           </>
         )}
-        
+
         {tab === "tasks" && <TaskManager />}
         {tab === "reports" && <Reports />}
         {tab === "export" && <DataExport />}
