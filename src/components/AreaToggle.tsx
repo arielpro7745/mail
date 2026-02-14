@@ -12,9 +12,10 @@ interface AreaToggleProps {
   area: Area;
   onEnd: () => void;
   onChange?: (newArea: number) => void;
+  lastSplitAt?: string | null;
 }
 
-export function AreaToggle({ area, onEnd, onChange }: AreaToggleProps) {
+export function AreaToggle({ area, onEnd, onChange, lastSplitAt }: AreaToggleProps) {
   // אם מגיע אזור לא מוכר, נציג אותו כ-7
   const displayArea = SAFE_COLORS[area] ? area : 7;
   const colors = SAFE_COLORS[displayArea];
@@ -48,6 +49,10 @@ export function AreaToggle({ area, onEnd, onChange }: AreaToggleProps) {
             <RotateCcw size={20} className="mb-1" />
             <span className="text-[10px] font-bold">סיים</span>
           </button>
+        </div>
+
+        <div className="px-5 pb-4 text-xs text-gray-500">
+          חלוקה אחרונה: {lastSplitAt ? new Date(lastSplitAt).toLocaleString('he-IL') : 'עדיין לא עודכן'}
         </div>
       </div>
 
