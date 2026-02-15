@@ -39,32 +39,32 @@ import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
 // === לו"ז 9 ימים (3 אזורים × 3 חלקים) ===
 const SCHEDULE_9_DAYS = [
-  // --- יום 1: אזור 14 (ירוק) ---
-  { day: 1, area: 14, title: "14 - הדף היומי וגד מכנס 4", streets: ["הדף היומי", "גד מכנס 4", "רוטשילד זוגי"], subType: "14_even", tips: "הדף היומי, גד מכנס 4, רוטשילד זוגי.", bldgCount: 20 },
+  // --- יום 1: אזור 14 (ירוק) - חלק 1/3 ---
+  { day: 1, area: 14, title: "14 - הדף היומי, רוטשילד זוגי, גד מכנס 4", streets: ["הדף היומי", "רוטשילד זוגי", "גד מכנס 4"], subType: "14_A", tips: "חלק ראשון לפי הבקשה: הדף היומי, רוטשילד זוגי, גד מכנס 4.", bldgCount: 24 },
 
   // --- יום 2: אזור 12 (אדום) - חלק 1/3 ---
-  { day: 2, area: 12, title: "12 - חיים כהן ושבדיה", streets: ["חיים כהן", "שבדיה"], subType: "12_A", tips: "חיים כהן, שבדיה.", bldgCount: 36 },
+  { day: 2, area: 12, title: "12 - חיים כהן, שבדיה, פנקס, הכרם", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם"], subType: "12_A", tips: "כולל את חיים כהן (עומס) בתחילת מחזור.", bldgCount: 42 },
 
   // --- יום 3: אזור 7 (כחול) - חלק 1/3 ---
-  { day: 3, area: 7, title: "7 - פינסקר זוגי", streets: ["פינסקר זוגי"], subType: "7_even", tips: "פינסקר זוגי (2-42).", bldgCount: 30 },
+  { day: 3, area: 7, title: "7 - פינסקר זוגי + משה מרקוס, מקס ברוד, ברוידה", streets: ["פינסקר זוגי", "משה מרקוס", "מקס ברוד", "ברוידה"], subType: "7_A", tips: "פינסקר הוא רחוב גדול ולכן מקבל חלק ייעודי.", bldgCount: 40 },
 
-  // --- יום 4: אזור 14 (ירוק) - היום! (04/02) ---
-  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי וקק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל"], subType: "14_odd", tips: "רוטשילד אי-זוגי וקק\"ל.", bldgCount: 25 },
+  // --- יום 4: אזור 14 (ירוק) - חלק 2/3 ---
+  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי, קק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל"], subType: "14_B", tips: "פעם הבאה לפי הבקשה: רוטשילד אי-זוגי וקק\"ל.", bldgCount: 25 },
 
   // --- יום 5: אזור 12 (אדום) - חלק 2/3 ---
-  { day: 5, area: 12, title: "12 - פנקס והכרם", streets: ["דוד צבי פנקס", "הכרם"], subType: "12_B", tips: "דוד צבי פנקס, הכרם.", bldgCount: 30 },
+  { day: 5, area: 12, title: "12 - התשעים ושלוש, הרב קוק, האחים ראב, חפץ מרדכי", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_B", tips: "כולל את הרב קוק (עומס) באמצע המחזור.", bldgCount: 40 },
 
   // --- יום 6: אזור 7 (כחול) - חלק 2/3 ---
-  { day: 6, area: 7, title: "7 - פינסקר אי-זוגי", streets: ["פינסקר אי-זוגי"], subType: "7_odd", tips: "פינסקר צד אי-זוגי (1-63).", bldgCount: 30 },
+  { day: 6, area: 7, title: "7 - פינסקר אי-זוגי + יוסף חיים, רוזוב, בורלא", streets: ["פינסקר אי-זוגי", "חכם יוסף חיים", "האחים רוזוב", "בורלא"], subType: "7_B", tips: "צד אי-זוגי של פינסקר יחד עם הרחובות הבינוניים.", bldgCount: 40 },
 
   // --- יום 7: אזור 14 (ירוק) - חלק 3/3 ---
-  { day: 7, area: 14, title: "14 - הדף היומי, גד מכנס 4, רוטשילד זוגי + קק\"ל", streets: ["הדף היומי", "גד מכנס 4", "רוטשילד זוגי", "קק\"ל"], subType: "14_mix", tips: "חלק שלישי: שילוב להשלמה.", bldgCount: 24 },
+  { day: 7, area: 14, title: "14 - חזרה ואיזון: הדף היומי, רוטשילד זוגי", streets: ["הדף היומי", "רוטשילד זוגי"], subType: "14_C", tips: "חלק שלישי לאיזון עומסים באזור 14.", bldgCount: 20 },
 
   // --- יום 8: אזור 12 (אדום) - חלק 3/3 ---
-  { day: 8, area: 12, title: "12 - ה-93, הרב קוק, האחים ראב וחפץ מרדכי", streets: ["התשעים ושלוש", "הרב קוק", "האחים ראב", "חפץ מרדכי"], subType: "12_C", tips: "חלק שלישי: השלמות לאזור 12.", bldgCount: 45 },
+  { day: 8, area: 12, title: "12 - אנה פרנק, מנדלסון, רוטשילד 100, זכרון משה", streets: ["אנה פרנק", "מנדלסון", "רוטשילד 100", "זכרון משה"], subType: "12_C", tips: "כולל את הרחובות החסרים: מנדלסון, רוטשילד 100, זכרון משה.", bldgCount: 35 },
 
   // --- יום 9: אזור 7 (כחול) - חלק 3/3 ---
-  { day: 9, area: 7, title: "7 - מרקוס, ברוד, ברוידה, יוסף חיים ורוזוב", streets: ["משה מרקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "האחים רוזוב"], subType: "7_small_1", tips: "חלק שלישי: השלמות לאזור 7.", bldgCount: 24 }
+  { day: 9, area: 7, title: "7 - עולי בבל, אורלוב, ליברמן, האחים שטרייט, תל חי", streets: ["עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], subType: "7_C", tips: "סגירת המחזור עם יתר רחובות אזור 7.", bldgCount: 32 }
 ];
 
 const AREA_THEMES: Record<number, any> = {
@@ -155,7 +155,7 @@ export default function App() {
   const [streetNotes, setStreetNotes] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem("streetNotes") || "{}"); } catch { return {}; } });
 
   const saveNote = (streetName: string, note: string) => { const u = { ...streetNotes, [streetName]: note }; setStreetNotes(u); localStorage.setItem("streetNotes", JSON.stringify(u)); };
-
+  
   useEffect(() => { const day = new Date().getDay(); setIsWeekend(day === 5 || day === 6); }, [cycleDay]);
 
   const { isHolidayMode } = useHolidayMode();
@@ -170,9 +170,9 @@ export default function App() {
   // === מנוע סינון חכם ומדויק ===
   const streetsToShow = useMemo(() => {
     if (todayArea !== currentDaySchedule.area && todayArea !== 45) return []; 
-
+    
     const uniqueMap = new Map();
-
+    
     const filtered = pendingToday.filter(street => {
        if (!street || !street.name) return false;
        const num = parseInt(street.name.match(/(\d+)/)?.[0] || "0");
@@ -198,7 +198,7 @@ export default function App() {
                 if (def.includes("אי-זוגי")) return num > 0 && num % 2 !== 0;
                 return true;
            }
-
+           
            return street.name.includes(def) || def.includes(street.name);
        });
     });
@@ -238,7 +238,7 @@ export default function App() {
             {!isWeekend && (
               <>
                  <div className="flex justify-between items-center mb-4"><h2 className="font-bold">המשימות להיום</h2><button onClick={() => setCycleDay(calculateAutoCycleDay())} className="text-xs underline">סנכרן</button></div>
-
+                 
                  {todayArea !== currentDaySchedule.area && todayArea !== 45 ? 
                     <div className="bg-white p-6 rounded text-center border-dashed border-2">
                        <h3 className="font-bold text-red-600">אזור לא תואם</h3>
@@ -247,17 +247,17 @@ export default function App() {
                     </div> 
                  : 
                  (streetsToShow.length > 0 ? streetsToShow.map((s: any) => <StreetCard key={s.id} street={s} theme={theme} onDone={(id:string)=>markDelivered(id,0)} onUndo={undoDelivered} onStartTimer={setCurrentStreet} isCompleted={s.isCompleted} notes={streetNotes} onSaveNote={saveNote}/>) : <div className="text-center mt-10 text-gray-500">אין רחובות להצגה או סיימת הכל!</div>)}
-
+                 
                  <div className="mt-8 opacity-70"><AreaToggle area={todayArea} onEnd={endDay} onChange={setManualArea} lastSplitAt={lastAreaSplitAt} /></div>
-
+                 
                  {currentStreet && <DeliveryTimer streetName={currentStreet.name} onComplete={(t) => {markDelivered(currentStreet.id, t); setCurrentStreet(null);}} />}
-
+                 
                  <div className="mt-10 text-center"><button onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)} className="underline text-gray-400">כלים מתקדמים</button>{showAdvancedFeatures && <div className="mt-4"><AutoBackup/><NightModeScheduler/></div>}</div>
               </>
             )}
           </>
         )}
-
+        
         {tab === "tasks" && <TaskManager />}
         {tab === "reports" && <Reports />}
         {tab === "export" && <DataExport />}
