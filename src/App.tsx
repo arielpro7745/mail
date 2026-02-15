@@ -37,31 +37,34 @@ import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === לו"ז 8 ימים לפי הסדר שביקשת ===
-const SCHEDULE_8_DAYS = [
-  // --- יום 1: אזור 14 - פעם אחת ---
-  { day: 1, area: 14, title: "14 - הדף היומי, רוטשילד זוגי, גד מכנס 4", streets: ["הדף היומי", "רוטשילד זוגי", "גד מכנס 4"], subType: "14_A", tips: "לפי הסדר שביקשת: פעם אחת.", bldgCount: 24 },
+// === לו"ז 9 ימים (אזור 14/12/7 כל 3 ימים) ===
+const SCHEDULE_9_DAYS = [
+  // --- יום 1: אזור 14 - סבב 1 ---
+  { day: 1, area: 14, title: "14 - הדף היומי, רוטשילד זוגי, גד מכנס 4", streets: ["הדף היומי", "רוטשילד זוגי", "גד מכנס 4"], subType: "14_even_A", tips: "גד מכנס 4 משויך לסבב הזוגי.", bldgCount: 24 },
 
-  // --- יום 2: אזור 12 - פעם ראשונה ---
+  // --- יום 2: אזור 12 - סבב 1 ---
   { day: 2, area: 12, title: "12 - חיים כהן, שבדיה, פנקס, הכרם, התשעים ושלוש", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם", "התשעים ושלוש"], subType: "12_A", tips: "כולל את חיים כהן (עומס).", bldgCount: 45 },
 
-  // --- יום 3: אזור 7 - פעם ראשונה ---
+  // --- יום 3: אזור 7 - סבב 1 ---
   { day: 3, area: 7, title: "7 - פינסקר", streets: ["פינסקר"], subType: "7_A", tips: "פינסקר הוא רחוב גדול.", bldgCount: 42 },
 
-  // --- יום 4: אזור 14 - פעם שנייה ---
-  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי, קק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל"], subType: "14_B", tips: "לפי הסדר שביקשת: פעם שנייה.", bldgCount: 25 },
+  // --- יום 4: אזור 14 - סבב 2 ---
+  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי, קק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל"], subType: "14_odd_B", tips: "סבב אי-זוגי נפרד (ללא גד מכנס 4).", bldgCount: 25 },
 
-  // --- יום 5: אזור 12 - פעם שנייה ---
+  // --- יום 5: אזור 12 - סבב 2 ---
   { day: 5, area: 12, title: "12 - הרב קוק, ראב אחים, חפץ מרדכי, אנה פרנק", streets: ["הרב קוק", "האחים ראב", "חפץ מרדכי", "אנה פרנק"], subType: "12_B", tips: "כולל את הרב קוק (עומס).", bldgCount: 38 },
 
-  // --- יום 6: אזור 7 - פעם שנייה ---
+  // --- יום 6: אזור 7 - סבב 2 ---
   { day: 6, area: 7, title: "7 - משה מרקוס, מקס ברוד, ברוידה, חכם יוסף חיים, רוזוב, בורלא", streets: ["משה מרקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "האחים רוזוב", "בורלא"], subType: "7_B", tips: "לפי הסדר שביקשת: פעם שנייה.", bldgCount: 34 },
 
-  // --- יום 7: אזור 12 - פעם שלישית ---
-  { day: 7, area: 12, title: "12 - מנדלסון, רוטשילד 100, זכרון משה", streets: ["מנדלסון", "רוטשילד 100", "זכרון משה"], subType: "12_C", tips: "לפי הסדר שביקשת: פעם שלישית.", bldgCount: 26 },
+  // --- יום 7: אזור 14 - סבב 3 ---
+  { day: 7, area: 14, title: "14 - הדף היומי, רוטשילד זוגי, גד מכנס 4", streets: ["הדף היומי", "רוטשילד זוגי", "גד מכנס 4"], subType: "14_even_C", tips: "אזור 14 חוזר כל 3 ימים.", bldgCount: 24 },
 
-  // --- יום 8: אזור 7 - פעם שלישית ---
-  { day: 8, area: 7, title: "7 - עולי בבל, אורלוב, ליברמן, האחים שטרייט, תל חי", streets: ["עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], subType: "7_C", tips: "לפי הסדר שביקשת: פעם שלישית.", bldgCount: 30 }
+  // --- יום 8: אזור 12 - סבב 3 ---
+  { day: 8, area: 12, title: "12 - מנדלסון, רוטשילד 100, זכרון משה", streets: ["מנדלסון", "רוטשילד 100", "זכרון משה"], subType: "12_C", tips: "לפי הסדר שביקשת: פעם שלישית.", bldgCount: 26 },
+
+  // --- יום 9: אזור 7 - סבב 3 ---
+  { day: 9, area: 7, title: "7 - עולי בבל, אורלוב, ליברמן, האחים שטרייט, תל חי", streets: ["עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], subType: "7_C", tips: "אזור 7 חוזר כל 3 ימים.", bldgCount: 30 }
 ];
 
 const AREA_THEMES: Record<number, any> = {
@@ -85,8 +88,8 @@ const calculateAutoCycleDay = () => {
       curr.setDate(curr.getDate() + 1);
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
-    let cycle = (1 + workDays) % 8;
-    return cycle === 0 ? 8 : cycle;
+    let cycle = (1 + workDays) % 9;
+    return cycle === 0 ? 9 : cycle;
   } catch(e) { return 1; }
 };
 
@@ -124,7 +127,7 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
 }
 
 function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, currentArea, theme }: any) {
-  const currentSchedule = SCHEDULE_8_DAYS.find(s => s.day === cycleDay) || SCHEDULE_8_DAYS[0];
+  const currentSchedule = SCHEDULE_9_DAYS.find(s => s.day === cycleDay) || SCHEDULE_9_DAYS[0];
   const isWeekend = new Date().getDay() === 5 || new Date().getDay() === 6;
   if (isWeekend) return <div className="bg-purple-600 rounded-3xl p-8 mb-6 text-white">סופ"ש נעים!</div>;
 
@@ -132,8 +135,8 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
     <div className={`rounded-3xl p-6 mb-6 shadow-xl relative overflow-hidden bg-white ${theme.border}`}>
       <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${theme.gradient}`}></div>
       <div className="flex justify-between items-start mb-6">
-        <div><span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full`}>יום {cycleDay} / 8</span><h2 className={`text-2xl font-bold mt-2 ${theme.textMain}`}>{currentSchedule.title}</h2></div>
-        <div className="flex bg-gray-50 rounded-xl p-1"><button onClick={()=>setCycleDay(cycleDay===1?8:cycleDay-1)} className="p-2"><ArrowRight/></button><div className="px-4 self-center font-bold">יום {cycleDay}</div><button onClick={()=>setCycleDay(cycleDay===8?1:cycleDay+1)} className="p-2"><ArrowLeft/></button></div>
+        <div><span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full`}>יום {cycleDay} / 9</span><h2 className={`text-2xl font-bold mt-2 ${theme.textMain}`}>{currentSchedule.title}</h2></div>
+        <div className="flex bg-gray-50 rounded-xl p-1"><button onClick={()=>setCycleDay(cycleDay===1?9:cycleDay-1)} className="p-2"><ArrowRight/></button><div className="px-4 self-center font-bold">יום {cycleDay}</div><button onClick={()=>setCycleDay(cycleDay===9?1:cycleDay+1)} className="p-2"><ArrowLeft/></button></div>
       </div>
       {currentArea !== currentSchedule.area && currentArea !== 45 && <div className="bg-red-50 text-red-800 p-4 mb-4 rounded-lg font-bold">שים לב: האזור באפליקציה ({currentArea}) לא תואם ללו"ז ({currentSchedule.area})</div>}
       <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded border"><Info size={16} className="inline ml-1"/>{currentSchedule.tips}</div>
@@ -161,7 +164,7 @@ export default function App() {
 
   useNotifications();
 
-  const currentDaySchedule = useMemo(() => SCHEDULE_8_DAYS.find(s => s.day === cycleDay) || SCHEDULE_8_DAYS[0], [cycleDay]);
+  const currentDaySchedule = useMemo(() => SCHEDULE_9_DAYS.find(s => s.day === cycleDay) || SCHEDULE_9_DAYS[0], [cycleDay]);
   const theme = useMemo(() => AREA_THEMES[todayArea] || AREA_THEMES[7], [todayArea]);
 
   // === מנוע סינון חכם ומדויק ===
