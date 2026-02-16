@@ -37,31 +37,44 @@ import ResidentComplaints from "./components/ResidentComplaints";
 import UnknownResidents from "./components/UnknownResidents";
 import GeographicAreaAnalysis from "./components/GeographicAreaAnalysis";
 
-// === לו"ז 8 ימים לפי הסדר שביקשת ===
-const SCHEDULE_8_DAYS = [
-  // --- יום 1: אזור 14 - פעם אחת ---
-  { day: 1, area: 14, title: "14 - הדף היומי, רוטשילד זוגי, גד מכנס 4", streets: ["הדף היומי", "רוטשילד זוגי", "גד מכנס 4"], subType: "14_A", tips: "לפי הסדר שביקשת: פעם אחת.", bldgCount: 24 },
+// === לו"ז 12 ימים לפי הרוטציה שביקשת (אדום -> כחול -> ירוק), עם דילוג ירוק פעם אחת ===
+// היום = כחול (7), מחר = ירוק (14), אח"כ אדום (12)...
+const SCHEDULE_12_DAYS = [
+  // --- יום 1: אזור 7 (כחול) ---
+  { day: 1, area: 7, title: "7 - פינסקר 1–67 (אי-זוגי)", streets: ["פינסקר אי-זוגי"], subType: "7_A", tips: "פינסקר הוא הרחוב הכי גדול: צד אי-זוגי (1–67).", bldgCount: 42 },
 
-  // --- יום 2: אזור 12 - פעם ראשונה ---
-  { day: 2, area: 12, title: "12 - חיים כהן, שבדיה, פנקס, הכרם, התשעים ושלוש", streets: ["חיים כהן", "שבדיה", "דוד צבי פנקס", "הכרם", "התשעים ושלוש"], subType: "12_A", tips: "כולל את חיים כהן (עומס).", bldgCount: 45 },
+  // --- יום 2: אזור 14 (ירוק) ---
+  { day: 2, area: 14, title: "14 - רוטשילד זוגי", streets: ["רוטשילד זוגי"], subType: "14_A", tips: "אזור 14 קטן: היום רק רוטשילד זוגי.", bldgCount: 18 },
 
-  // --- יום 3: אזור 7 - פעם ראשונה ---
-  { day: 3, area: 7, title: "7 - פינסקר", streets: ["פינסקר"], subType: "7_A", tips: "פינסקר הוא רחוב גדול.", bldgCount: 42 },
+  // --- יום 3: אזור 12 (אדום) ---
+  { day: 3, area: 12, title: "12 - חיים כהן, שבדיה, פנקס", streets: ["חיים כהן", "שבדיה", "פנקס"], subType: "12_A", tips: "אדום #1: 3 רחובות.", bldgCount: 45 },
 
-  // --- יום 4: אזור 14 - פעם שנייה ---
-  { day: 4, area: 14, title: "14 - רוטשילד אי-זוגי, קק\"ל", streets: ["רוטשילד אי-זוגי", "קק\"ל"], subType: "14_B", tips: "לפי הסדר שביקשת: פעם שנייה.", bldgCount: 25 },
+  // --- יום 4: אזור 7 (כחול) ---
+  { day: 4, area: 7, title: "7 - פינסקר 2–38 (זוגי)", streets: ["פינסקר זוגי"], subType: "7_B", tips: "פינסקר הוא הרחוב הכי גדול: צד זוגי (2–38).", bldgCount: 40 },
 
-  // --- יום 5: אזור 12 - פעם שנייה ---
-  { day: 5, area: 12, title: "12 - הרב קוק, ראב אחים, חפץ מרדכי, אנה פרנק", streets: ["הרב קוק", "האחים ראב", "חפץ מרדכי", "אנה פרנק"], subType: "12_B", tips: "כולל את הרב קוק (עומס).", bldgCount: 38 },
+  // --- יום 5: אזור 14 (ירוק) ---
+  { day: 5, area: 14, title: "14 - הדף היומי", streets: ["הדף היומי"], subType: "14_B", tips: "אזור 14: הדף היומי.", bldgCount: 12 },
 
-  // --- יום 6: אזור 7 - פעם שנייה ---
-  { day: 6, area: 7, title: "7 - משה מרקוס, מקס ברוד, ברוידה, חכם יוסף חיים, רוזוב, בורלא", streets: ["משה מרקוס", "מקס ברוד", "ברוידה", "חכם יוסף חיים", "האחים רוזוב", "בורלא"], subType: "7_B", tips: "לפי הסדר שביקשת: פעם שנייה.", bldgCount: 34 },
+  // --- יום 6: אזור 12 (אדום) ---
+  { day: 6, area: 12, title: "12 - הכרם, התשעים ושלוש, הרב קוק", streets: ["הכרם", "התשעים ושלוש", "הרב קוק"], subType: "12_B", tips: "אדום #2: 3 רחובות.", bldgCount: 38 },
 
-  // --- יום 7: אזור 12 - פעם שלישית ---
-  { day: 7, area: 12, title: "12 - מנדלסון, רוטשילד 100, זכרון משה", streets: ["מנדלסון", "רוטשילד 100", "זכרון משה"], subType: "12_C", tips: "לפי הסדר שביקשת: פעם שלישית.", bldgCount: 26 },
+  // --- יום 7: אזור 7 (כחול) ---
+  { day: 7, area: 7, title: "7 - משה מרקוס, מקס ברוד, תל חי", streets: ["משה מרקוס", "מקס ברוד", "תל חי"], subType: "7_C", tips: "כחול #3: 3 רחובות בינוניים.", bldgCount: 34 },
 
-  // --- יום 8: אזור 7 - פעם שלישית ---
-  { day: 8, area: 7, title: "7 - עולי בבל, אורלוב, ליברמן, האחים שטרייט, תל חי", streets: ["עולי בבל", "אורלוב", "ליברמן", "האחים שטרייט", "תל חי"], subType: "7_C", tips: "לפי הסדר שביקשת: פעם שלישית.", bldgCount: 30 }
+  // --- יום 8: אזור 14 (ירוק) ---
+  { day: 8, area: 14, title: "14 - גד מכנס 4", streets: ["גד מכנס 4"], subType: "14_C", tips: "אזור 14: גד מכנס (4).", bldgCount: 10 },
+
+  // --- יום 9: אזור 12 (אדום) ---
+  { day: 9, area: 12, title: "12 - אנה פרנק, האחים ראב, חפץ מרדכי", streets: ["אנה פרנק", "האחים ראב", "חפץ מרדכי"], subType: "12_C", tips: "אדום #3: 3 רחובות.", bldgCount: 30 },
+
+  // --- יום 10: אזור 7 (כחול) ---
+  { day: 10, area: 7, title: "7 - ברוידה, חכם יוסף חיים, האחים רוזוב", streets: ["ברוידה", "חכם יוסף חיים", "האחים רוזוב"], subType: "7_D", tips: "כחול #4: 3 רחובות.", bldgCount: 30 },
+
+  // --- יום 11: דילוג פעם אחת על אזור 14 (במקום ירוק -> כחול) ---
+  { day: 11, area: 7, title: "7 - עולי בבל, האחים שטרייט, ליברמן, אורלוב (במקום ירוק)", streets: ["עולי בבל", "האחים שטרייט", "ליברמן", "אורלוב"], subType: "7_E", tips: "דילוג פעם אחת על אזור 14 כדי להפחית עומס בשאר האזורים.", bldgCount: 32 },
+
+  // --- יום 12: אזור 12 (אדום) ---
+  { day: 12, area: 12, title: "12 - מנדלסון, רוטשילד 100, זכרון משה", streets: ["מנדלסון", "רוטשילד 100", "זכרון משה"], subType: "12_D", tips: "אדום #4: 3 רחובות.", bldgCount: 26 }
 ];
 
 const AREA_THEMES: Record<number, any> = {
@@ -73,9 +86,9 @@ const AREA_THEMES: Record<number, any> = {
 
 const calculateAutoCycleDay = () => {
   try {
-    // תאריך עוגן חדש: 1 בפברואר 2026 = יום 1
-    // זה מבטיח שה-4 בפברואר (היום) יהיה יום 4
-    const anchorDate = new Date('2026-02-01T00:00:00'); 
+    // תאריך עוגן: 16 בפברואר 2026 = יום 1 (כחול)
+    // זה תואם למה שאמרת: אתמול אדום, היום כחול, מחר ירוק...
+    const anchorDate = new Date('2026-02-16T00:00:00'); 
     const today = new Date();
     today.setHours(0,0,0,0);
     if (today < anchorDate) return 1;
@@ -85,8 +98,8 @@ const calculateAutoCycleDay = () => {
       curr.setDate(curr.getDate() + 1);
       if (curr.getDay() !== 5 && curr.getDay() !== 6) workDays++;
     }
-    let cycle = (1 + workDays) % 8;
-    return cycle === 0 ? 8 : cycle;
+    let cycle = (1 + workDays) % 12;
+    return cycle === 0 ? 12 : cycle;
   } catch(e) { return 1; }
 };
 
@@ -124,7 +137,7 @@ function StreetCard({ street, theme, onDone, onUndo, onStartTimer, isCompleted, 
 }
 
 function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, currentArea, theme }: any) {
-  const currentSchedule = SCHEDULE_8_DAYS.find(s => s.day === cycleDay) || SCHEDULE_8_DAYS[0];
+  const currentSchedule = SCHEDULE_12_DAYS.find(s => s.day === cycleDay) || SCHEDULE_12_DAYS[0];
   const isWeekend = new Date().getDay() === 5 || new Date().getDay() === 6;
   if (isWeekend) return <div className="bg-purple-600 rounded-3xl p-8 mb-6 text-white">סופ"ש נעים!</div>;
 
@@ -132,8 +145,8 @@ function CycleDashboard({ cycleDay, setCycleDay, completedCount, pendingCount, c
     <div className={`rounded-3xl p-6 mb-6 shadow-xl relative overflow-hidden bg-white ${theme.border}`}>
       <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${theme.gradient}`}></div>
       <div className="flex justify-between items-start mb-6">
-        <div><span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full`}>יום {cycleDay} / 8</span><h2 className={`text-2xl font-bold mt-2 ${theme.textMain}`}>{currentSchedule.title}</h2></div>
-        <div className="flex bg-gray-50 rounded-xl p-1"><button onClick={()=>setCycleDay(cycleDay===1?8:cycleDay-1)} className="p-2"><ArrowRight/></button><div className="px-4 self-center font-bold">יום {cycleDay}</div><button onClick={()=>setCycleDay(cycleDay===8?1:cycleDay+1)} className="p-2"><ArrowLeft/></button></div>
+        <div><span className={`${theme.primary} text-white text-xs font-bold px-3 py-1 rounded-full`}>יום {cycleDay} / 12</span><h2 className={`text-2xl font-bold mt-2 ${theme.textMain}`}>{currentSchedule.title}</h2></div>
+        <div className="flex bg-gray-50 rounded-xl p-1"><button onClick={()=>setCycleDay(cycleDay===1?12:cycleDay-1)} className="p-2"><ArrowRight/></button><div className="px-4 self-center font-bold">יום {cycleDay}</div><button onClick={()=>setCycleDay(cycleDay===12?1:cycleDay+1)} className="p-2"><ArrowLeft/></button></div>
       </div>
       {currentArea !== currentSchedule.area && currentArea !== 45 && <div className="bg-red-50 text-red-800 p-4 mb-4 rounded-lg font-bold">שים לב: האזור באפליקציה ({currentArea}) לא תואם ללו"ז ({currentSchedule.area})</div>}
       <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded border"><Info size={16} className="inline ml-1"/>{currentSchedule.tips}</div>
@@ -152,7 +165,7 @@ export default function App() {
   const [streetNotes, setStreetNotes] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem("streetNotes") || "{}"); } catch { return {}; } });
 
   const saveNote = (streetName: string, note: string) => { const u = { ...streetNotes, [streetName]: note }; setStreetNotes(u); localStorage.setItem("streetNotes", JSON.stringify(u)); };
-  
+
   useEffect(() => { const day = new Date().getDay(); setIsWeekend(day === 5 || day === 6); }, [cycleDay]);
 
   const { isHolidayMode } = useHolidayMode();
@@ -161,21 +174,23 @@ export default function App() {
 
   useNotifications();
 
-  const currentDaySchedule = useMemo(() => SCHEDULE_8_DAYS.find(s => s.day === cycleDay) || SCHEDULE_8_DAYS[0], [cycleDay]);
+  const currentDaySchedule = useMemo(() => SCHEDULE_12_DAYS.find(s => s.day === cycleDay) || SCHEDULE_12_DAYS[0], [cycleDay]);
   const theme = useMemo(() => AREA_THEMES[todayArea] || AREA_THEMES[7], [todayArea]);
 
   // === מנוע סינון חכם ומדויק ===
   const streetsToShow = useMemo(() => {
     if (todayArea !== currentDaySchedule.area && todayArea !== 45) return []; 
-    
+
     const uniqueMap = new Map();
-    
+
     const filtered = pendingToday.filter(street => {
        if (!street || !street.name) return false;
        const num = parseInt(street.name.match(/(\d+)/)?.[0] || "0");
 
-       // 1. טיפול בגד מכנס (רק 4)
+       // 1. טיפול בגד מכנס (רק 4) + רק ביום שמופיע בלו"ז
        if (street.name.includes("גד מכנס")) {
+           const isInTodaySchedule = currentDaySchedule.streets.some(def => def.includes("גד מכנס"));
+           if (!isInTodaySchedule) return false;
            return num === 4 || street.name.trim() === "גד מכנס 4";
        }
 
@@ -195,7 +210,7 @@ export default function App() {
                 if (def.includes("אי-זוגי")) return num > 0 && num % 2 !== 0;
                 return true;
            }
-           
+
            return street.name.includes(def) || def.includes(street.name);
        });
     });
@@ -235,7 +250,7 @@ export default function App() {
             {!isWeekend && (
               <>
                  <div className="flex justify-between items-center mb-4"><h2 className="font-bold">המשימות להיום</h2><button onClick={() => setCycleDay(calculateAutoCycleDay())} className="text-xs underline">סנכרן</button></div>
-                 
+
                  {todayArea !== currentDaySchedule.area && todayArea !== 45 ? 
                     <div className="bg-white p-6 rounded text-center border-dashed border-2">
                        <h3 className="font-bold text-red-600">אזור לא תואם</h3>
@@ -244,17 +259,17 @@ export default function App() {
                     </div> 
                  : 
                  (streetsToShow.length > 0 ? streetsToShow.map((s: any) => <StreetCard key={s.id} street={s} theme={theme} onDone={(id:string)=>markDelivered(id,0)} onUndo={undoDelivered} onStartTimer={setCurrentStreet} isCompleted={s.isCompleted} notes={streetNotes} onSaveNote={saveNote}/>) : <div className="text-center mt-10 text-gray-500">אין רחובות להצגה או סיימת הכל!</div>)}
-                 
+
                  <div className="mt-8 opacity-70"><AreaToggle area={todayArea} onEnd={endDay} onChange={setManualArea} lastSplitAt={lastAreaSplitAt} /></div>
-                 
+
                  {currentStreet && <DeliveryTimer streetName={currentStreet.name} onComplete={(t) => {markDelivered(currentStreet.id, t); setCurrentStreet(null);}} />}
-                 
+
                  <div className="mt-10 text-center"><button onClick={() => setShowAdvancedFeatures(!showAdvancedFeatures)} className="underline text-gray-400">כלים מתקדמים</button>{showAdvancedFeatures && <div className="mt-4"><AutoBackup/><NightModeScheduler/></div>}</div>
               </>
             )}
           </>
         )}
-        
+
         {tab === "tasks" && <TaskManager />}
         {tab === "reports" && <Reports />}
         {tab === "export" && <DataExport />}
